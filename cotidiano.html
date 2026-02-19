@@ -858,7 +858,16 @@
 
             if (acts.length === 0) return alert("No hay prácticas para generar el reporte.");
 
-            const printWindow = window.open('', '_blank');
+            // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+            let printFrame = document.getElementById('printFrame');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'printFrame';
+                printFrame.style.display = 'none';
+                document.body.appendChild(printFrame);
+            }
+
+            const doc = printFrame.contentWindow.document;
 
             let html = `
     <html>
@@ -943,12 +952,14 @@
     </body>
     </html>`;
 
-            printWindow.document.write(html);
-            printWindow.document.close();
-            printWindow.onload = () => {
-                printWindow.print();
-                printWindow.close();
-            };
+            doc.open();
+            doc.write(html);
+            doc.close();
+
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 500);
         }
         function closeGeneralReport() { document.getElementById('modal-general-report').classList.add('hidden'); }
         // Función de guardado general
