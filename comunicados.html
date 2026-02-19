@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunicados al Hogar - Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    <meta name="theme-color" content="#10b981">
+    <style>
+        .page-comunicados .nav-active {
+            background: var(--primary-light);
+            color: var(--primary-vibrant);
+            box-shadow: var(--nm-shadow-in);
+        }
+
+        .priority-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .priority-btn.active-green {
+            background: #dcfce7;
+            border-color: #22c55e;
+            color: #15803d;
+            box-shadow: inset 4px 4px 8px #bbf7d0, inset -4px -4px 8px #ffffff;
+        }
+
+        .priority-btn.active-yellow {
+            background: #fef9c3;
+            border-color: #eab308;
+            color: #a16207;
+            box-shadow: inset 4px 4px 8px #fef08a, inset -4px -4px 8px #ffffff;
+        }
+
+        .priority-btn.active-red {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #b91c1c;
+            box-shadow: inset 4px 4px 8px #fecaca, inset -4px -4px 8px #ffffff;
+        }
+
+        .print-layout {
+            display: none;
+        }
+
+        @media print {
+            @page {
+                margin: 0.5cm;
+                size: letter;
+            }
+
+            body * {
+                visibility: hidden;
+            }
+
+            .print-layout,
+            .print-layout * {
+                visibility: visible;
+            }
+
+            .print-layout {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-ready-card {
+                border: 1px solid #ddd;
+                padding: 15px;
+                margin-bottom: 10px;
+                page-break-inside: avoid;
+            }
+
+            .print-grid-green {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .print-full-yellow,
+            .print-full-red {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            .print-half {
+                height: 49%;
+                border-bottom: 1px dashed #000;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .print-half:last-child {
+                border-bottom: none;
+                margin-top: 5px;
+            }
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #000;
+            padding-top: 3px;
+            margin-top: 20px;
+            font-size: 9px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen page-comunicados">
+    <button class="sidebar-toggle no-print" onclick="toggleSidebar()">
+        <i data-lucide="menu"></i>
+    </button>
+    <aside
+        class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group no-print">
+        <div class="flex flex-col gap-3 p-4 mt-6">
+            <a href="config.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="settings"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
+            </a>
+            <a href="index.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all">
+                <i data-lucide="layout-dashboard"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
+            </a>
+            <a href="estudiantes.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="users"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
+            </a>
+            <a href="comunicados.html" class="flex items-center gap-4 p-3 rounded-2xl nav-active">
+                <i data-lucide="message-square"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Comunicados</span>
+            </a>
+            <a href="bitacora.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book-open"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora</span>
+            </a>
+            <a href="calendario.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Calendario</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-10 no-print">
+        <header class="mb-10 flex items-center justify-between border-b border-slate-100 pb-6">
+            <div>
+                <h1><i data-lucide="message-square" class="title-icon"></i> Comunicados al Hogar</h1>
+                <p class="info-profesional">Generación de notificaciones imprimibles</p>
+            </div>
+            <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
+                <div class="flex items-center gap-2">
+                    <select id="level-filter" onchange="updateSections()"
+                        class="text-xs font-bold text-slate-600 outline-none">
+                        <option value="7">7°</option>
+                        <option value="8">8°</option>
+                        <option value="9">9°</option>
+                        <option value="10">10°</option>
+                        <option value="11">11°</option>
+                    </select>
+                    <span class="text-slate-200">|</span>
+                    <select id="section-filter" onchange="updateStudentsList()"
+                        class="text-xs font-bold text-slate-600 outline-none"></select>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Selector de Estudiantes -->
+            <div class="space-y-6">
+                <section class="card-premium h-full">
+                    <h2 class="card-title mb-4">
+                        <div class="icon-vibrant">
+                            <i data-lucide="search"></i>
+                        </div>
+                        Seleccionar Destinatario
+                    </h2>
+
+                    <div id="student-selection-mode" class="flex gap-2 mb-4">
+                        <button onclick="setSelectionMode('single')" id="btn-mode-single"
+                            class="btn-nm flex-1 justify-center active-green">Individual</button>
+                        <button onclick="setSelectionMode('group')" id="btn-mode-group"
+                            class="btn-nm flex-1 justify-center">Grupal</button>
+                    </div>
+
+                    <div id="single-student-box" class="space-y-4">
+                        <div>
+                            <label class="card-text">Estudiante</label>
+                            <select id="student-select" onchange="loadGuardian()" class="input-soft w-full mt-1">
+                                <option value="">Seleccione un estudiante</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="card-text">Encargado Legal</label>
+                            <input type="text" id="guardian-name" class="input-soft w-full mt-1"
+                                placeholder="Nombre del encargado">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="card-text">Fecha Emisión</label>
+                                <input type="date" id="comm-date" class="input-soft w-full mt-1">
+                            </div>
+                            <div>
+                                <label class="card-text">Fecha de la Falta</label>
+                                <input type="date" id="fault-date" class="input-soft w-full mt-1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="group-student-box" class="hidden space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="checkbox" id="select-all-students" onchange="toggleAllStudents()"
+                                class="w-4 h-4">
+                            <label for="select-all-students" class="text-xs font-bold text-slate-600">Seleccionar
+                                todos</label>
+                        </div>
+                        <div id="students-checklist"
+                            class="max-h-60 overflow-y-auto space-y-2 p-2 bg-slate-50 rounded-xl">
+                            <!-- Checklist de estudiantes -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Panel de Control del Comunicado -->
+            <div class="lg:col-span-2 space-y-6">
+                <section class="card-premium">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="card-title">
+                            <div class="icon-vibrant">
+                                <i data-lucide="alert-circle"></i>
+                            </div>
+                            Tipo de Comunicado
+                        </h2>
+                        <div class="flex gap-2">
+                            <button onclick="setPriority('green')" id="btn-priority-green"
+                                class="priority-btn px-4 py-2 rounded-xl border text-xs font-bold transition-all">Verde</button>
+                            <button onclick="setPriority('yellow')" id="btn-priority-yellow"
+                                class="priority-btn px-4 py-2 rounded-xl border text-xs font-bold transition-all">Amarillo</button>
+                            <button onclick="setPriority('red')" id="btn-priority-red"
+                                class="priority-btn px-4 py-2 rounded-xl border text-xs font-bold transition-all">Rojo</button>
+                        </div>
+                    </div>
+
+                    <!-- Verde: Informativo -->
+                    <div id="panel-green" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                        <div>
+                            <label class="card-text">Mensaje General</label>
+                            <textarea id="msg-green" class="input-soft w-full mt-1 h-32"
+                                placeholder="Escriba el comunicado informativo aquí..."></textarea>
+                        </div>
+                        <div class="flex items-center gap-2 p-3 bg-green-50 rounded-2xl border border-green-100">
+                            <i data-lucide="info" class="text-green-500 w-5 h-5"></i>
+                            <p class="text-[10px] font-medium text-green-700">Se imprimirán 4 a 6 copias idénticas para
+                                optimizar el papel.</p>
+                        </div>
+                    </div>
+
+                    <!-- Amarillo: Seguimiento -->
+                    <div id="panel-yellow" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label
+                                class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl hover:bg-white transition-all border border-transparent hover:border-amber-200 cursor-pointer">
+                                <input type="checkbox" name="yellow-item" value="No presentó tarea"
+                                    class="w-4 h-4 text-amber-500">
+                                <span class="text-xs font-bold text-slate-700">No presentó tarea</span>
+                            </label>
+                            <label
+                                class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl hover:bg-white transition-all border border-transparent hover:border-amber-200 cursor-pointer">
+                                <input type="checkbox" name="yellow-item" value="No trajo cuaderno" class="w-4 h-4">
+                                <span class="text-xs font-bold text-slate-700">No trajo cuaderno</span>
+                            </label>
+                            <label
+                                class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl hover:bg-white transition-all border border-transparent hover:border-amber-200 cursor-pointer">
+                                <input type="checkbox" name="yellow-item" value="Trabajo en clase incompleto"
+                                    class="w-4 h-4">
+                                <span class="text-xs font-bold text-slate-700">Trabajo incompleto</span>
+                            </label>
+                            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-transparent">
+                                <input type="checkbox" name="yellow-item" id="check-absences"
+                                    value="Ausencias injustificadas" class="w-4 h-4">
+                                <span class="text-xs font-bold text-slate-700">Ausencias:</span>
+                                <input type="number" id="absences-count"
+                                    class="input-soft !p-1 !rounded-md w-16 text-xs text-center" placeholder="Cant.">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="card-text">Detalle Adicional / Otros</label>
+                            <textarea id="msg-yellow-other" class="input-soft w-full mt-1 h-20"
+                                placeholder="Especifique tareas pendientes u otros detalles..."></textarea>
+                        </div>
+                        <div class="flex items-center gap-2 p-3 bg-amber-50 rounded-2xl border border-amber-100">
+                            <i data-lucide="copy" class="text-amber-500 w-5 h-5"></i>
+                            <p class="text-[10px] font-medium text-amber-700">Se imprimirá Original y Copia en la misma
+                                hoja.</p>
+                        </div>
+                    </div>
+
+                    <!-- Rojo: Disciplinario -->
+                    <div id="panel-red" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="card-text">Tipo de Falta</label>
+                                <select id="red-type" onchange="updateRedArticles()" class="input-soft w-full mt-1">
+                                    <option value="Muy Leve">Muy Leve</option>
+                                    <option value="Leve">Leve</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="card-text">Origen</label>
+                                <select id="red-origin" class="input-soft w-full mt-1">
+                                    <option value="REAC">REAC (Reglamento Evaluación)</option>
+                                    <option value="Normativa Interna">Normativa Interna</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="card-text">Artículo Aplicable</label>
+                            <select id="red-article" class="input-soft w-full mt-1">
+                                <!-- Dinámico -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="card-text">Descripción de los Hechos</label>
+                            <textarea id="msg-red-facts" class="input-soft w-full mt-1 h-32"
+                                placeholder="Describa los hechos ocurridos de forma objetiva..."></textarea>
+                        </div>
+                        <div>
+                            <label class="card-text">Acción Correctiva</label>
+                            <select id="red-action" class="input-soft w-full mt-1">
+                                <option value="Amonestación escrita">Amonestación escrita</option>
+                                <option value="Reparación del daño">Reparación del daño</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2 p-3 bg-red-50 rounded-2xl border border-red-100">
+                            <i data-lucide="alert-triangle" class="text-red-500 w-5 h-5"></i>
+                            <p class="text-[10px] font-medium text-red-700">Se imprimirá Original y Copia con respaldo
+                                legal.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 flex justify-end gap-4">
+                        <button onclick="window.print()"
+                            class="btn-nm px-12 py-4 shadow-lg hover:shadow-xl transition-all">
+                            <i data-lucide="printer"></i> Preparar Impresión
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Área de Impresión (Invisible en pantalla, visible en Print) -->
+    <div id="print-area" class="print-layout">
+        <!-- El contenido se genera dinámicamente -->
+    </div>
+
+    <script>
+        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { students: {}, groups: [], admin: {} };
+        let currentPriority = 'green';
+        let selectionMode = 'single';
+
+        const REAC_MUY_LEVES = [
+            { id: "a", text: "Inciso a: Uso incorrecto del uniforme." },
+            { id: "b", text: "Inciso b: Uso de accesorios personales no autorizados." },
+            { id: "c", text: "Inciso c: Incumplimiento de normas de presentación personal." },
+            { id: "d", text: "Otra falta muy leve (según normativa interna)." }
+        ];
+
+        const REAC_LEVES = [
+            { id: "a", text: "Inciso a: Uso incorrecto del cuaderno de comunicaciones." },
+            { id: "b", text: "Inciso b: No informar a encargados sobre comunicaciones enviadas." },
+            { id: "c", text: "Inciso c: Interrupciones al proceso de aprendizaje." },
+            { id: "d", text: "Inciso d: Fuga de lecciones o actividades programadas." },
+            { id: "e", text: "Inciso e: Ausencias injustificadas a actividades convocadas." },
+            { id: "f", text: "Otra falta leve (según normativa interna)." }
+        ];
+
+        function init() {
+            const savedLevel = localStorage.getItem('temp_current_level');
+            const savedSection = localStorage.getItem('temp_current_section');
+
+            if (savedLevel) {
+                document.getElementById('level-filter').value = savedLevel;
+            }
+
+            updateSections(savedSection);
+            setPriority('green');
+
+            // Set default dates to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('comm-date').value = today;
+            document.getElementById('fault-date').value = today;
+
+            // Listeners para sincronizar vista previa al escribir/cambiar
+            document.addEventListener('input', updatePrintPreview);
+            document.addEventListener('change', updatePrintPreview);
+
+            lucide.createIcons();
+        }
+
+        function updateSections(sectionToSelect) {
+            const lvl = document.getElementById('level-filter').value;
+            const secSelect = document.getElementById('section-filter');
+            const groups = (state.groups || []).filter(g => g.startsWith(lvl + '-')).map(g => g.split('-')[1]);
+
+            secSelect.innerHTML = groups.map(s => `<option value="${s}">${lvl}-${s}</option>`).join('') || `<option value="1">1</option>`;
+
+            if (sectionToSelect && groups.includes(sectionToSelect)) {
+                secSelect.value = sectionToSelect;
+            }
+
+            localStorage.setItem('temp_current_level', lvl);
+            updateStudentsList();
+        }
+
+        function updateStudentsList() {
+            const lvl = document.getElementById('level-filter').value;
+            const sec = document.getElementById('section-filter').value;
+            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+
+            localStorage.setItem('temp_current_section', sec);
+
+            // Individual select
+            const select = document.getElementById('student-select');
+            select.innerHTML = '<option value="">Seleccione un estudiante</option>' +
+                students.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+            // Group checklist
+            const checklist = document.getElementById('students-checklist');
+            checklist.innerHTML = students.map(s => `
+                <div class="flex items-center gap-2 hover:bg-white p-1 rounded">
+                    <input type="checkbox" name="group-student" value="${s.id}" data-name="${s.name}" class="w-3 h-3">
+                    <span class="text-xs text-slate-600">${s.name}</span>
+                </div>
+            `).join('');
+
+            updatePrintPreview();
+        }
+
+        function setSelectionMode(mode) {
+            selectionMode = mode;
+            document.getElementById('single-student-box').classList.toggle('hidden', mode === 'group');
+            document.getElementById('group-student-box').classList.toggle('hidden', mode === 'single');
+
+            document.getElementById('btn-mode-single').classList.toggle('active-green', mode === 'single');
+            document.getElementById('btn-mode-group').classList.toggle('active-green', mode === 'group');
+
+            updatePrintPreview();
+        }
+
+        function setPriority(p) {
+            currentPriority = p;
+
+            // Update buttons
+            ['green', 'yellow', 'red'].forEach(type => {
+                document.getElementById(`btn-priority-${type}`).className = `priority-btn px-4 py-2 rounded-xl border text-xs font-bold transition-all ${p === type ? 'active-' + type : ''}`;
+                document.getElementById(`panel-${type}`).classList.toggle('hidden', p !== type);
+            });
+
+            if (p === 'red') {
+                setSelectionMode('single');
+                document.getElementById('btn-mode-group').disabled = true;
+                document.getElementById('btn-mode-group').style.opacity = '0.5';
+            } else {
+                document.getElementById('btn-mode-group').disabled = false;
+                document.getElementById('btn-mode-group').style.opacity = '1';
+            }
+
+            if (p === 'red') updateRedArticles();
+            updatePrintPreview();
+        }
+
+        function loadGuardian() {
+            const id = document.getElementById('student-select').value;
+            const lvl = document.getElementById('level-filter').value;
+            const student = (state.students[lvl] || []).find(s => s.id === id);
+
+            if (student) {
+                document.getElementById('guardian-name').value = student.encargado || '';
+            } else {
+                document.getElementById('guardian-name').value = '';
+            }
+            updatePrintPreview();
+        }
+
+        function updateRedArticles() {
+            const type = document.getElementById('red-type').value;
+            const select = document.getElementById('red-article');
+            const items = type === 'Muy Leve' ? REAC_MUY_LEVES : REAC_LEVES;
+            const artNum = type === 'Muy Leve' ? '153' : '154';
+
+            select.innerHTML = items.map(item => `<option value="Art. ${artNum} - ${item.text}">${item.text}</option>`).join('');
+            updatePrintPreview();
+        }
+
+        function toggleAllStudents() {
+            const allChecked = document.getElementById('select-all-students').checked;
+            document.querySelectorAll('input[name="group-student"]').forEach(cb => cb.checked = allChecked);
+            updatePrintPreview();
+        }
+
+        function updatePrintPreview() {
+            const printArea = document.getElementById('print-area');
+            const dateInput = document.getElementById('comm-date').value;
+            const faultDateInput = document.getElementById('fault-date').value;
+
+            const formatDate = (val) => {
+                const parts = val.split('-');
+                return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : new Date().toLocaleDateString('es-CR');
+            };
+
+            const dateStr = formatDate(dateInput);
+            const faultDateStr = formatDate(faultDateInput);
+
+            const admin = state.admin || {};
+            const lvl = document.getElementById('level-filter').value;
+            const sec = document.getElementById('section-filter').value;
+            const fullSection = `${lvl}-${sec}`;
+
+            const headerHtml = `
+                <div style="font-size: 9px; line-height: 1.2; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-top: 4px;font-weight: 800; font-size: 11px;"><span>MINISTERIO DE EDUCACIÓN PÚBLICA</span>
+                    <span>Curso Lectivo: ${admin.year || '2026'}</span></div> 
+                    <div style="display: flex; justify-content: space-between;font-weight: 700;"><span>Dirección Regional de Educación: ${admin.dre || 'Puriscal'}</span><span>Materia: ${admin.subject || '__________'}</span></div>
+                    <div style="display: flex; justify-content: space-between;font-weight: 700;"><span>Supervisión Educativa Circuito: ${admin.circuit || '___'}</span><span>Fecha Emisión: ${dateStr}</span></div>
+                    <div style="font-weight: 700;">Institución: ${admin.institution || '____________________'}           
+                    </div>
+                     <div style="font-weight: 700;">Docente: ${admin.name || '____________________'}</div>
+                </div>
+            `;
+
+            let content = '';
+
+            if (currentPriority === 'green') {
+                const msg = document.getElementById('msg-green').value;
+                let recipients = [];
+
+                if (selectionMode === 'single') {
+                    const id = document.getElementById('student-select').value;
+                    const studentName = document.getElementById('student-select').options[document.getElementById('student-select').selectedIndex]?.text || '';
+                    if (id) recipients.push(studentName);
+                    else recipients = ['____________________'];
+                } else {
+                    document.querySelectorAll('input[name="group-student"]:checked').forEach(cb => {
+                        recipients.push(cb.getAttribute('data-name'));
+                    });
+                    if (recipients.length === 0) recipients = ['____________________'];
+                }
+
+                const getCard = (name) => `
+                    <div class="print-ready-card" style="border: 2px solid #000; height: 100%; display: flex; flex-direction: column;">
+                        ${headerHtml}
+                        
+                        <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 5px 0 10px 0; color: #15803d; border: 1px solid #15803d; padding: 2px; font-size: 12px !important;">COMUNICADO INFORMATIVO</h3>
+
+                        <div style="margin-bottom: 5px; font-size: 10px;"><strong>Estudiante:</strong> ${name} | <strong>Sección:</strong> ${fullSection}</div>
+                        <div style="font-size: 11px; flex-grow: 1; min-height: 60px; margin-bottom: 10px; border: 1px dashed #ccc; padding: 8px;">
+                            ${msg.replace(/\n/g, '<br>') || '<em>Sin mensaje...</em>'}
+                        </div>
+                        <div style="display: flex; justify-content: center; margin-top: auto;">
+                            <div class="signature-line" style="width: 180px; margin-top: 15px;">Firma Padre/Encargado</div>
+                        </div>
+                    </div>
+                `;
+
+                let cardsHtml = '';
+                if (selectionMode === 'single') {
+                    const name = recipients[0];
+                    cardsHtml = Array(4).fill(getCard(name)).join('');
+                } else {
+                    cardsHtml = recipients.map(name => getCard(name)).join('');
+                }
+
+                content = `<div class="print-grid-green">${cardsHtml}</div>`;
+
+            } else if (currentPriority === 'yellow') {
+                let students = [];
+                if (selectionMode === 'single') {
+                    const id = document.getElementById('student-select').value;
+                    const name = document.getElementById('student-select').options[document.getElementById('student-select').selectedIndex]?.text || '____________________';
+                    const guardian = document.getElementById('guardian-name').value || '____________________';
+                    if (id) students.push({ name, guardian });
+                    else students.push({ name: '____________________', guardian: '____________________' });
+                } else {
+                    document.querySelectorAll('input[name="group-student"]:checked').forEach(cb => {
+                        const studentId = cb.value;
+                        const student = (state.students[lvl] || []).find(s => s.id === studentId);
+                        students.push({
+                            name: cb.getAttribute('data-name'),
+                            guardian: student?.encargado || '____________________'
+                        });
+                    });
+                    if (students.length === 0) students.push({ name: '____________________', guardian: '____________________' });
+                }
+
+                const itemsSelected = Array.from(document.querySelectorAll('input[name="yellow-item"]:checked')).map(cb => {
+                    let text = cb.value;
+                    if (text === 'Ausencias injustificadas') {
+                        const count = document.getElementById('absences-count').value;
+                        text += `: <strong>${count || '___'}</strong>`;
+                    }
+                    return text;
+                });
+                const other = document.getElementById('msg-yellow-other').value;
+
+                content = students.map(s => {
+                    const checkboxList = `
+                        <div style="margin: 10px 0;">
+                            <h4 style="text-transform: uppercase; font-weight: 900; margin-bottom: 5px; color: #a16207; font-size: 11px;">Seguimiento Académico/Conductual</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                                ${itemsSelected.map(item => `<div style="font-size: 10px;"><span class="checkbox-custom">✓</span> ${item}</div>`).join('')}
+                                ${itemsSelected.length === 0 ? '<div style="font-size: 10px; color: #999;">(No se marcaron ítems específicos)</div>' : ''}
+                            </div>
+                            ${other ? `<div style="font-size: 10px; margin-top: 8px; border-top: 1px dotted #ccc; padding-top: 5px;"><strong>Detalle adicional:</strong> ${other}</div>` : ''}
+                        </div>
+                    `;
+
+                    const getFullCard = (label) => `
+                        <div style="border: 2px solid #eab308; padding: 15px; flex-grow: 1; display: flex; flex-direction: column; font-family: inherit;">
+                            <div style="text-align: right; font-weight: 900; color: #eab308; font-size: 10px;">[ ${label} ]</div>
+                            ${headerHtml}
+                            
+                            <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 5px 0 10px 0; color: #a16207; border: 1px solid #eab308; padding: 2px; font-size: 12px !important;">SEGUIMIENTO ACADÉMICO/CONDUCTUAL</h3>
+
+                            <div style="font-size: 11px; line-height: 1.4; margin-bottom: 10px;">
+                                <p>Estimado(a) señor(a): <strong style="font-size: 12px;">${s.guardian}</strong></p>
+                                <p style="margin-top: 5px;">Se le comunica que el(la) estudiante <strong style="font-size: 12px;">${s.name}</strong>, de la sección: <strong>${fullSection}</strong>, el día <strong>${faultDateStr}</strong> ha presentado la(s) siguiente(s) situación(es):</p>
+                            </div>
+
+                            ${checkboxList}
+
+                            <div style="font-size: 10px; margin-top: 5px; font-weight: 700; color: #444;">
+                                Favor realizar las acciones pertinentes como encargado legal del estudiante.
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: auto;">
+                                <div class="signature-line">Firma Docente</div>
+                                <div class="signature-line">Recibido Estudiante</div>
+                                <div class="signature-line">Firma Padre/Encargado</div>
+                            </div>
+                        </div>
+                    `;
+
+                    return `
+                        <div class="print-full-yellow" style="height: 100vh; page-break-after: always;">
+                            <div class="print-half">${getFullCard('ORIGINAL')}</div>
+                            <div class="print-half">${getFullCard('COPIA')}</div>
+                        </div>
+                    `;
+                }).join('');
+
+            } else if (currentPriority === 'red') {
+                const studentName = document.getElementById('student-select').options[document.getElementById('student-select').selectedIndex]?.text || '____________________';
+                const guardian = document.getElementById('guardian-name').value || '____________________';
+                const type = document.getElementById('red-type').value;
+                const origin = document.getElementById('red-origin').value;
+                const article = document.getElementById('red-article').value;
+                const facts = document.getElementById('msg-red-facts').value;
+                const action = document.getElementById('red-action').value;
+                const points = type === 'Muy Leve' ? '5' : '10';
+
+                const getCard = (label) => `
+                    <div style="border: 2px solid #ef4444; padding: 10px; flex-grow: 1; display: flex; flex-direction: column; font-family: inherit;">
+                        <div style="text-align: right; font-weight: 900; color: #ef4444; font-size: 9px;">[ ${label} ]</div>
+                        ${headerHtml}
+                        
+                        <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 2px 0 5px 0; color: #b91c1c; border: 1px solid #ef4444; padding: 1px; font-size: 11px !important;">NOTIFICACIÓN DISCIPLINARIA</h3>
+
+                        <div style="font-size: 10px; line-height: 1.2; margin-bottom: 5px;">
+                            <p>Estimado(a) señor(a): <strong style="font-size: 11px;">${guardian}</strong></p>
+                            <p style="margin-top: 3px;">Se le comunica que el(la) estudiante <strong style="font-size: 11px;">${studentName}</strong>, de la sección: <strong>${fullSection}</strong>, el día <strong>${faultDateStr}</strong> se ha visto involucrado(a) en la siguiente situación disciplinaria:</p>
+                        </div>
+
+                        <div style="margin: 3px 0; font-size: 9px;">
+                            <div style="background: #fee2e2; padding: 4px; font-weight: 800; margin-bottom: 5px; text-align: center; border: 1px solid #ef4444;">FALTA ${type.toUpperCase()}</div>
+                            
+                            <div style="margin-bottom: 5px;">
+                                <strong style="text-decoration: underline;">Base Legal (${origin}):</strong><br>
+                                <div style="margin-top: 2px;">${article}</div>
+                            </div>
+
+                            <div style="margin-bottom: 5px; min-height: 35px;">
+                                <strong style="text-decoration: underline;">Descripción de los Hechos:</strong><br>
+                                <div style="font-style: italic; margin-top: 2px; border: 1px dotted #ccc; padding: 4px;">
+                                    ${facts || '____________________________________________________________________________________________________________________________________'}
+                                </div>
+                            </div>
+
+                            <div style="border: 1px solid #ef4444; padding: 6px; background: #f8fafc;">
+                                <div style="margin-left: 5px;">• Posible acción correctiva a aplicar: <strong>${action}</strong></div>
+                                <div style="margin-left: 5px;">• Posible rebajo de <strong>${points} puntos</strong> en la nota de conducta.</div>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 9px; margin-top: 5px; font-weight: 700; color: #444;">
+                            Favor realizar las acciones pertinentes como encargado legal del estudiante y dar seguimiento al debido proceso.
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: auto;">
+                            <div class="signature-line">Firma Docente</div>
+                            <div class="signature-line">Recibido Estudiante</div>
+                            <div class="signature-line">Firma Padre/Encargado</div>
+                        </div>
+                    </div>
+                `;
+
+                content = `
+                    <div class="print-full-red" style="height: 100vh;">
+                        <div class="print-half">${getCard('ORIGINAL')}</div>
+                        <div class="print-half">${getCard('COPIA')}</div>
+                    </div>
+                `;
+            }
+
+            printArea.innerHTML = content;
+        }
+
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-expanded');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>

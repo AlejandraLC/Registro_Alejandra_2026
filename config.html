@@ -44,6 +44,12 @@
                 <span
                     class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
             </a>
+            <a href="comunicados.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="message-square"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Comunicados</span>
+            </a>
             <a href="bitacora.html"
                 class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
                 <i data-lucide="book-open"></i>
@@ -72,18 +78,31 @@
                     </div>
                     Información técnica
                 </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="card-text">Nombre</label>
-                        <input type="text" id="conf-name" class="input-soft mt-1" placeholder="Nombre">
+                        <label class="card-text">Nombre del Docente</label>
+                        <input type="text" id="conf-name" class="input-soft mt-1" placeholder="Nombre completo">
                     </div>
                     <div>
                         <label class="card-text">Institución</label>
-                        <input type="text" id="conf-inst" class="input-soft mt-1" placeholder="Liceo">
+                        <input type="text" id="conf-inst" class="input-soft mt-1"
+                            placeholder="Nombre del Centro Educativo">
                     </div>
                     <div>
                         <label class="card-text">Materia</label>
-                        <input type="text" id="conf-subject" class="input-soft mt-1">
+                        <input type="text" id="conf-subject" class="input-soft mt-1" placeholder="Asignatura">
+                    </div>
+                    <div>
+                        <label class="card-text">Curso Lectivo</label>
+                        <input type="text" id="conf-year" class="input-soft mt-1" placeholder="Ej: 2026">
+                    </div>
+                    <div>
+                        <label class="card-text">Supervisión Educativa Circuito</label>
+                        <input type="text" id="conf-circuit" class="input-soft mt-1" placeholder="Ej: 01">
+                    </div>
+                    <div>
+                        <label class="card-text">Dirección Regional de Educación</label>
+                        <input type="text" id="conf-dre" class="input-soft mt-1" placeholder="Ej: Puriscal">
                     </div>
                 </div>
             </section>
@@ -173,6 +192,9 @@
             document.getElementById('conf-name').value = state.admin.name || '';
             document.getElementById('conf-inst').value = state.admin.institution || '';
             document.getElementById('conf-subject').value = state.admin.subject || '';
+            document.getElementById('conf-year').value = state.admin.year || '';
+            document.getElementById('conf-circuit').value = state.admin.circuit || '';
+            document.getElementById('conf-dre').value = state.admin.dre || 'Puriscal';
 
             renderGroups();
             lucide.createIcons();
@@ -227,7 +249,14 @@
         }
 
         function saveConfig() {
-            state.admin = { name: document.getElementById('conf-name').value, institution: document.getElementById('conf-inst').value, subject: document.getElementById('conf-subject').value };
+            state.admin = {
+                name: document.getElementById('conf-name').value,
+                institution: document.getElementById('conf-inst').value,
+                subject: document.getElementById('conf-subject').value,
+                year: document.getElementById('conf-year').value,
+                circuit: document.getElementById('conf-circuit').value,
+                dre: document.getElementById('conf-dre').value
+            };
             localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
             window.location.href = 'index.html';
         }

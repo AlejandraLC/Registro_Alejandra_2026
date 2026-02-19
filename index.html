@@ -46,6 +46,12 @@
                 <span
                     class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
             </a>
+            <a href="comunicados.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="message-square"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Comunicados</span>
+            </a>
             <a href="bitacora.html"
                 class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
                 <i data-lucide="book-open"></i>
@@ -187,6 +193,7 @@
                 { title: 'Trabajo Cotidiano', desc: 'Actividades diarias.', pct: pctCoti, icon: 'clipboard-list', color: 'blue', link: 'cotidiano.html?rubro=cotidiano' },
                 { title: 'Tareas', desc: 'Asignaciones extraclase.', pct: '10%', icon: 'book', color: 'purple', link: 'tareas.html' },
                 { title: 'Pruebas', desc: 'Exámenes parciales.', pct: pctPruebas, icon: 'file-text', color: 'rose', link: 'pruebas.html' },
+                { title: 'Comunicados', desc: 'Notificaciones al hogar.', pct: 'IMPRIMIR', icon: 'message-square', color: 'emerald', link: 'comunicados.html' },
             ];
 
             container.innerHTML = components.map(c => `

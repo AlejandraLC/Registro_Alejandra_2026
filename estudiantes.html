@@ -53,6 +53,12 @@
                 <span
                     class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
             </a>
+            <a href="comunicados.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="message-square"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Comunicados</span>
+            </a>
             <a href="bitacora.html"
                 class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
                 <i data-lucide="book-open"></i>
@@ -103,12 +109,20 @@
             </div>
         </header>
         <div class="flex flex-wrap gap-4 mb-10 items-center justify-between">
-            <div class="flex gap-4">
+            <div class="flex flex-wrap gap-4" id="student-form">
                 <input type="text" id="new-id" placeholder="ID Estudiante" class="w-33">
                 <input type="text" id="new-name" placeholder="Nombre Completo" class="w-64">
-                <button onclick="addStudentManual()" class="btn-nm">
-                    <i data-lucide="plus" class="w-4 h-4 icon-vibrant"></i> Agregar
-                </button>
+                <input type="text" id="new-guardian" placeholder="Encargado Legal (Opcional)" class="w-64">
+                <div class="flex gap-2">
+                    <button onclick="addStudentManual()" id="btn-submit-student" class="btn-nm">
+                        <i data-lucide="plus" class="w-4 h-4 icon-vibrant" id="submit-icon"></i> <span
+                            id="submit-text">Agregar</span>
+                    </button>
+                    <button onclick="cancelEdit()" id="btn-cancel-edit" class="btn-nm hidden"
+                        style="--primary-vibrant: #64748b; --primary-light: #f1f5f9;">
+                        ✕ Cancelar
+                    </button>
+                </div>
             </div>
 
             <div class="flex gap-3">
@@ -136,6 +150,7 @@
                         <th class="p-5">N°</th>
                         <th class="p-5">Identificación</th>
                         <th class="p-5">Nombre del Estudiante</th>
+                        <th class="p-5">Encargado Legal</th>
                         <th class="p-5 text-right">Acciones</th>
                     </tr>
                 </thead>
@@ -175,6 +190,8 @@
             renderStudents();
         }
 
+        let editingStudentId = null;
+
         function renderStudents() {
             const lvl = document.getElementById('level-filter').value;
             const sec = document.getElementById('section-filter').value;
@@ -189,11 +206,15 @@
             <td class="p-5 text-slate-300 font-bold text-xs">${i + 1}</td>
             <td class="p-5 font-medium">${s.id}</td>
             <td class="p-5 font-bold text-slate-700">${s.name}</td>
+            <td class="p-5 italic text-slate-500 text-xs">${s.encargado || '---'}</td>
             <td class="p-5 text-right flex justify-end gap-2">
+                <button onclick="editStudent('${lvl}', '${s.id}')" class="text-slate-300 hover:text-amber-500 transition-colors" title="Editar Estudiante">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
                 <button onclick="viewStudentReport('${lvl}', '${s.id}')" class="text-slate-300 hover:text-blue-500 transition-colors" title="Ver Reporte">
                     <i data-lucide="file-user" class="w-4 h-4"></i>
                 </button>
-                <button onclick="removeStudent('${lvl}','${s.id}')" class="text-slate-300 hover:text-red-500 transition-colors">
+                <button onclick="removeStudent('${lvl}','${s.id}')" class="text-slate-300 hover:text-red-500 transition-colors" title="Eliminar">
                     <i data-lucide="x-circle" class="w-4 h-4"></i>
                 </button>
             </td>
@@ -202,14 +223,63 @@
             lucide.createIcons();
         }
 
+        function editStudent(lvl, id) {
+            const student = state.students[lvl].find(s => s.id === id);
+            if (!student) return;
+
+            editingStudentId = id;
+            document.getElementById('new-id').value = student.id;
+            document.getElementById('new-name').value = student.name;
+            document.getElementById('new-guardian').value = student.encargado || '';
+
+            // UI Changes
+            document.getElementById('submit-text').innerText = "Guardar";
+            document.getElementById('submit-icon').setAttribute('data-lucide', 'save');
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            document.getElementById('student-form').scrollIntoView({ behavior: 'smooth' });
+            lucide.createIcons();
+        }
+
+        function cancelEdit() {
+            editingStudentId = null;
+            document.getElementById('new-id').value = '';
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-guardian').value = '';
+
+            document.getElementById('submit-text').innerText = "Agregar";
+            document.getElementById('submit-icon').setAttribute('data-lucide', 'plus');
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+            lucide.createIcons();
+        }
+
         function addStudentManual() {
             const id = document.getElementById('new-id').value.trim();
             const name = document.getElementById('new-name').value.trim();
+            const guardian = document.getElementById('new-guardian').value.trim();
             const lvl = document.getElementById('level-filter').value;
             const sec = document.getElementById('section-filter').value;
+
             if (!id || !name) return alert("Completa los datos");
+
             if (!state.students[lvl]) state.students[lvl] = [];
-            state.students[lvl].push({ id, name, section: sec });
+
+            if (editingStudentId) {
+                const index = state.students[lvl].findIndex(s => s.id === editingStudentId);
+                if (index !== -1) {
+                    state.students[lvl][index] = { ...state.students[lvl][index], id, name, encargado: guardian };
+                }
+                cancelEdit();
+            } else {
+                // Verificar si ya existe
+                if (state.students[lvl].some(s => s.id === id)) {
+                    return alert("Ya existe un estudiante con esta identificación.");
+                }
+                state.students[lvl].push({ id, name, section: sec, encargado: guardian });
+                document.getElementById('new-id').value = '';
+                document.getElementById('new-name').value = '';
+                document.getElementById('new-guardian').value = '';
+            }
+
             save();
         }
         function removeStudent(level, studentId) {
@@ -232,7 +302,12 @@
                 rows.forEach(row => {
                     const cols = row.split(';'); // Uso de punto y coma
                     if (cols.length >= 2) {
-                        state.students[lvl].push({ id: cols[0].trim(), name: cols[1].trim(), section: sec });
+                        state.students[lvl].push({
+                            id: cols[0].trim(),
+                            name: cols[1].trim(),
+                            section: sec,
+                            encargado: cols[6] ? cols[6].trim() : ''
+                        });
                     }
                 });
                 save();
@@ -241,7 +316,7 @@
         }
 
         function downloadTemplate() {
-            const csvContent = "id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia";
+            const csvContent = "id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia;Encargado";
             safeDownloadCSV(csvContent, "plantilla_estudiantes.csv");
         }
 
