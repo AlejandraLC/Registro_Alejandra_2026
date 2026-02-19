@@ -223,7 +223,7 @@
             const records = Object.entries(periodData)
                 .filter(([id, _]) => groupStudentIds.has(id))
                 .map(([_, r]) => r);
-            
+
             if (records.length > 0) {
                 const dailyMax = Math.max(...records.map(r => r.lessons || 0), 0);
                 document.getElementById('day-lessons').value = dailyMax;
@@ -327,7 +327,7 @@
         function calculateTotalLessons() {
             let total = 0;
             const periodData = state.attendance?.[period] || {};
-            
+
             // Obtenemos los IDs de los alumnos del grupo actual
             const groupStudentIds = new Set((state.students[lvl] || [])
                 .filter(s => s.section === sec)
@@ -337,7 +337,7 @@
             for (const date in periodData) {
                 const dailyRecords = periodData[date];
                 const groupRecords = [];
-                
+
                 for (const studentId in dailyRecords) {
                     if (groupStudentIds.has(studentId)) {
                         groupRecords.push(dailyRecords[studentId]);
@@ -382,13 +382,13 @@
                     const groupStudentIds = new Set((state.students[lvl] || [])
                         .filter(s => s.section === sec)
                         .map(s => s.id));
-                    
+
                     for (const id in state.attendance[period][date]) {
                         if (groupStudentIds.has(id)) {
                             delete state.attendance[period][date][id];
                         }
                     }
-                    
+
                     // Si el objeto de la fecha queda vacío, lo eliminamos
                     if (Object.keys(state.attendance[period][date]).length === 0) {
                         delete state.attendance[period][date];
@@ -405,7 +405,7 @@
         function updateAllLessons() {
             const date = document.getElementById('att-date').value;
             const dayLec = parseInt(document.getElementById('day-lessons').value) || 0;
-            
+
             const groupStudentIds = new Set((state.students[lvl] || [])
                 .filter(s => s.section === sec)
                 .map(s => s.id));
@@ -432,12 +432,17 @@
             const displayPeriod = period === '1' ? 'I' : period === '2' ? 'II' : period;
             document.getElementById('history-period-info').innerText = `Periodo ${displayPeriod} | Componente: 5%`;
 
-            // Obtenemos todas las fechas grabadas en este periodo y las ordenamos
+            // Obtenemos todos los IDs de los alumnos del grupo actual
+            const groupStudentIds = new Set(students.map(s => s.id));
+
+            // Obtenemos solo las fechas que tienen registros para este grupo
             const periodData = state.attendance?.[period] || {};
-            const dates = Object.keys(periodData).sort();
+            const dates = Object.keys(periodData).filter(date => {
+                return Object.keys(periodData[date]).some(studentId => groupStudentIds.has(studentId));
+            }).sort();
 
             if (dates.length === 0) {
-                alert("Aún no hay fechas registradas en este periodo.");
+                alert("Aún no hay fechas registradas para este grupo en este periodo.");
                 return;
             }
 
@@ -484,11 +489,17 @@
         }
         function downloadPDF() {
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            const groupStudentIds = new Set(students.map(s => s.id));
             const periodData = state.attendance?.[period] || {};
-            const dates = Object.keys(periodData).sort();
+
+            // Filtrar solo las fechas que pertenecen a este grupo
+            const dates = Object.keys(periodData).filter(date => {
+                return Object.keys(periodData[date]).some(id => groupStudentIds.has(id));
+            }).sort();
+
             const totalLecPeriodo = calculateTotalLessons();
 
-            if (dates.length === 0) return alert("No hay datos históricos para imprimir.");
+            if (dates.length === 0) return alert("No hay datos históricos para este grupo.");
 
             // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
             let printFrame = document.getElementById('printFrame');
