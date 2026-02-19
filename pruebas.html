@@ -396,9 +396,9 @@
             h2 { font-size: 14px; color: #1e293b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: -0.5px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: center; }
-            th { background: #f8fafc; font-size: 8px; text-transform: uppercase; font-weight: 800; }
-            .sig { color: #d97706; font-weight: 800; font-size: 7px; text-transform: uppercase; }
-            .name-cell { text-align: left !important; font-weight: 700; background: #ffffff; padding-left: 10px !important; }
+            th { background: #f8fafc; font-size: 7px; text-transform: uppercase; font-weight: 800; }
+            .sig { color: #d97706; font-weight: 800; font-size: 6px; text-transform: uppercase; }
+            .name-cell { text-align: left !important; font-weight: 700; background: #ffffff; padding-left: 10px !important; font-size: 8px; }
         </style>
     </head>
     <body>
@@ -435,11 +435,11 @@
                 const pG = (nota * maxPerc / 100).toFixed(2);
                 return `<tr>
                             <td class="name-cell">${s.name} ${ev.sig ? '<br><span class="sig">[Adecuación Sign.]</span>' : ''}</td>
-                            <td>${ev.date.split('-').reverse().join('/')}</td>
-                            <td><b>${ev.pts}</b> / ${maxPts}</td>
-                            <td><b>${nota}</b></td>
-                            <td style="background:#f8fafc; font-weight:900; color:#334155;">${pG}%</td>
-                            <td style="font-size:8px;">${ev.isReturned ? 'SÍ (' + (ev.signed.split('-').reverse().slice(0, 2).join('/')) + ')' : '<span style="color:#94a3b8; font-style:italic">Pendiente</span>'}</td>
+                            <td style="font-size:7px;">${ev.date.split('-').reverse().join('/')}</td>
+                            <td style="font-size:7px;"><b>${ev.pts}</b> / ${maxPts}</td>
+                            <td style="font-size:7px;"><b>${nota}</b></td>
+                            <td style="background:#f8fafc; font-weight:900; color:#334155; font-size:7px;">${pG}%</td>
+                            <td style="font-size:7px;">${ev.isReturned ? 'SÍ (' + (ev.signed.split('-').reverse().slice(0, 2).join('/')) + ')' : '<span style="color:#94a3b8; font-style:italic">Pendiente</span>'}</td>
                         </tr>`;
             }).join('')}
             </tbody>
@@ -489,9 +489,9 @@
             th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: center; word-wrap: break-word; }
             th { background: #f8fafc; font-size: 8px; font-weight: 800; text-transform: uppercase; }
             
-            .name-cell { text-align: left !important; font-weight: 700; width: 25%; }
-            .final-total { background: #1e293b; color: white; font-weight: 800; }
-            .footer { margin-top: 50px; display: flex; justify-content: space-around; font-size: 9px; }
+            .name-cell { text-align: left !important; font-weight: 700; width: 25%; font-size: 8px; }
+            .final-total { background: #1e293b; color: white; font-weight: 800; font-size: 8px; }
+            .footer { margin-top: 40px; display: flex; justify-content: space-around; font-size: 8px; }
         </style>
     </head>
     <body>
@@ -531,9 +531,9 @@
 
                 return `
                         <tr>
-                            <td class="name-cell" style="font-size:9px">${s.name}</td>
+                            <td class="name-cell">${s.name}</td>
                             ${celdas}
-                            <td style="background:#f8fafc; font-weight:900; color:#334155;">${totalSum.toFixed(2)}%</td>
+                            <td style="background:#f8fafc; font-weight:900; color:#334155; font-size:8px;">${totalSum.toFixed(2)}%</td>
                         </tr>`;
             }).join('')}
             </tbody>

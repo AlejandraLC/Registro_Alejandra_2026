@@ -657,36 +657,47 @@
             h2 { font-size: 14px; color: #1e293b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: -0.5px; }
             
             /* TABLA DE ESPECIFICACIONES (RÚBRICA) */
-            .spec-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; border: 1px solid #e2e8f0; table-layout: fixed; }
-            .spec-table th { background: #f8fafc; padding: 10px; border: 1px solid #e2e8f0; font-size: 8px; text-align: left; }
-            .spec-table td { padding: 10px; border: 1px solid #e2e8f0; vertical-align: top; width: 25%; word-wrap: break-word; }
-            .skill-row { background: #f1f5f9; font-weight: 800; font-size: 9px; text-transform: uppercase; }
+            .spec-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #e2e8f0; table-layout: fixed; }
+            .spec-table th { background: #f8fafc; padding: 8px; border: 1px solid #e2e8f0; font-size: 7px; text-align: left; }
+            .spec-table td { padding: 8px; border: 1px solid #e2e8f0; vertical-align: top; width: 25%; word-wrap: break-word; font-size: 7px; }
+            .skill-row { background: #f1f5f9; font-weight: 800; font-size: 8px; text-transform: uppercase; }
             
-            /* Ajuste de simetría para el Registro de Evaluación */
-.reg-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    table-layout: fixed; /* Esta es la clave para que las celdas respeten el ancho */
-}
-
-.reg-table th, .reg-table td { 
-    border: 1px solid #cbd5e1; 
-    padding: 5px; 
-    text-align: center; 
-    word-wrap: break-word; /* Fuerza el salto de línea si el texto es largo */
-    overflow: hidden;
-}
+            /* Registro de Evaluación */
+            .reg-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                table-layout: fixed;
+                font-size: 7px;
+            }
+            
+            .reg-table th { 
+                background: #f8fafc;
+                border: 1px solid #cbd5e1; 
+                padding: 4px; 
+                text-align: center; 
+                font-size: 6px;
+                text-transform: uppercase;
+            }
+            
+            .reg-table td { 
+                border: 1px solid #cbd5e1; 
+                padding: 4px; 
+                text-align: center; 
+                word-wrap: break-word;
+            }
 
 /* Columna de Estudiante un poco más ancha para el nombre */
-.name-cell-header { width: 25%; } 
-.date-col-header { width: 10%; }
+/* Columna de Estudiante un poco más ancha para el nombre */
+.name-cell-header { width: 20%; font-size: 7px !important; } 
+.date-col-header { width: 8%; font-size: 6px !important; }
 
 /* Las columnas de indicadores se repartirán el resto del espacio equitativamente */
 .indicator-col { 
-    width: auto; /* El navegador las hará iguales gracias al table-layout: fixed */
+    width: auto;
+    font-size: 6px !important;
 }
 
-.obs-col-header { width: 20%; }
+.obs-col-header { width: 15%; font-size: 6px !important; }
             .name-cell { text-align: left !important; font-weight: 700; background: #ffffff; padding-left: 10px !important; }
             
             .btn-pdf { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 8px; font-weight: 800; margin: 0 1px; color: #94a3b8; }
@@ -861,13 +872,13 @@
             .prof-data b { color: #334155; }
             
             h1 { font-size: 18px; margin: 0; color: #1e293b; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: center; }
-            th { background: #f8fafc; font-size: 8px; font-weight: 800; text-transform: uppercase; }
-            .name-cell { text-align: left !important; font-weight: 700; }
-            .final-note { background: #eff6ff; font-weight: 800; color: #1d4ed8; }
-            .final-porc { background: #1e293b; color: white; font-weight: 800; }
-            .footer { margin-top: 50px; display: flex; justify-content: space-around; font-size: 9px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px; text-align: center; word-wrap: break-word; font-size: 7px; }
+            th { background: #f8fafc; font-size: 7px; font-weight: 800; text-transform: uppercase; }
+            .name-cell { text-align: left !important; font-weight: 700; width: 20%; font-size: 8px; }
+            .final-note { background: #eff6ff; font-weight: 800; color: #1d4ed8; font-size: 8px; }
+            .final-porc { background: #1e293b; color: white; font-weight: 800; font-size: 8px; }
+            .footer { margin-top: 40px; display: flex; justify-content: space-around; font-size: 8px; }
         </style>
     </head>
     <body>
@@ -911,14 +922,15 @@
                     return `<td style="color:#cbd5e1; font-style:italic;">Faltó</td>`;
                 }).join('');
 
-                const notaFinal = conteo > 0 ? (sumaNotas / conteo).toFixed(2) : "0.00";
-                const porcGanado = ((parseFloat(notaFinal) * porcComponente) / 3).toFixed(2);
+                const promedio03 = conteo > 0 ? (sumaNotas / conteo) : 0;
+                const nota100 = ((promedio03 * 100) / 3).toFixed(2);
+                const porcGanado = ((parseFloat(nota100) * porcComponente) / 100).toFixed(2);
 
                 return `
                     <tr>
                         <td class="name-cell">${s.name}</td>
                         ${filasPracticas}
-                        <td class="final-note">${notaFinal}</td>
+                        <td class="final-note">${nota100}</td>
                         <td class="final-porc">${porcGanado}%</td>
                     </tr>`;
             }).join('')}

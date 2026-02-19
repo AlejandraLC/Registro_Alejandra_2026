@@ -136,9 +136,12 @@
                     </div>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 no-print">
                 <button onclick="openEventModal()" class="btn-nm">
                     <i data-lucide="plus" class="w-4 h-4 icon-vibrant"></i> Nuevo Evento
+                </button>
+                <button onclick="downloadCalendarPDF()" class="btn-nm">
+                    <i data-lucide="printer" class="w-4 h-4 icon-vibrant"></i> Imprimir Mes
                 </button>
                 <button onclick="location.href='index.html'" class="btn-nm">
                     <i data-lucide="arrow-left" class="w-4 h-4 icon-vibrant"></i> Volver
@@ -512,6 +515,117 @@
             }
 
             function closeEventModal() { document.getElementById('modal-evento').classList.add('hidden'); }
+
+            function downloadCalendarPDF() {
+                const monthName = document.getElementById('current-month-display').innerText;
+                const calendarGridClone = document.getElementById('calendar-grid').cloneNode(true);
+
+                // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+                let printFrame = document.getElementById('printFrame');
+                if (!printFrame) {
+                    printFrame = document.createElement('iframe');
+                    printFrame.id = 'printFrame';
+                    printFrame.style.display = 'none';
+                    document.body.appendChild(printFrame);
+                }
+
+                const doc = printFrame.contentWindow.document;
+                doc.open();
+                doc.write(`
+                    <html>
+                    <head>
+                        <title>Calendario - ${monthName}</title>
+                        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+                        <style>
+                            body { font-family: 'Outfit', sans-serif; padding: 20px; color: #334155; }
+                            .header-pdf { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #f163de; padding-bottom: 15px; margin-bottom: 20px; }
+                            .header-pdf h1 { margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: -1px; }
+                            .info-grid { text-align: right; font-size: 10px; font-weight: 700; color: #64748b; line-height: 1.4; }
+                            .info-grid b { color: #f163de; text-transform: uppercase; }
+                            
+                            h2 { font-size: 18px; font-weight: 900; text-transform: uppercase; color: #1e293b; text-align: center; margin: 20px 0; }
+                            
+                            .calendar-container { 
+                                display: grid; 
+                                grid-template-columns: repeat(7, 1fr); 
+                                border: 1px solid #e2e8f0; 
+                                border-radius: 15px; 
+                                overflow: hidden;
+                            }
+                            
+                            .day-name { 
+                                background: #f8fafc; 
+                                padding: 10px; 
+                                text-align: center; 
+                                font-size: 9px; 
+                                font-weight: 900; 
+                                color: #94a3b8; 
+                                text-transform: uppercase; 
+                                border-bottom: 1px solid #e2e8f0;
+                            }
+                            
+                            .day-cell { 
+                                min-height: 100px; 
+                                padding: 8px; 
+                                border-right: 1px solid #f1f5f9; 
+                                border-bottom: 1px solid #f1f5f9; 
+                                background: white; 
+                                font-size: 10px;
+                            }
+                            
+                            .day-cell:nth-child(7n) { border-right: none; }
+                            
+                            .event-tag { 
+                                font-size: 7px; 
+                                font-weight: 800; 
+                                padding: 3px 6px; 
+                                border-radius: 6px; 
+                                margin-top: 3px; 
+                                background: #f3e8ff; 
+                                color: #a855f7; 
+                                text-transform: uppercase;
+                                border: 1px solid #e9d5ff;
+                            }
+                            
+                            .day-number { font-weight: 900; color: #cbd5e1; margin-bottom: 5px; display: block; }
+                            .today-number { color: #f163de; }
+                            
+                            @media print { .no-print { display: none; } }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header-pdf">
+                            <div>
+                                <h1>Calendario Escolar</h1>
+                                <p style="color:#f163de; font-weight:900; margin: 5px 0 0 0;">MES: ${monthName}</p>
+                            </div>
+                            <div class="info-grid">
+                                <p>INSTITUCIÓN: <b>${state.admin?.institution || 'MEP'}</b></p>
+                                <p>MATERIA: <b>${state.admin?.subject || 'PENDIENTE'}</b></p>
+                                <p>DOCENTE: <b>${state.admin?.name || '---'}</b></p>
+                            </div>
+                        </div>
+                        
+                        <div class="calendar-container">
+                            <div class="day-name">Lun</div>
+                            <div class="day-name">Mar</div>
+                            <div class="day-name">Mie</div>
+                            <div class="day-name">Jue</div>
+                            <div class="day-name">Vie</div>
+                            <div class="day-name">Sab</div>
+                            <div class="day-name">Dom</div>
+                            ${calendarGridClone.innerHTML}
+                        </div>
+                    </body>
+                    </html>
+                `);
+                doc.close();
+
+                setTimeout(() => {
+                    printFrame.contentWindow.focus();
+                    printFrame.contentWindow.print();
+                }, 500);
+            }
 
             function toggleSidebar() {
                 document.body.classList.toggle('sidebar-expanded');
