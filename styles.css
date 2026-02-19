@@ -249,3 +249,102 @@ textarea:focus {
     color: var(--primary-vibrant);
     text-transform: uppercase;
 }
+
+/* Sidebar Responsive */
+.sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 50;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: var(--nm-shadow-out);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+}
+
+body.sidebar-expanded aside {
+    left: 0 !important;
+    width: 16rem !important;
+}
+
+body.sidebar-expanded aside span {
+    opacity: 100 !important;
+}
+
+@media (max-width: 1024px) {
+    .sidebar-toggle {
+        display: flex;
+    }
+
+    aside {
+        position: fixed !important;
+        left: -80px !important;
+        width: 80px !important;
+        height: 100vh !important;
+        z-index: 100 !important;
+        transition: all 0.3s ease !important;
+        background: white !important;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    body.sidebar-expanded aside {
+        left: 0 !important;
+        width: 16rem !important;
+    }
+
+    main {
+        padding: 1.5rem !important;
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    header.page-title {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1.5rem !important;
+        padding-top: 3.5rem !important;
+    }
+
+    header.page-title>div:last-child {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .grid-cols-4,
+    .lg\:grid-cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .card-premium {
+        padding: 1.5rem !important;
+        border-radius: 1.5rem !important;
+    }
+
+    h1 {
+        font-size: 1.25rem !important;
+    }
+
+    .grid,
+    .grid-cols-2,
+    .md\:grid-cols-2,
+    .lg\:grid-cols-4 {
+        grid-template-columns: 1fr !important;
+    }
+
+    header.page-title>div:last-child {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .btn-nm {
+        width: 100%;
+        justify-content: center;
+    }
+}

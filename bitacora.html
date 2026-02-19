@@ -7,6 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <meta name="theme-color" content="#10b981">
     <style>
         .page-bitacora .nav-active {
             background: var(--primary-light);
@@ -17,6 +21,9 @@
 </head>
 
 <body class="flex min-h-screen page-bitacora">
+    <button class="sidebar-toggle no-print" onclick="toggleSidebar()">
+        <i data-lucide="menu"></i>
+    </button>
     <aside
         class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group">
         <div class="flex flex-col gap-3 p-4 mt-6">
@@ -523,6 +530,9 @@
     `);
                 printWindow.document.close();
                 printWindow.onload = () => { printWindow.print(); printWindow.close(); };
+            }
+            function toggleSidebar() {
+                document.body.classList.toggle('sidebar-expanded');
             }
             document.addEventListener('DOMContentLoaded', init);
         </script>
