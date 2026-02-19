@@ -632,7 +632,16 @@
         function downloadActivityPDF() {
             const a = state.activities[activeActivityId];
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
-            const printWindow = window.open('', '_blank');
+            // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+            let printFrame = document.getElementById('printFrame');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'printFrame';
+                printFrame.style.display = 'none';
+                document.body.appendChild(printFrame);
+            }
+
+            const doc = printFrame.contentWindow.document;
 
             let html = `
     <html>
@@ -700,31 +709,16 @@
             </div>
         </div>
 
-        <h2>Tabla de Especificaciones (Habilidades y Criterios)</h2>
+        <h2>I. Tabla de Especificaciones</h2>
         <table class="spec-table">
-            <table class="spec-table">
             <thead>
                 <tr>
                     <th style="color:#64748b">INDICADOR</th>
-                    <th style="color:#b45309">1 PUNTO (INICIAL)</th>
-                    <th style="color:#1d4ed8">2 PUNTOS (INTERMEDIO)</th>
-                    <th style="color:#15803d">3 PUNTOS (AVANZADO)</th>
+                    <th style="color:#b45309">1 PTO (INICIAL)</th>
+                    <th style="color:#1d4ed8">2 PTOS (INTERMEDIO)</th>
+                    <th style="color:#15803d">3 PTOS (AVANZADO)</th>
                 </tr>
             </thead>
-            <tbody>
-                ${a.skills.map((skill, sIdx) => `
-                    <tr class="skill-row"><td colspan="4">Habilidad ${sIdx + 1}: ${skill.name}</td></tr>
-                    ${skill.indicators.map(ind => `
-                        <tr>
-                            <td style="font-weight:700">${ind.name}</td>
-                            <td>${ind.c1}</td>
-                            <td>${ind.c2}</td>
-                            <td>${ind.c3}</td>
-                        </tr>
-                    `).join('')}
-                `).join('')}
-            </tbody>
-        </table>
             <tbody>
                 ${a.skills.map((skill, sIdx) => `
                     <tr class="skill-row"><td colspan="4">Habilidad ${sIdx + 1}: ${skill.name}</td></tr>
@@ -774,9 +768,14 @@
     </body>
     </html>`;
 
-            printWindow.document.write(html);
-            printWindow.document.close();
-            printWindow.onload = () => { printWindow.print(); printWindow.close(); };
+            doc.open();
+            doc.write(html);
+            doc.close();
+
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 500);
         }
         function showGeneralReport() {
             const modal = document.getElementById('modal-general-report');

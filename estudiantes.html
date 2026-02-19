@@ -241,11 +241,30 @@
         }
 
         function downloadTemplate() {
-            const blob = new Blob(["id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia"], { type: 'text/csv' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = "plantilla_estudiantes.csv";
-            a.click();
+            const csvContent = "id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia";
+            safeDownloadCSV(csvContent, "plantilla_estudiantes.csv");
+        }
+
+        // Función auxiliar para descargas seguras en Tablets/Móviles
+        function safeDownloadCSV(content, filename) {
+            // Añadimos BOM para que Excel reconozca tildes y eñes correctamente
+            const BOM = "\uFEFF";
+            const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.setAttribute("download", filename);
+            link.setAttribute("target", "_blank"); // Ayuda en algunos navegadores móviles
+
+            document.body.appendChild(link);
+            link.click();
+
+            // Limpieza diferida para asegurar que la descarga inicie
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
         }
 
         function clearAllStudents() {
@@ -263,23 +282,12 @@
 
             if (list.length === 0) return alert("No hay estudiantes en este grupo para exportar.");
 
-            // Encabezados con punto y coma según tu solicitud
             let csvContent = "id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia\n";
-
-            // Unimos los datos de cada estudiante
             list.forEach(s => {
                 csvContent += `${s.id};${s.name};;;;\n`;
             });
 
-            // Creamos el archivo para descarga
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Lista_Estudiantes_${lvl}-${sec}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            safeDownloadCSV(csvContent, `Lista_Estudiantes_${lvl}-${sec}.csv`);
         }
         function viewStudentReport(level, studentId) {
             // Guardamos temporalmente el estudiante seleccionado para que la página de reporte sepa a quién cargar

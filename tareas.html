@@ -420,7 +420,17 @@
         function downloadActivityPDF() {
             const a = state.tasks[activeActivityId];
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
-            const printWindow = window.open('', '_blank');
+
+            // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+            let printFrame = document.getElementById('printFrame');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'printFrame';
+                printFrame.style.display = 'none';
+                document.body.appendChild(printFrame);
+            }
+
+            const doc = printFrame.contentWindow.document;
 
             let html = `
     <html>
@@ -527,17 +537,32 @@
     </body>
     </html>`;
 
-            printWindow.document.write(html);
-            printWindow.document.close();
-            printWindow.onload = () => { printWindow.print(); printWindow.close(); };
+            doc.open();
+            doc.write(html);
+            doc.close();
+
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 500);
         }
 
         function downloadGeneralPDF() {
             const acts = Object.values(state.tasks).filter(a => a.level === lvl && a.section === sec && a.period === period);
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
             const porc = (parseInt(lvl) >= 10) ? 10 : 10;
-            const printWindow = window.open('', '_blank');
             const displayPeriod = period === '1' ? 'I' : period === '2' ? 'II' : period;
+
+            // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+            let printFrame = document.getElementById('printFrame');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'printFrame';
+                printFrame.style.display = 'none';
+                document.body.appendChild(printFrame);
+            }
+
+            const doc = printFrame.contentWindow.document;
 
             let html = `
     <html>
@@ -614,9 +639,14 @@
     </body>
     </html>`;
 
-            printWindow.document.write(html);
-            printWindow.document.close();
-            printWindow.onload = () => { printWindow.print(); printWindow.close(); };
+            doc.open();
+            doc.write(html);
+            doc.close();
+
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 500);
         }
 
         function save() { localStorage.setItem('academicApp_2026_data', JSON.stringify(state)); }

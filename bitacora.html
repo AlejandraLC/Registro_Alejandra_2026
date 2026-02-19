@@ -98,8 +98,8 @@
                 </div>
             </header>
 
-            <div class="grid grid-cols-12 gap-8">
-                <div class="col-span-8 space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-8 space-y-8">
                     <div class="card-premium relative">
                         <div class="flex justify-between items-center mb-8">
                             <h2>Actividades del Día</h2>
@@ -118,7 +118,7 @@
                     </div>
                 </div>
 
-                <div class="col-span-4 space-y-8">
+                <div class="lg:col-span-4 space-y-8">
                     <div class="card-premium relative overflow-hidden">
                         <div class="absolute -top-4 -right-4 w-20 h-20 bg-emerald-50 rounded-full opacity-50"></div>
                         <h2>Mis Pendientes</h2>
@@ -483,8 +483,18 @@
                 const todos = (state.todos || []).filter(t => !t.done);
                 const notes = state.specialNotes?.[date] || [];
 
-                const printWindow = window.open('', '_blank');
-                printWindow.document.write(`
+                // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+                let printFrame = document.getElementById('printFrame');
+                if (!printFrame) {
+                    printFrame = document.createElement('iframe');
+                    printFrame.id = 'printFrame';
+                    printFrame.style.display = 'none';
+                    document.body.appendChild(printFrame);
+                }
+
+                const doc = printFrame.contentWindow.document;
+                doc.open();
+                doc.write(`
         <html>
         <head>
             <title>Diario - ${date}</title>
@@ -500,6 +510,7 @@
                 .note-title { font-weight: 900; color: #10b981; text-transform: uppercase; font-size: 11px; margin-bottom: 5px; }
                 .footer { margin-top: 50px; display: flex; justify-content: flex-end; }
                 .signature { border-top: 2px solid #cbd5e1; width: 250px; text-align: center; padding-top: 8px; font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; }
+                @media print { .no-print { display: none; } }
             </style>
         </head>
         <body>
@@ -528,8 +539,13 @@
         </body>
         </html>
     `);
-                printWindow.document.close();
-                printWindow.onload = () => { printWindow.print(); printWindow.close(); };
+                doc.close();
+
+                // Esperamos a que cargue el contenido y disparamos impresión
+                setTimeout(() => {
+                    printFrame.contentWindow.focus();
+                    printFrame.contentWindow.print();
+                }, 500);
             }
             function toggleSidebar() {
                 document.body.classList.toggle('sidebar-expanded');

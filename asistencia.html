@@ -452,8 +452,16 @@
 
             if (dates.length === 0) return alert("No hay datos históricos para imprimir.");
 
-            // Crear contenido para la ventana de impresión
-            const printWindow = window.open('', '_blank');
+            // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+            let printFrame = document.getElementById('printFrame');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'printFrame';
+                printFrame.style.display = 'none';
+                document.body.appendChild(printFrame);
+            }
+
+            const doc = printFrame.contentWindow.document;
 
             let html = `
     <html>
@@ -525,14 +533,14 @@
     </body>
     </html>`;
 
-            printWindow.document.write(html);
-            printWindow.document.close();
+            doc.open();
+            doc.write(html);
+            doc.close();
 
-            // Esperar a que carguen las fuentes antes de imprimir
-            printWindow.onload = function () {
-                printWindow.print();
-                printWindow.close();
-            };
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 500);
         }
         function toggleSidebar() {
             document.body.classList.toggle('sidebar-expanded');

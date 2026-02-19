@@ -370,7 +370,17 @@
         function downloadTestPDF() {
             const t = state.tests[activeTestId];
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
-            const printWindow = window.open('', '_blank');
+
+            // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+            let printFrame = document.getElementById('printFrame');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'printFrame';
+                printFrame.style.display = 'none';
+                document.body.appendChild(printFrame);
+            }
+
+            const doc = printFrame.contentWindow.document;
 
             let html = `
     <html>
@@ -437,9 +447,14 @@
     </body>
     </html>`;
 
-            printWindow.document.write(html);
-            printWindow.document.close();
-            printWindow.onload = () => { printWindow.print(); printWindow.close(); };
+            doc.open();
+            doc.write(html);
+            doc.close();
+
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 500);
         }
         function downloadGeneralPDF() {
             const tests = Object.values(state.tests).filter(t => t.level === lvl && t.section === sec && t.period === period);
@@ -447,7 +462,16 @@
 
             if (tests.length === 0) return alert("No hay pruebas registradas para este periodo.");
 
-            const printWindow = window.open('', '_blank');
+            // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
+            let printFrame = document.getElementById('printFrame');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'printFrame';
+                printFrame.style.display = 'none';
+                document.body.appendChild(printFrame);
+            }
+
+            const doc = printFrame.contentWindow.document;
 
             let html = `
     <html>
@@ -521,12 +545,14 @@
     </body>
     </html>`;
 
-            printWindow.document.write(html);
-            printWindow.document.close();
-            printWindow.onload = () => {
-                printWindow.print();
-                printWindow.close();
-            };
+            doc.open();
+            doc.write(html);
+            doc.close();
+
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 500);
         }
         function closeGeneralReport() { document.getElementById('modal-general-report').classList.add('hidden'); }
         function toggleSidebar() {
