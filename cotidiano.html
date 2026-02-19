@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabajo Cotidiano - Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #fcfcfd;
+            color: #475569;
+        }
+
+        .card-rubric {
+            background: white;
+            border-radius: 2rem;
+            border: 1px solid #f1f5f9;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-soft {
+            background: #f8fafc;
+            border-radius: 1rem;
+            border: 1px solid #f1f5f9;
+            padding: 0.6rem 1rem;
+            outline: none;
+            font-size: 0.85rem;
+        }
+
+        .btn-minimal {
+            padding: 0.5rem 1rem;
+            border-radius: 0.8rem;
+            font-weight: 500;
+            font-size: 0.75rem;
+            display: inline-flex;
+            gap: 0.4rem;
+            transition: all 0.2s;
+        }
+
+        .btn-blue {
+            background: #eff6ff;
+            color: #3b82f6;
+            border: 1px solid #dbeafe;
+        }
+
+        .modal-blur {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Limita el ancho de las columnas de indicadores en la tabla de evaluación */
+        #grading-header th:not(:first-child):not(:last-child) {
+            max-width: 150px;
+            min-width: 120px;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        #grading-body td:not(:first-child):not(:last-child) {
+            max-width: 150px;
+            word-wrap: break-word;
+        }
+
+        .page-estudiantes .nav-active {
+            background: var(--primary-light);
+            color: var(--primary-vibrant);
+            box-shadow: var(--nm-shadow-in);
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen page-estudiantes">
+    <aside
+        class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group">
+        <div class="flex flex-col gap-3 p-4 mt-6">
+            <a href="config.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="settings"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
+            </a>
+            <a href="index.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all">
+                <i data-lucide="layout-dashboard"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
+            </a>
+            <a href="estudiantes.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all">
+                <i data-lucide="users"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
+            </a>
+            <a href="bitacora.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book-open"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora</span>
+            </a>
+            <a href="calendario.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Calendario</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-8">
+        <header class="page-title mb-8 flex items-center justify-between border-b border-slate-100 pb-6 uppercase">
+            <h1><i data-lucide="clipboard-list" class="title-icon icon-vibrant"></i> Trabajo Cotidiano</h1>
+            <div
+                class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm text-xs font-bold text-slate-600">
+                <span id="display-group">---</span> <span class="text-slate-200">|</span> <span id="display-period"
+                    class="text-blue-500">P-I</span>
+            </div>
+            <div class="flex items-center gap-6 text-[10px] font-medium text-slate-400">
+                <p>Materia: <span class="text-slate-600 font-bold" id="info-subject">---</span></p>
+                <p>Docente: <span class="text-slate-600 font-bold" id="info-teacher">---</span></p>
+            </div>
+        </header>
+
+        <div class="flex justify-between items-center mb-10">
+            <div class="flex gap-4">
+                <button onclick="openActivityModal()" class="btn-nm">
+                    <i data-lucide="plus-circle" class="w-4 h-4 icon-vibrant"></i> Nueva Práctica
+                </button>
+                <button onclick="showGeneralReport()" class="btn-nm">
+                    <i data-lucide="clipboard-list" class="w-4 h-4 icon-vibrant"></i> Reporte General
+                </button>
+            </div>
+            <button onclick="location.href='index.html'" class="btn-nm">
+                <i data-lucide="arrow-left" class="w-4 h-4 icon-vibrant"></i> Volver
+            </button>
+        </div>
+
+        <div id="activities-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
+
+    <div id="modal-activity" class="fixed inset-0 modal-blur z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                <input type="text" id="act-name"
+                    class="text-xl font-bold text-slate-800 bg-transparent border-b border-slate-200 focus:border-blue-400 outline-none w-2/3"
+                    placeholder="Nombre de la Práctica">
+                <button onclick="closeActivityModal()" class="text-slate-400 hover:text-slate-600"><i
+                        data-lucide="x"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-auto p-8 space-y-6">
+                <div class="flex items-center gap-4">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fechas:</label>
+                    <div id="dates-list" class="flex flex-wrap gap-2"></div>
+                    <div class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nueva Fecha:</span>
+                        <input type="date" id="hidden-date-input"
+                            class="text-xs font-bold text-slate-600 bg-transparent border-none outline-none cursor-pointer"
+                            onchange="processDateSelection(this)">
+                    </div>
+                </div>
+
+                <div id="rubric-builder" class="space-y-8"></div>
+
+                <button onclick="addSkill()" class="btn-minimal btn-blue w-full py-4 border-dashed">
+                    <i data-lucide="plus"></i> Agregar Habilidad
+                </button>
+            </div>
+
+            <div class="p-8 border-t border-slate-50 flex justify-between">
+                <button onclick="deleteActivity()"
+                    class="text-red-400 text-xs font-bold uppercase tracking-widest hover:text-red-600">Eliminar</button>
+                <button onclick="saveActivity()"
+                    class="btn-minimal bg-blue-500 text-white px-10 py-3 text-sm border-none shadow-lg shadow-blue-100">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. CONFIGURACIÓN INICIAL
+        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { activities: {}, evaluations: {}, admin: {} };
+        if (!state.activities) state.activities = {};
+
+        const lvl = localStorage.getItem('temp_current_level') || '7';
+        const sec = localStorage.getItem('temp_current_section') || '1';
+        const period = state.settings?.currentPeriod || '1';
+        let currentActivityDates = [];
+
+        function init() {
+            document.getElementById('display-group').innerText = `${lvl}-${sec}`;
+            document.getElementById('display-period').innerText = `P-${period}`;
+            document.getElementById('info-subject').innerText = state.admin.subject || 'Matemáticas';
+            document.getElementById('info-teacher').innerText = state.admin.name || '---';
+            renderActivities();
+            lucide.createIcons();
+        }
+
+        // 2. GESTIÓN DEL MODAL
+        function openActivityModal() {
+            currentActivityDates = [];
+            const modal = document.getElementById('modal-activity');
+            modal.removeAttribute('data-editing-id'); // Limpiamos rastro de ediciones previas
+
+            document.getElementById('act-name').value = "";
+            document.getElementById('dates-list').innerHTML = "";
+            document.getElementById('rubric-builder').innerHTML = "";
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeActivityModal() {
+            document.getElementById('modal-activity').classList.add('hidden');
+        }
+
+        // 3. FECHAS
+        function processDateSelection(input) {
+            if (input.value && !currentActivityDates.includes(input.value)) {
+                currentActivityDates.push(input.value);
+                renderDates();
+            }
+            input.value = "";
+        }
+
+        function renderDates() {
+            const list = document.getElementById('dates-list');
+            list.innerHTML = currentActivityDates.map(d => `
+            <span class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100">
+                ${d.split('-').reverse().join('/')}
+                <button type="button" onclick="removeDate('${d}')"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </span>
+        `).join('');
+            lucide.createIcons();
+        }
+
+        function removeDate(date) {
+            currentActivityDates = currentActivityDates.filter(d => d !== date);
+            renderDates();
+        }
+
+        // 4. RÚBRICAS (HABILIDADES E INDICADORES)
+        function addSkill() {
+            const id = Date.now();
+            const html = `
+            <div class="card-rubric border-l-4 border-l-blue-400 mb-6" id="skill-${id}">
+                <div class="flex justify-between items-center mb-4">
+                    <input type="text" placeholder="Habilidad" class="font-bold text-slate-700 outline-none w-full border-b border-transparent focus:border-blue-400">
+                    <button onclick="document.getElementById('skill-${id}').remove()" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+                <table class="w-full text-xs">
+                    <tbody id="ind-body-${id}">
+                        <tr>
+                            <td class="py-1"><input type="text" class="indicator-name input-soft w-full" placeholder="Indicador"></td>
+                            <td class="py-1 px-1"><textarea class="crit-1 input-soft w-full text-[10px]" placeholder="Inic."></textarea></td>
+                            <td class="py-1 px-1"><textarea class="crit-2 input-soft w-full text-[10px]" placeholder="Inter."></textarea></td>
+                            <td class="py-1 px-1"><textarea class="crit-3 input-soft w-full text-[10px]" placeholder="Avan."></textarea></td>
+                            <td class="py-1"><button onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button onclick="addIndicatorRow('${id}')" type="button" class="mt-4 text-[10px] font-bold text-blue-400 uppercase tracking-widest">+ Agregar Indicador</button>
+            </div>`;
+            document.getElementById('rubric-builder').insertAdjacentHTML('beforeend', html);
+            lucide.createIcons();
+        }
+
+        function addIndicatorRow(skillId) {
+            const tbody = document.getElementById(`ind-body-${skillId}`);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td class="py-1"><input type="text" class="indicator-name input-soft w-full" placeholder="Indicador"></td>
+            <td class="py-1 px-1"><textarea class="crit-1 input-soft w-full text-[10px]" placeholder="Inic."></textarea></td>
+            <td class="py-1 px-1"><textarea class="crit-2 input-soft w-full text-[10px]" placeholder="Inter."></textarea></td>
+            <td class="py-1 px-1"><textarea class="crit-3 input-soft w-full text-[10px]" placeholder="Avan."></textarea></td>
+            <td class="py-1"><button onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button></td>`;
+            tbody.appendChild(row);
+            lucide.createIcons();
+        }
+
+        // 5. GUARDAR Y EDITAR
+        function saveActivity() {
+            const name = document.getElementById('act-name').value.trim();
+            if (!name || currentActivityDates.length === 0) {
+                return alert("Por favor, completa el nombre y agrega al menos una fecha.");
+            }
+
+            const modal = document.getElementById('modal-activity');
+            const editingId = modal.getAttribute('data-editing-id');
+            const id = editingId ? editingId : Date.now().toString();
+
+            const skills = [];
+            // CAMBIO CLAVE: Solo buscamos dentro de rubric-builder para no confundirnos con las tarjetas de afuera
+            const skillCards = document.getElementById('rubric-builder').querySelectorAll('.card-rubric');
+
+            skillCards.forEach(card => {
+                const skillName = card.querySelector('input').value;
+                const indicators = [];
+                card.querySelectorAll('tbody tr').forEach(row => {
+                    const indName = row.querySelector('.indicator-name').value;
+                    // Solo guardamos si el indicador tiene nombre
+                    if (indName.trim() !== "") {
+                        indicators.push({
+                            name: indName,
+                            c1: row.querySelector('.crit-1').value,
+                            c2: row.querySelector('.crit-2').value,
+                            c3: row.querySelector('.crit-3').value
+                        });
+                    }
+                });
+
+                if (skillName.trim() !== "" || indicators.length > 0) {
+                    skills.push({ name: skillName, indicators });
+                }
+            });
+
+            state.activities[id] = {
+                id,
+                name,
+                level: lvl,
+                section: sec,
+                period,
+                skills,
+                dates: currentActivityDates
+            };
+
+            localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+            modal.removeAttribute('data-editing-id');
+
+            closeActivityModal();
+            renderActivities();
+            alert("¡Cambios guardados con éxito!");
+        }
+
+        function editActivity(id) {
+            const a = state.activities[id];
+            openActivityModal(); // Limpia el modal
+
+            // Seteamos el ID en el modal para saber que estamos editando y no creando
+            document.getElementById('modal-activity').setAttribute('data-editing-id', id);
+            document.getElementById('act-name').value = a.name;
+            currentActivityDates = [...a.dates];
+            renderDates();
+
+            // Reconstruimos las habilidades e indicadores
+            const builder = document.getElementById('rubric-builder');
+            a.skills.forEach(skill => {
+                const sId = Date.now() + Math.random();
+                const skillHtml = `
+            <div class="card-rubric border-l-4 border-l-blue-400 mb-6" id="skill-${sId}">
+                <div class="flex justify-between items-center mb-4">
+                    <input type="text" value="${skill.name}" class="font-bold text-slate-700 outline-none w-full">
+                    <button onclick="document.getElementById('skill-${sId}').remove()"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+                <table class="w-full text-xs">
+                    <tbody id="ind-body-${sId}">
+                        ${skill.indicators.map(ind => `
+                            <tr>
+                                <td class="py-1"><input type="text" class="indicator-name input-soft w-full" value="${ind.name}"></td>
+                                <td class="py-1 px-1"><textarea class="crit-1 input-soft w-full text-[10px]">${ind.c1}</textarea></td>
+                                <td class="py-1 px-1"><textarea class="crit-2 input-soft w-full text-[10px]">${ind.c2}</textarea></td>
+                                <td class="py-1 px-1"><textarea class="crit-3 input-soft w-full text-[10px]">${ind.c3}</textarea></td>
+                                <td class="py-1"><button onclick="this.closest('tr').remove()"><i data-lucide="x" class="w-3 h-3"></i></button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <button onclick="addIndicatorRow('${sId}')" class="mt-4 text-[10px] font-bold text-blue-400 uppercase">+ Agregar Indicador</button>
+            </div>`;
+                builder.insertAdjacentHTML('beforeend', skillHtml);
+            });
+            lucide.createIcons();
+        }
+
+        function renderActivities() {
+            const container = document.getElementById('activities-container');
+            const acts = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === sec && a.period === period);
+
+            if (acts.length === 0) {
+                container.innerHTML = '<p class="text-slate-300 text-center py-20 w-full col-span-full italic text-xs">No hay prácticas creadas.</p>';
+                return;
+            }
+
+            container.innerHTML = acts.map(a => `
+        <div class="card-premium group">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="font-bold text-slate-700 text-sm">${a.name}</h3>
+                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onclick="copyActivityToOther('${a.id}')" title="Copiar a otro grupo" class="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                    
+                    <button onclick="editActivity('${a.id}')" class="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                    <button onclick="deleteStoredActivity('${a.id}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="startGrading('${a.id}')"
+                    class="flex-1 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all">Calificar</button>
+            </div>
+        </div>`).join('');
+            lucide.createIcons();
+        }
+        function copyActivityToOther(id) {
+            const original = state.activities[id];
+            const target = prompt("¿A qué grupo quieres copiar esta práctica? (Ejemplo: 7-2, 9-5)", `${lvl}-${sec}`);
+
+            if (!target) return;
+
+            // Separamos el nivel y la sección del texto ingresado
+            const parts = target.split('-');
+            if (parts.length !== 2) return alert("Formato incorrecto. Usa: Nivel-Sección (Ej: 9-1)");
+
+            const newLvl = parts[0].trim();
+            const newSec = parts[1].trim();
+
+            // Creamos la copia independiente con un nuevo ID
+            const newId = Date.now().toString();
+
+            state.activities[newId] = {
+                ...JSON.parse(JSON.stringify(original)), // Clonación profunda para romper el vínculo
+                id: newId,
+                level: newLvl,
+                section: newSec,
+                dates: [...original.dates] // Mantenemos las fechas por si son las mismas
+            };
+
+            localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+            alert(`¡Práctica "${original.name}" copiada con éxito al grupo ${newLvl}-${newSec}!`);
+
+            // Si el grupo de destino es el actual, refrescamos la vista
+            if (newLvl === lvl && newSec === sec) renderActivities();
+        }
+        function deleteStoredActivity(id) {
+            if (confirm("¿Eliminar práctica?")) { delete state.activities[id]; localStorage.setItem('academicApp_2026_data', JSON.stringify(state)); renderActivities(); }
+        }
+
+        function deleteActivity() {
+            const id = document.getElementById('modal-activity').getAttribute('data-editing-id');
+            if (id) deleteStoredActivity(id);
+            closeActivityModal();
+        }
+        // Función para abrir la evaluación
+        function startGrading(id) {
+            activeActivityId = id;
+            const a = state.activities[id];
+            document.getElementById('grading-title').innerText = a.name;
+
+            // Llenar selector de fechas
+            const dateSelect = document.getElementById('select-grading-date');
+            dateSelect.innerHTML = a.dates.map(d => `<option value="${d}">${d.split('-').reverse().join('/')}</option>`).join('');
+
+            renderGradingHeader(a);
+            renderGradingList();
+            document.getElementById('modal-grading').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function renderGradingHeader(a) {
+            const header = document.getElementById('grading-header');
+            let html = `<tr><th class="p-4 w-64 sticky left-0 bg-slate-50 z-10">Estudiante</th>`;
+
+            a.skills.forEach(skill => {
+                skill.indicators.forEach(ind => {
+                    html += `<th class="p-4 text-center border-l border-slate-100 min-w-[100px]">${ind.name}</th>`;
+                });
+            });
+
+            html += `<th class="p-4 text-center bg-blue-50 text-blue-500 border-l border-blue-100">Pts</th>`;
+            html += `<th class="p-4 text-center bg-blue-50 text-blue-500 border-l border-blue-100">Nota(0-3)</th>`;
+            html += `<th class="p-4 border-l border-slate-100 min-w-[200px]">Observaciones</th></tr>`;
+            header.innerHTML = html;
+        }
+
+        function renderGradingList() {
+            const a = state.activities[activeActivityId];
+            const date = document.getElementById('select-grading-date').value;
+            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            const tbody = document.getElementById('grading-body');
+
+            tbody.innerHTML = students.map(s => {
+                const isAbsent = checkAbsence(s.id, date);
+                const att = state.attendance?.[period]?.[date]?.[s.id];
+                const isTardy = att && att.status === 'T';
+
+                // Es ausencia parcial si tiene AI o AJ pero no se bloqueó (checkAbsence = false)
+                const isPartial = att && (att.status === 'AI' || att.status === 'AJ') && !isAbsent;
+
+                const disabledClass = isAbsent ? 'opacity-30 pointer-events-none bg-slate-50' : '';
+                const best = calculateBestScores(s.id, a);
+
+                return `
+    <tr class="border-t border-slate-50 ${disabledClass}">
+        <td class="p-4 font-bold text-slate-700 sticky left-0 bg-white z-10">
+            ${s.name} 
+            ${isAbsent ? '<span class="text-[7px] text-red-500 block uppercase font-black">[Ausencia Total]</span>' : ''}
+            ${isPartial ? `<span class="text-[7px] text-orange-500 block uppercase font-black">[Ausencia Parcial: ${att.lessons} lecc.]</span>` : ''}
+            ${isTardy ? '<span class="text-[7px] text-amber-500 block uppercase font-black">[Llegó Tarde]</span>' : ''}
+        </td>
+        ${renderIndicatorButtons(s.id, a, date)}
+        <td class="p-4 text-center font-bold text-slate-400 bg-slate-50/50">${best.pts}</td>
+        <td class="p-4 text-center font-black text-blue-500 bg-blue-50/50">${best.nota}</td>
+        <td class="p-4"><input type="text" value="${getObs(s.id, a.id, date)}" onchange="saveObs('${s.id}', '${a.id}', this.value)" class="input-soft w-full text-[10px]" placeholder="..."></td>
+    </tr>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // Lógica de botones 1, 2, 3
+        function renderIndicatorButtons(studentId, a, date) {
+            let html = '';
+            a.skills.forEach((skill, sIdx) => {
+                skill.indicators.forEach((ind, iIdx) => {
+                    const current = getScore(studentId, a.id, date, sIdx, iIdx);
+
+                    // Verificamos si ya alcanzó el máximo (3) en alguna de las fechas registradas para esta práctica
+                    let hasMaxed = false;
+                    for (const d of a.dates) {
+                        if (getScore(studentId, a.id, d, sIdx, iIdx) === 3) {
+                            hasMaxed = true;
+                            break;
+                        }
+                    }
+
+                    // Estilo si ya completó el indicador
+                    const cellBg = hasMaxed ? 'bg-emerald-50/50' : '';
+                    const checkMark = hasMaxed ? `
+                        <div class="absolute top-1 right-1 flex items-center gap-0.5">
+                            <span class="text-[6px] font-black text-emerald-500 uppercase tracking-tighter">LISTO</span>
+                            <div class="w-2 h-2 bg-emerald-500 rounded-full flex items-center justify-center">
+                                <i data-lucide="check" class="text-white w-1.5 h-1.5 stroke-[4px]"></i>
+                            </div>
+                        </div>` : '';
+
+                    html += `<td class="p-4 border-l border-slate-50 text-center relative ${cellBg}">
+                ${checkMark}
+                <div class="flex justify-center gap-1">
+                    ${[1, 2, 3].map(v => `
+                        <button onclick="setScore('${studentId}','${a.id}','${date}',${sIdx},${iIdx},${v})" 
+                            class="w-7 h-7 rounded-lg text-[10px] font-bold border ${current == v ? 'bg-blue-500 text-white border-blue-600' : 'bg-slate-50 text-slate-400 border-slate-100'}">
+                            ${v}
+                        </button>
+                    `).join('')}
+                </div>
+            </td>`;
+                });
+            });
+            return html;
+        }
+
+        // CÁLCULO DE MEJOR NOTA HISTÓRICA
+        function calculateBestScores(studentId, a) {
+            let totalPts = 0;
+            let maxPossible = 0;
+
+            a.skills.forEach((skill, sIdx) => {
+                skill.indicators.forEach((ind, iIdx) => {
+                    maxPossible += 3;
+                    let bestInd = 0;
+                    // Revisamos cada fecha para este indicador
+                    a.dates.forEach(d => {
+                        const s = getScore(studentId, a.id, d, sIdx, iIdx);
+                        if (s > bestInd) bestInd = s;
+                    });
+                    totalPts += bestInd;
+                });
+            });
+
+            const nota = maxPossible > 0 ? ((totalPts * 3) / maxPossible).toFixed(2) : "0.00";
+            return { pts: totalPts, nota: nota };
+        }
+
+        // Funciones de persistencia
+        function setScore(sId, aId, date, skIdx, inIdx, val) {
+            if (!state.evaluations) state.evaluations = {};
+            if (!state.evaluations[aId]) state.evaluations[aId] = {};
+            if (!state.evaluations[aId][date]) state.evaluations[aId][date] = {};
+            if (!state.evaluations[aId][date][sId]) state.evaluations[aId][date][sId] = { scores: {}, obs: "" };
+
+            state.evaluations[aId][date][sId].scores[`${skIdx}-${inIdx}`] = val;
+            save();
+            renderGradingList();
+        }
+
+        function getScore(sId, aId, date, skIdx, inIdx) {
+            return state.evaluations?.[aId]?.[date]?.[sId]?.scores?.[`${skIdx}-${inIdx}`] || 0;
+        }
+
+        function checkAbsence(sId, date) {
+            const periodData = state.attendance?.[period] || {};
+            const dailyData = periodData[date] || {};
+            const att = dailyData[sId];
+
+            if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return false;
+
+            // Buscamos el valor máximo de lecciones registrado para ese día en asistencia
+            // Esto define el total de lecciones del bloque de ese día.
+            const records = Object.values(dailyData);
+            const dailyMax = records.length > 0 ? Math.max(...records.map(r => r.lessons || 0), 0) : 0;
+
+            // Solo bloqueamos si el estudiante faltó a TODAS las lecciones registradas
+            // Si faltó menos (ej: 1 de 2 lecciones), se permite evaluarlo.
+            return att.lessons >= dailyMax;
+        }
+
+        // Funciones de persistencia de observaciones
+        function saveObs(sId, aId, val) {
+            const date = document.getElementById('select-grading-date').value;
+            if (!state.evaluations) state.evaluations = {};
+            if (!state.evaluations[aId]) state.evaluations[aId] = {};
+            if (!state.evaluations[aId][date]) state.evaluations[aId][date] = {};
+            if (!state.evaluations[aId][date][sId]) state.evaluations[aId][date][sId] = { scores: {}, obs: "" };
+
+            state.evaluations[aId][date][sId].obs = val;
+            save();
+        }
+
+        function getObs(sId, aId, specificDate) {
+            const date = specificDate || document.getElementById('select-grading-date')?.value;
+            if (!date) return "";
+            return state.evaluations?.[aId]?.[date]?.[sId]?.obs || "";
+        }
+        document.addEventListener('DOMContentLoaded', init);
+        function closeGrading() {
+            document.getElementById('modal-grading').classList.add('hidden');
+        }
+
+        function downloadActivityPDF() {
+            const a = state.activities[activeActivityId];
+            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            const printWindow = window.open('', '_blank');
+
+            let html = `
+    <html>
+    <head>
+        <title>Reporte de Tarea - ${a.name}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Outfit', sans-serif; padding: 40px; color: #334155; font-size: 10px; }
+            .professional-header { display: flex; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px; text-transform: uppercase; }
+            .prof-data p { margin: 2px 0; font-size: 9px; color: #64748b; }
+            .prof-data b { color: #334155; }
+            
+            h2 { font-size: 14px; color: #1e293b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: -0.5px; }
+            
+            /* TABLA DE ESPECIFICACIONES (RÚBRICA) */
+            .spec-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; border: 1px solid #e2e8f0; table-layout: fixed; }
+            .spec-table th { background: #f8fafc; padding: 10px; border: 1px solid #e2e8f0; font-size: 8px; text-align: left; }
+            .spec-table td { padding: 10px; border: 1px solid #e2e8f0; vertical-align: top; width: 25%; word-wrap: break-word; }
+            .skill-row { background: #f1f5f9; font-weight: 800; font-size: 9px; text-transform: uppercase; }
+            
+            /* Ajuste de simetría para el Registro de Evaluación */
+.reg-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    table-layout: fixed; /* Esta es la clave para que las celdas respeten el ancho */
+}
+
+.reg-table th, .reg-table td { 
+    border: 1px solid #cbd5e1; 
+    padding: 5px; 
+    text-align: center; 
+    word-wrap: break-word; /* Fuerza el salto de línea si el texto es largo */
+    overflow: hidden;
+}
+
+/* Columna de Estudiante un poco más ancha para el nombre */
+.name-cell-header { width: 25%; } 
+.date-col-header { width: 10%; }
+
+/* Las columnas de indicadores se repartirán el resto del espacio equitativamente */
+.indicator-col { 
+    width: auto; /* El navegador las hará iguales gracias al table-layout: fixed */
+}
+
+.obs-col-header { width: 20%; }
+            .name-cell { text-align: left !important; font-weight: 700; background: #ffffff; padding-left: 10px !important; }
+            
+            .btn-pdf { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 8px; font-weight: 800; margin: 0 1px; color: #94a3b8; }
+            .active-1 { background: #3b82f6; color: white; border-color: #2563eb; }
+            .active-2 { background: #f59e0b; color: white; border-color: #d97706; }
+            .active-3 { background: #10b981; color: white; border-color: #059669; }
+        </style>
+    </head>
+    <body>
+        <div class="professional-header">
+            <div>
+                <h1 style="margin:0; font-size:24px; color:#1e293b; font-weight:900; text-transform:uppercase;">${a.name}</h1>
+                <p style="margin:5px 0 0 0; color:#3b82f6; font-weight:900; text-transform:uppercase; font-size:12px;">NIVEL: ${lvl} | SECCIÓN: ${sec} | PERIODO: ${period === '1' ? 'I' : period === '2' ? 'II' : period}</p>
+            </div>
+            <div class="prof-data">
+                <p>INSTITUCIÓN: <b>${state.admin.institution || 'MEP'}</b></p>
+                <p>MATERIA: <b>${state.admin.subject || 'MATEMÁTICAS'}</b></p>
+                <p>DOCENTE: <b>${state.admin.name || '---'}</b></p>
+                <p>INSTRUMENTO DE EVALUACIÓN: <b>TRABAJO COTIDIANO</b></p>
+            </div>
+        </div>
+
+        <h2>Tabla de Especificaciones (Habilidades y Criterios)</h2>
+        <table class="spec-table">
+            <table class="spec-table">
+            <thead>
+                <tr>
+                    <th style="color:#64748b">INDICADOR</th>
+                    <th style="color:#b45309">1 PUNTO (INICIAL)</th>
+                    <th style="color:#1d4ed8">2 PUNTOS (INTERMEDIO)</th>
+                    <th style="color:#15803d">3 PUNTOS (AVANZADO)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${a.skills.map((skill, sIdx) => `
+                    <tr class="skill-row"><td colspan="4">Habilidad ${sIdx + 1}: ${skill.name}</td></tr>
+                    ${skill.indicators.map(ind => `
+                        <tr>
+                            <td style="font-weight:700">${ind.name}</td>
+                            <td>${ind.c1}</td>
+                            <td>${ind.c2}</td>
+                            <td>${ind.c3}</td>
+                        </tr>
+                    `).join('')}
+                `).join('')}
+            </tbody>
+        </table>
+            <tbody>
+                ${a.skills.map((skill, sIdx) => `
+                    <tr class="skill-row"><td colspan="4">Habilidad ${sIdx + 1}: ${skill.name}</td></tr>
+                    ${skill.indicators.map(ind => `
+                        <tr>
+                            <td style="font-weight:700">${ind.name}</td>
+                            <td>${ind.c1}</td>
+                            <td>${ind.c2}</td>
+                            <td>${ind.c3}</td>
+                        </tr>
+                    `).join('')}
+                `).join('')}
+            </tbody>
+        </table>
+
+        <h2>Registro de Evaluación</h2>
+        <table class="reg-table">
+            <thead>
+                <tr>
+                    <th rowspan="2" class="name-cell-header" style="font-size:9px">Estudiante</th>
+                    <th rowspan="2" style="width:50px">Fecha</th>
+                    ${a.skills.flatMap(s => s.indicators.map(ind => `<th>${ind.name}</th>`)).join('')}
+                    <th rowspan="2" style="width:150px">Observaciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${students.map(s => {
+                return a.dates.map((date, dIdx) => `
+                        <tr>
+                            ${dIdx === 0 ? `<td rowspan="${a.dates.length}" class="name-cell" style="font-size:9px">${s.name}</td>` : ''}
+                            <td style="color:#64748b">${date.split('-').reverse().slice(0, 2).join('/')}</td>
+                            ${a.skills.flatMap((skill, skIdx) => skill.indicators.map((_, inIdx) => {
+                    const score = getScore(s.id, a.id, date, skIdx, inIdx);
+                    return `
+                                <td>
+                                    <span class="btn-pdf ${score == 1 ? 'active-1' : ''}">1</span>
+                                    <span class="btn-pdf ${score == 2 ? 'active-2' : ''}">2</span>
+                                    <span class="btn-pdf ${score == 3 ? 'active-3' : ''}">3</span>
+                                </td>`;
+                })).join('')}
+                           <td style="text-align:left; font-size:8px; font-style:italic;">${getObs(s.id, a.id, date) || '-'}</td>
+                    </tr>
+                    `).join('');
+            }).join('')}
+            </tbody>
+        </table>
+    </body>
+    </html>`;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.onload = () => { printWindow.print(); printWindow.close(); };
+        }
+        function showGeneralReport() {
+            const modal = document.getElementById('modal-general-report');
+            const table = document.getElementById('general-report-table');
+            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            const acts = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === sec && a.period === period);
+            const porcComponente = (parseInt(lvl) >= 10) ? 35 : 45;
+
+            // Actualizar info del periodo
+            const displayPeriod = period === '1' ? 'I' : period === '2' ? 'II' : period;
+            const periodField = document.getElementById('general-report-period-info');
+            if (periodField) periodField.innerText = `Periodo ${displayPeriod} | Componente: ${porcComponente}%`;
+
+            let html = `
+    <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+        <tr>
+            <th class="p-4 sticky left-0 bg-slate-50 text-blue-600">Estudiante</th>
+            ${acts.map(a => `<th class="p-4 text-center border-l border-slate-100">${a.name}</th>`).join('')}
+            <th class="p-4 text-center bg-blue-50 text-blue-600 border-l border-blue-100 font-black">Nota Final (100)</th>
+            <th class="p-4 text-center bg-blue-200 text-blue-800 border-l border-blue-300 font-black uppercase tracking-tighter shadow-sm">Total (${porcComponente}%)</th>
+        </tr>
+    </thead>
+    <tbody class="text-[11px]">`;
+
+            students.forEach(s => {
+                let sumaNotas = 0;
+                let conteo = 0;
+                let celdasPracticas = "";
+
+                acts.forEach(a => {
+                    const wasPresent = a.dates.some(d => !checkAbsence(s.id, d));
+                    const best = calculateBestScores(s.id, a);
+                    const nota = Math.round(parseFloat(best.nota));
+
+                    if (wasPresent) {
+                        sumaNotas += nota;
+                        conteo++;
+                        celdasPracticas += `<td class="p-4 text-center border-l border-slate-50 font-bold text-slate-600">${nota}</td>`;
+                    } else {
+                        celdasPracticas += `<td class="p-4 text-center border-l border-slate-50 text-red-300 italic">Faltó</td>`;
+                    }
+                });
+
+                // Nota en escala 0-100
+                const promedioEscala3 = conteo > 0 ? (sumaNotas / conteo) : 0;
+                const nota100 = ((promedioEscala3 * 100) / 3).toFixed(2);
+
+                // Cálculo del porcentaje del componente
+                const porcentajeGanado = ((parseFloat(nota100) * porcComponente) / 100).toFixed(2);
+
+                html += `
+        <tr class="border-t border-slate-50 hover:bg-slate-50/50 transition-colors">
+            <td class="p-4 font-bold text-slate-700 sticky left-0 bg-white">${s.name}</td>
+            ${celdasPracticas}
+            <td class="p-4 text-center font-black text-blue-500 bg-blue-50/20 border-l border-blue-100">${nota100}</td>
+            <td class="p-4 text-center font-black text-blue-600 bg-blue-50/30 border-l border-blue-100">${porcentajeGanado}%</td>
+        </tr>`;
+            });
+
+            html += `</tbody>`;
+            table.innerHTML = html;
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+        function downloadGeneralPDF() {
+            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            const acts = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === sec && a.period === period);
+            const porcComponente = (parseInt(lvl) >= 10) ? 35 : 45;
+
+            if (acts.length === 0) return alert("No hay prácticas para generar el reporte.");
+
+            const printWindow = window.open('', '_blank');
+
+            let html = `
+    <html>
+    <head>
+        <title>Consolidado Trabajo Cotidiano - ${lvl}-${sec}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Outfit', sans-serif; padding: 40px; color: #334155; font-size: 10px; }
+            .header-print { display: flex; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px; text-transform: uppercase; }
+            .prof-data p { margin: 2px 0; font-size: 9px; color: #64748b; }
+            .prof-data b { color: #334155; }
+            
+            h1 { font-size: 18px; margin: 0; color: #1e293b; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: center; }
+            th { background: #f8fafc; font-size: 8px; font-weight: 800; text-transform: uppercase; }
+            .name-cell { text-align: left !important; font-weight: 700; }
+            .final-note { background: #eff6ff; font-weight: 800; color: #1d4ed8; }
+            .final-porc { background: #1e293b; color: white; font-weight: 800; }
+            .footer { margin-top: 50px; display: flex; justify-content: space-around; font-size: 9px; }
+        </style>
+    </head>
+    <body>
+        <div class="header-print">
+            <div>
+                <h1>Consolidado de Trabajo Cotidiano</h1>
+                <p style="margin:5px 0 0 0; color:#3b82f6; font-weight:800;">Nivel: ${lvl} | Sección: ${sec} | Periodo: ${period}</p>
+            </div>
+            <div class="prof-data">
+                <p>Institución: <b>${state.admin.institution || 'Ministerio de Educación Pública'}</b></p>
+                <p>Materia: <b>${state.admin.subject || 'Matemáticas'}</b></p>
+                <p>Docente: <b>${state.admin.name || '---'}</b></p>
+                <p>Instrumento: <b>Trabajo Cotidiano</b></p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Estudiante</th>
+                    ${acts.map(a => `<th>${a.name}</th>`).join('')}
+                    <th>Nota Final</th>
+                    <th>Porcentaje (${porcComponente}%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${students.map(s => {
+                let sumaNotas = 0;
+                let conteo = 0;
+
+                const filasPracticas = acts.map(a => {
+                    const wasPresent = a.dates.some(d => !checkAbsence(s.id, d));
+                    const best = calculateBestScores(s.id, a);
+                    const nota = Math.round(parseFloat(best.nota));
+
+                    if (wasPresent) {
+                        sumaNotas += nota;
+                        conteo++;
+                        return `<td>${nota}</td>`;
+                    }
+                    return `<td style="color:#cbd5e1; font-style:italic;">Faltó</td>`;
+                }).join('');
+
+                const notaFinal = conteo > 0 ? (sumaNotas / conteo).toFixed(2) : "0.00";
+                const porcGanado = ((parseFloat(notaFinal) * porcComponente) / 3).toFixed(2);
+
+                return `
+                    <tr>
+                        <td class="name-cell">${s.name}</td>
+                        ${filasPracticas}
+                        <td class="final-note">${notaFinal}</td>
+                        <td class="final-porc">${porcGanado}%</td>
+                    </tr>`;
+            }).join('')}
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <div style="border-top:1px solid #334155; width:200px; padding-top:5px; text-align:center;">Firma del Docente</div>
+        </div>
+    </body>
+    </html>`;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.onload = () => {
+                printWindow.print();
+                printWindow.close();
+            };
+        }
+        function closeGeneralReport() { document.getElementById('modal-general-report').classList.add('hidden'); }
+        // Función de guardado general
+        function save() {
+            localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+        }
+
+    </script>
+    <div id="modal-grading" class="fixed inset-0 modal-blur z-[60] hidden flex items-center justify-center p-0 md:p-4">
+        <div
+            class="bg-white w-full h-full md:max-w-7xl md:h-[95vh] md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                <div>
+                    <h2 id="grading-title" class="text-lg font-bold text-slate-800 uppercase tracking-tighter">---</h2>
+                    <div class="flex items-center gap-4 mt-1">
+                        <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Fecha de
+                            hoy:</span>
+                        <select id="select-grading-date"
+                            class="text-[10px] font-bold uppercase bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border-none outline-none cursor-pointer"
+                            onchange="renderGradingList()">
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="downloadActivityPDF()"
+                        class="p-2 text-slate-400 hover:text-blue-500 transition-all"><i
+                            data-lucide="file-text"></i></button>
+                    <button onclick="closeGrading()" class="p-2 text-slate-400 hover:text-slate-600 transition-all"><i
+                            data-lucide="x"></i></button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-auto p-4">
+                <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead id="grading-header"
+                            class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        </thead>
+                        <tbody id="grading-body" class="text-[11px] font-medium">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-slate-50 bg-white flex justify-end">
+                <button onclick="closeGrading()"
+                    class="btn-minimal bg-slate-800 text-white px-12 py-3 border-none">Cerrar Evaluación</button>
+            </div>
+        </div>
+    </div>
+</body>
+<div id="modal-general-report" class="fixed inset-0 modal-blur z-[70] hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden">
+        <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-800 uppercase tracking-tighter">
+                    <i data-lucide="clipboard-list" class="w-6 h-6 icon-vibrant inline-block mr-2 mb-1"></i> Consolidado
+                    de Trabajo Cotidiano
+                </h2>
+                <p id="general-report-period-info"
+                    class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Periodo ---</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="downloadGeneralPDF()" class="btn-minimal btn-blue px-6 py-2 shadow-sm">
+                    <i data-lucide="download"></i> Descargar PDF
+                </button>
+                <button onclick="closeGeneralReport()" class="text-slate-400 hover:text-slate-600"><i
+                        data-lucide="x"></i></button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-auto p-8">
+            <div class="table-container border border-slate-100 rounded-2xl overflow-hidden">
+                <table class="w-full text-left border-collapse" id="general-report-table">
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+</html>

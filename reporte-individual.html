@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Individual - Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .progress-bar-bg {
+            background: #f1f5f9;
+            height: 8px;
+            border-radius: 10px;
+            width: 100%;
+            position: relative;
+            box-shadow: var(--nm-shadow-in);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .badge-at {
+            padding: 4px 12px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .table-rubric th {
+            font-size: 9px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            padding: 10px;
+            background: #f8fafc;
+        }
+
+        .table-rubric td {
+            padding: 12px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 11px;
+        }
+
+        .achieved {
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            color: #2563eb;
+            font-weight: 700;
+            border-radius: 8px;
+            box-shadow: var(--nm-shadow-in);
+        }
+
+        .header-pdf {
+            display: none;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            .max-w-5xl {
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+            }
+
+            .card-premium {
+                padding: 1.25rem !important;
+                border-radius: 1rem !important;
+                margin-bottom: 0.75rem !important;
+                page-break-inside: avoid;
+                background: white !important;
+                border: 1px solid #e1e8f0 !important;
+                box-shadow: none !important;
+            }
+
+            .space-y-10>*+* {
+                margin-top: 0.75rem !important;
+            }
+
+            .space-y-12>*+* {
+                margin-top: 1rem !important;
+            }
+
+            .icon-container {
+                width: 1.5rem !important;
+                height: 1.5rem !important;
+                margin-bottom: 0 !important;
+            }
+
+            .icon-container i {
+                width: 1rem !important;
+                height: 1rem !important;
+            }
+
+            .section-title {
+                font-size: 0.9rem !important;
+            }
+
+            .progress-bar-bg {
+                height: 5px !important;
+            }
+
+            .table-rubric td,
+            .table-rubric th {
+                padding: 6px !important;
+            }
+
+            .header-pdf {
+                display: flex !important;
+                justify-content: space-between;
+                align-items: end;
+                border-bottom: 2px solid #e2e8f0;
+                padding-bottom: 0.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .mb-8 {
+                margin-bottom: 0.75rem !important;
+            }
+
+            .pt-8 {
+                padding-top: 0.75rem !important;
+            }
+
+            .page-title {
+                display: none !important;
+            }
+
+            .bg-slate-50\/30 {
+                background-color: transparent !important;
+                padding: 0.5rem !important;
+                border: 1px solid #f1f5f9 !important;
+                margin-top: 0.5rem !important;
+            }
+
+            .table-rubric {
+                font-size: 9px !important;
+            }
+
+            .table-rubric td {
+                padding: 4px !important;
+            }
+
+            .table-rubric th {
+                padding: 4px !important;
+                background: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .achieved {
+                background: #eff6ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .badge-at {
+                padding: 2px 6px !important;
+                font-size: 9px !important;
+            }
+
+            .p-6 {
+                padding: 0.75rem !important;
+            }
+
+            .gap-4 {
+                gap: 0.5rem !important;
+            }
+
+            .gap-10 {
+                gap: 2rem !important;
+            }
+
+            .gap-12 {
+                gap: 2rem !important;
+            }
+
+            #grades-breakdown {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem !important;
+            }
+
+            #grades-breakdown>div {
+                margin-top: 0 !important;
+            }
+        }
+    </style>
+</head>
+
+<div class="max-w-5xl mx-auto p-10">
+    <!-- ENCABEZADO PDF (Solo Impresión) -->
+    <div class="header-pdf">
+        <div>
+            <h1 class="header-pdf-title">Reporte Individual</h1>
+            <p class="text-xl font-black text-slate-700 mt-2" id="pdf-student-name">---</p>
+        </div>
+        <div class="header-pdf-info">
+            <p id="pdf-inst">---</p>
+            <p id="pdf-subject">---</p>
+            <p id="pdf-teacher">---</p>
+            <p id="pdf-period">Periodo I - 2026</p>
+        </div>
+    </div>
+
+    <header class="flex justify-between items-center mb-12 uppercase no-print page-title">
+        <h1><i data-lucide="user" class="title-icon icon-vibrant"></i> <span id="student-header-name">---</span></h1>
+        <div class="flex gap-4">
+            <button onclick="window.print()" class="btn-nm">
+                <i data-lucide="printer" class="w-4 h-4 icon-vibrant"></i> Imprimir Reporte
+            </button>
+            <button onclick="location.href='estudiantes.html'" class="btn-nm">
+                <i data-lucide="arrow-left" class="w-4 h-4 icon-vibrant"></i> Volver a Estudiantes
+            </button>
+        </div>
+    </header>
+
+    <div class="space-y-10">
+        <!-- DESGLOSE DE NOTAS -->
+        <div class="card-premium">
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h2 class="section-title"><i data-lucide="layout-dashboard" class="w-5 h-5 icon-vibrant"></i>
+                        Desglose de Notas</h2>
+                    <p class="text-[9px] font-bold text-slate-300 uppercase tracking-widest mt-1">Resumen del Periodo
+                        Actual</p>
+                </div>
+                <div class="text-right bg-slate-50 px-6 py-3 rounded-3xl border border-slate-100 shadow-sm">
+                    <p class="text-2xl font-black text-blue-600" id="final-period-grade">0.00</p>
+                    <p class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Nota Final</p>
+                </div>
+            </div>
+            <div class="space-y-6" id="grades-breakdown"></div>
+        </div>
+
+        <!-- ASISTENCIA -->
+        <div class="card-premium"
+            style="--primary-light: var(--emerald-light); --primary-vibrant: var(--emerald-vibrant);">
+            <div class="flex justify-between items-start mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="icon-vibrant"><i data-lucide="clock" class="w-5 h-5 icon-vibrant"></i></div>
+                    <div>
+                        <h2 class="section-title">Historial de Asistencia</h2>
+                        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">Componente: 5%</p>
+                    </div>
+                </div>
+                <div class="text-right bg-emerald-50/50 px-6 py-3 rounded-3xl border border-emerald-100 shadow-sm">
+                    <p class="text-xl font-black text-emerald-600" id="at-nota">0.0%</p>
+                    <p class="text-[9px] font-bold text-emerald-300 uppercase tracking-widest">Nota Obtenida</p>
+                </div>
+            </div>
+            <div class="flex gap-3 mb-8" id="at-badges"></div>
+            <div id="at-history" class="space-y-4"></div>
+        </div>
+
+        <!-- TRABAJO COTIDIANO -->
+        <div class="card-premium" style="--primary-light: var(--blue-light); --primary-vibrant: var(--blue-vibrant);">
+            <div class="flex justify-between items-start mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="icon-vibrant"><i data-lucide="clipboard-list" class="w-5 h-5 icon-vibrant"></i>
+                    </div>
+                    <div>
+                        <h2 class="section-title">Trabajo Cotidiano</h2>
+                        <p id="cot-pct-label"
+                            class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">Componente: --%
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right bg-blue-50/50 px-6 py-3 rounded-3xl border border-blue-100 shadow-sm">
+                    <p class="text-xl font-black text-blue-600" id="cot-nota-final">0.0%</p>
+                    <p class="text-[9px] font-bold text-blue-300 uppercase tracking-widest">Nota Obtenida</p>
+                </div>
+            </div>
+            <div id="cot-history" class="space-y-12"></div>
+        </div>
+
+        <!-- TAREAS -->
+        <div class="card-premium"
+            style="--primary-light: var(--purple-light); --primary-vibrant: var(--purple-vibrant);">
+            <div class="flex justify-between items-start mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="icon-vibrant"><i data-lucide="book" class="w-5 h-5 icon-vibrant"></i></div>
+                    <div>
+                        <h2 class="section-title">Historial de Tareas</h2>
+                        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">Componente: 10%
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right bg-purple-50/50 px-6 py-3 rounded-3xl border border-purple-100 shadow-sm">
+                    <p class="text-xl font-black text-purple-600" id="task-nota-final">0.0%</p>
+                    <p class="text-[9px] font-bold text-purple-300 uppercase tracking-widest">Nota Obtenida</p>
+                </div>
+            </div>
+            <div id="task-history" class="space-y-12"></div>
+        </div>
+
+        <!-- PRUEBAS -->
+        <div class="card-premium" style="--primary-light: var(--rose-light); --primary-vibrant: var(--rose-vibrant);">
+            <div class="flex justify-between items-start mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="icon-vibrant"><i data-lucide="file-text" class="w-5 h-5 icon-vibrant"></i></div>
+                    <div>
+                        <h2 class="section-title">Historial de Pruebas</h2>
+                        <p id="test-pct-label"
+                            class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">Componente: --%
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right bg-rose-50/50 px-6 py-3 rounded-3xl border border-rose-100 shadow-sm">
+                    <p class="text-xl font-black text-rose-600" id="test-nota-final">0.0%</p>
+                    <p class="text-[9px] font-bold text-rose-300 uppercase tracking-widest">Nota Obtenida</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto rounded-3xl border border-slate-100 border-rose-100/30">
+                <table class="w-full text-center">
+                    <thead
+                        class="text-[9px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">
+                        <tr>
+                            <th class="p-4 text-left">Prueba</th>
+                            <th>Fecha</th>
+                            <th>Puntos Obt.</th>
+                            <th>Calificación</th>
+                            <th>% Obtenido</th>
+                        </tr>
+                    </thead>
+                    <tbody id="test-body" class="text-[11px] font-bold text-slate-600"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RESUMEN ANUAL -->
+        <div class="card-premium" id="annual-summary-container">
+            <h2 class="text-xl font-extrabold text-slate-800 mb-8 uppercase tracking-tight">
+                <i data-lucide="award" class="w-6 h-6 icon-vibrant inline-block mr-2 mb-1"></i> Resumen de Calificación
+                Anual
+            </h2>
+            <div
+                class="flex justify-between items-center bg-slate-50/50 p-8 rounded-[3rem] border border-slate-100 shadow-inner">
+                <div class="flex gap-12 border-r border-slate-200 pr-12">
+                    <div class="text-center">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">I Periodo (50%)
+                        </p>
+                        <p class="text-lg font-black text-slate-800" id="ann-p1">0.00</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">II Periodo (50%)
+                        </p>
+                        <p class="text-lg font-black text-slate-800" id="ann-p2">0.00</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-10">
+                    <div class="text-center">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nota Final Anual
+                        </p>
+                        <p class="text-3xl font-black text-slate-900 leading-none" id="ann-final">0.00</p>
+                    </div>
+                    <div class="text-center" id="ann-status-box"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div> ```
+<script>
+    const state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
+    const sId = localStorage.getItem('temp_report_student_id');
+    const lvl = localStorage.getItem('temp_report_level');
+    const period = state.settings?.currentPeriod || '1';
+
+    function init() {
+        const student = (state.students?.[lvl] || []).find(s => s.id === sId);
+        if (!student) return;
+
+        // Header Web
+        document.getElementById('student-header-name').innerText = student.name;
+
+        // Header PDF
+        document.getElementById('pdf-student-name').innerText = student.name;
+        document.getElementById('pdf-inst').innerText = state.admin?.institution || 'Sin institución';
+        document.getElementById('pdf-subject').innerText = state.admin?.subject || 'Sin asignatura';
+        document.getElementById('pdf-teacher').innerText = state.admin?.name || 'Sin docente';
+        document.getElementById('pdf-period').innerText = `Periodo ${period} - 2026`;
+
+        renderCompleteReport(student);
+        lucide.createIcons();
+    }
+
+    // MOTOR DE CÁLCULO DE ASISTENCIA (TABLA MEP)
+    function calculateAttendanceNota(studentId) {
+        const attData = state.attendance?.[period] || {};
+
+        // Filtramos solo fechas con lecciones reales para evitar "fantasmas"
+        const validDates = Object.keys(attData).filter(date => {
+            return Object.values(attData[date]).some(r => r.lessons > 0);
+        }).sort().reverse();
+
+        let totalLeccionesImpartidas = 0;
+        let aiLecciones = 0;
+        let ajLecciones = 0;
+        let tardiasCount = 0; // Contador de eventos de tardía
+        let historyHtml = "";
+
+        validDates.forEach(date => {
+            const dailyMax = Math.max(...Object.values(attData[date]).map(r => r.lessons || 0), 0);
+            totalLeccionesImpartidas += dailyMax;
+
+            const record = attData[date][studentId];
+            if (record && record.status !== 'P') {
+                if (record.status === 'AI') aiLecciones += record.lessons;
+                if (record.status === 'AJ') ajLecciones += record.lessons;
+                if (record.status === 'T') tardiasCount += 1; // Sumamos 1 evento
+
+                historyHtml += `
+                <div class="flex items-center gap-4 text-[10px] font-bold border-b border-slate-50 pb-2 mb-2">
+                    <span class="text-slate-300 w-20">${date}</span>
+                    <span class="badge-at ${record.status === 'AI' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}">
+                        ${record.status === 'AI' ? 'Ausencia Inj.' : record.status === 'AJ' ? 'Ausencia Just.' : 'Tardía'}
+                    </span>
+                    <span class="text-slate-400">${record.lessons} lecciones</span>
+                </div>`;
+            }
+        });
+
+        // REGLA MEP: Cada tardía equivale a 0.5 ausencias injustificadas
+        const ausenciasEquivalentes = aiLecciones + (tardiasCount * 0.5);
+
+        // Cálculo del porcentaje sobre el total de lecciones
+        const porcentajeInjustificado = totalLeccionesImpartidas > 0
+            ? (ausenciasEquivalentes / totalLeccionesImpartidas) * 100
+            : 0;
+
+        // Tabla de asignación de puntos (0% - 5%)
+        let notaAsistencia = 0;
+        if (porcentajeInjustificado < 10) notaAsistencia = 5;
+        else if (porcentajeInjustificado < 20) notaAsistencia = 4;
+        else if (porcentajeInjustificado < 30) notaAsistencia = 3;
+        else if (porcentajeInjustificado < 40) notaAsistencia = 2;
+        else if (porcentajeInjustificado < 50) notaAsistencia = 1;
+        else notaAsistencia = 0;
+
+        return {
+            nota: notaAsistencia,
+            porc: porcentajeInjustificado,
+            total: totalLeccionesImpartidas,
+            ai: aiLecciones,
+            aj: ajLecciones,
+            t: tardiasCount,
+            html: historyHtml
+        };
+    }
+
+    function calculateActivityMetrics(studentId, activity, type) {
+        const evals = type === 'task' ? state.task_evaluations : state.evaluations;
+        let pts = 0; let max = 0;
+        activity.skills.forEach((sk, skI) => {
+            sk.indicators.forEach((ind, inI) => {
+                max += 3;
+                let best = 0;
+                activity.dates.forEach(d => {
+                    const s = evals?.[activity.id]?.[d]?.[studentId]?.scores?.[`${skI}-${inI}`] || 0;
+                    if (s > best) best = s;
+                });
+                pts += best;
+            });
+        });
+        return { pts, max, nota: max > 0 ? (pts * 100) / max : 0 };
+    }
+
+    function renderCompleteReport(student) {
+        // A. ASISTENCIA
+        const resAtt = calculateAttendanceNota(student.id);
+        document.getElementById('at-badges').innerHTML = `
+                <span class="badge-at bg-red-50 text-red-500">AI: ${resAtt.ai}</span>
+                <span class="badge-at bg-blue-50 text-blue-500">AJ: ${resAtt.aj}</span>
+                <span class="badge-at bg-amber-50 text-amber-500">T: ${resAtt.t}</span>`;
+        document.getElementById('at-nota').innerText = resAtt.nota.toFixed(1) + "%";
+        document.getElementById('at-history').innerHTML = resAtt.html || "Sin registros.";
+
+        // B. COTIDIANO (40/45%)
+        const cotActs = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === student.section && a.period === period);
+        const valCot = (parseInt(lvl) >= 10) ? 40 : 45;
+        let sumCot = 0; let cotHtml = "";
+        cotActs.forEach(a => {
+            const r = calculateActivityMetrics(student.id, a, 'cot');
+            sumCot += r.nota;
+            cotHtml += renderCard(a, r, 'cot');
+        });
+        const pCot = cotActs.length > 0 ? (sumCot / cotActs.length * valCot / 100) : 0;
+        document.getElementById('cot-pct-label').innerText = `Componente: ${valCot}%`;
+        document.getElementById('cot-nota-final').innerText = pCot.toFixed(2) + "%";
+        document.getElementById('cot-history').innerHTML = cotHtml || "<p class='text-slate-300 italic text-center p-8'>Sin actividades registradas.</p>";
+
+        // C. TAREAS (10%)
+        const taskActs = Object.values(state.tasks || {}).filter(a => a.level === lvl && a.section === student.section && a.period === period);
+        let pObtT = 0; let pMaxT = 0; let taskHtml = "";
+        taskActs.forEach(a => {
+            const r = calculateActivityMetrics(student.id, a, 'task');
+            pObtT += r.pts; pMaxT += r.max;
+            taskHtml += renderCard(a, r, 'task');
+        });
+        const pTask = pMaxT > 0 ? (pObtT * 10 / pMaxT) : 0;
+        document.getElementById('task-nota-final').innerText = pTask.toFixed(2) + "%";
+        document.getElementById('task-history').innerHTML = taskHtml || "<p class='text-slate-300 italic text-center p-8'>Sin tareas registradas.</p>";
+
+        // D. PRUEBAS (40/50%)
+        const tests = Object.values(state.tests || {}).filter(t => t.level === lvl && t.section === student.section && t.period === period);
+        const valTest = (parseInt(lvl) >= 10) ? 50 : 40;
+        let pTest = 0; let testHtml = "";
+        tests.forEach(t => {
+            const ev = state.test_evals?.[t.id]?.[student.id] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
+            const mPts = ev.sig ? ev.sigPts : t.points;
+            const mPerc = ev.sig ? ev.sigPerc : t.percent;
+            const n100 = mPts > 0 ? (ev.pts * 100 / mPts) : 0;
+            const pG = (n100 * mPerc / 100);
+            pTest += pG;
+            testHtml += `<tr class="border-t border-slate-50"><td class="p-4 text-left font-bold text-slate-700">${t.name}</td><td>${t.date.split('-').reverse().join('/')}</td><td>${ev.pts}/${mPts}</td><td>${n100.toFixed(2)}</td><td class="bg-rose-50/30 text-rose-600 font-black">${pG.toFixed(2)}%</td></tr>`;
+        });
+        document.getElementById('test-pct-label').innerText = `Componente: ${valTest}%`;
+        document.getElementById('test-nota-final').innerText = pTest.toFixed(2) + "%";
+        document.getElementById('test-body').innerHTML = testHtml || "<tr><td colspan='5' class='p-10 italic text-slate-300'>Sin registros.</td></tr>";
+
+        // E. DESGLOSE
+        const total = pCot + pTask + pTest + resAtt.nota;
+        const comps = [
+            { n: 'Trabajo Cotidiano', v: pCot.toFixed(2) + '%', p: (pCot / valCot) * 100, c: 'bg-blue-500' },
+            { n: 'Tareas', v: pTask.toFixed(2) + '%', p: (pTask / 10) * 100, c: 'bg-purple-500' },
+            { n: 'Pruebas', v: pTest.toFixed(2) + '%', p: (pTest / valTest) * 100, c: 'bg-rose-500' },
+            { n: 'Asistencia', v: resAtt.nota.toFixed(2) + '%', p: (resAtt.nota / 5) * 100, c: 'bg-emerald-500' }
+        ];
+        document.getElementById('grades-breakdown').innerHTML = comps.map(c => `
+                <div class="space-y-2">
+                    <div class="flex justify-between items-end"><span class="text-[11px] font-bold text-slate-600">${c.n}</span><span class="text-xs font-black text-slate-800">${c.v}</span></div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill ${c.c}" style="width: ${c.p}%"></div></div>
+                </div>`).join('');
+        document.getElementById('final-period-grade').innerText = total.toFixed(2);
+
+        // --- F. CÁLCULO ANUAL (I P-50% / II P-50%) ---
+        const notaMinima = (parseInt(lvl) >= 10) ? 70 : 65;
+
+        // Calculamos la nota del periodo actual que tenemos en pantalla
+        const currentPeriodGrade = parseFloat(document.getElementById('final-period-grade').innerText) || 0;
+
+        // Lógica para obtener P1 y P2 del estado global
+        let p1 = 0; let p2 = 0;
+        if (period === '1') {
+            p1 = currentPeriodGrade;
+            p2 = state.grades?.[lvl]?.[student.id]?.p2 || 0;
+        } else {
+            p1 = state.grades?.[lvl]?.[student.id]?.p1 || 0;
+            p2 = currentPeriodGrade;
+        }
+
+        const p1Contrib = p1 * 0.5;
+        const p2Contrib = p2 * 0.5;
+        const notaAnual = p1Contrib + p2Contrib;
+
+        // Inyectar valores
+        document.getElementById('ann-p1').innerHTML = `${p1.toFixed(2)} <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-1 rounded ml-1">${p1Contrib.toFixed(2)}%</span>`;
+        document.getElementById('ann-p2').innerHTML = `${p2.toFixed(2)} <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-1 rounded ml-1">${p2Contrib.toFixed(2)}%</span>`;
+        document.getElementById('ann-final').innerText = notaAnual.toFixed(2);
+
+        const statusBox = document.getElementById('ann-status-box');
+        if (notaAnual >= notaMinima) {
+            statusBox.innerHTML = `
+                    <div class="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-2xl border border-green-100 text-green-600 shadow-sm">
+                        <i data-lucide="check-circle" class="w-4 h-4 icon-vibrant"></i>
+                        <span class="text-xs font-black uppercase tracking-widest">Aprobado</span>
+                    </div>
+                    <p class="text-[8px] font-bold text-slate-300 uppercase mt-2 text-center font-black">Mínimo: ${notaMinima}</p>`;
+        } else {
+            statusBox.innerHTML = `
+                    <div class="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-2xl border border-red-100 text-red-500 shadow-sm">
+                        <i data-lucide="alert-circle" class="w-4 h-4 icon-vibrant"></i>
+                        <span class="text-xs font-black uppercase tracking-widest">Aplazado</span>
+                    </div>
+                    <p class="text-[8px] font-bold text-slate-300 uppercase mt-2 text-center font-black">Mínimo: ${notaMinima}</p>`;
+        }
+    }
+
+    function renderCard(a, res, type) {
+        const evs = type === 'task' ? state.task_evaluations : state.evaluations;
+        // Definir color base según el tipo
+        const color = type === 'task' ? 'purple' : 'blue';
+
+        const firstDate = a.dates[0];
+        const record = evs?.[a.id]?.[firstDate]?.[sId];
+        const observation = record?.observations || "Sin observaciones registradas.";
+
+        return `
+    <div class="border-t border-slate-100 pt-8 first:border-0 first:pt-0">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <p class="text-sm font-black text-slate-800 uppercase tracking-tight">${a.name}</p>
+                <div class="flex gap-3 mt-1">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Puntaje: ${res.pts}/${res.max}</p>
+                    <span class="text-slate-200">|</span>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Fecha: ${firstDate.split('-').reverse().join('/')}</p>
+                </div>
+            </div>
+            <div class="bg-${color}-50 text-${color}-600 px-6 py-2 rounded-2xl font-black text-xs border border-${color}-100">
+                Nota: ${Math.round(res.nota)}
+            </div>
+        </div>
+        
+        <div class="overflow-hidden rounded-3xl border border-slate-100 border-${color}-100/30 mb-6">
+            <table class="w-full table-rubric">
+                <thead>
+                    <tr>
+                        <th class="text-left bg-slate-50/50">Indicador</th>
+                        <th class="bg-slate-50/50">1</th>
+                        <th class="bg-slate-50/50">2</th>
+                        <th class="bg-slate-50/50">3</th>
+                        <th class="bg-slate-50/50">Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${a.skills.flatMap((sk, skI) => sk.indicators.map((ind, inI) => {
+            let best = 0;
+            a.dates.forEach(d => {
+                const s = evs?.[a.id]?.[d]?.[sId]?.scores?.[`${skI}-${inI}`] || 0;
+                if (s > best) best = s;
+            });
+            const achievedClass = `bg-${color}-50 border-${color}-100 text-${color}-600 font-bold rounded-lg shadow-sm`;
+            return `
+                        <tr>
+                            <td class="font-bold text-slate-700">${ind.name}</td>
+                            <td class="${best == 1 ? achievedClass : 'text-slate-400'} text-center p-2 transition-all">${ind.c1}</td>
+                            <td class="${best == 2 ? achievedClass : 'text-slate-400'} text-center p-2 transition-all">${ind.c2}</td>
+                            <td class="${best == 3 ? achievedClass : 'text-slate-400'} text-center p-2 transition-all">${ind.c3}</td>
+                            <td class="text-center font-black text-slate-800 bg-${color}-50/10">${best || '-'}</td>
+                        </tr>`;
+        })).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="bg-slate-50/30 p-6 rounded-[2rem] border border-slate-100 flex gap-4 items-start">
+            <div class="p-2 bg-white rounded-xl shadow-sm"><i data-lucide="message-square" class="w-4 h-4 icon-vibrant"></i></div>
+            <div class="text-left">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Retroalimentación Docente</p>
+                <p class="text-[11px] text-slate-600 italic leading-relaxed font-medium">"${observation}"</p>
+            </div>
+        </div>
+    </div>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+
+</html>

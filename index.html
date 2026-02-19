@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .page-registro .nav-active {
+            background: var(--primary-light);
+            color: var(--primary-vibrant);
+            box-shadow: var(--nm-shadow-in);
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen page-registro">
+
+    <aside
+        class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group">
+        <div class="flex flex-col gap-3 p-4 mt-6">
+            <a href="config.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all"
+                id="nav-config">
+                <i data-lucide="settings"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
+            </a>
+            <a href="index.html" class="flex items-center gap-4 p-3 rounded-2xl nav-active">
+                <i data-lucide="layout-dashboard"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
+            </a>
+            <a href="estudiantes.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="users"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
+            </a>
+            <a href="bitacora.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book-open"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora</span>
+            </a>
+            <a href="calendario.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Calendario</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-10">
+        <header class="page-title mb-12 flex items-center justify-between border-b border-slate-100 pb-6">
+
+            <div>
+                <h1><i data-lucide="layout-dashboard" class="title-icon"></i> Registro 2026</h1>
+                <div class="flex gap-4 mt-1">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="home" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-inst">---</span>
+                    </p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="bookmark" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-subject">---</span>
+                    </p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="user" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-teacher">---</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
+                    <select id="level-select" onchange="updateSectionSelector()"
+                        class="text-xs font-bold text-slate-600 outline-none">
+                        <option value="7">7°</option>
+                        <option value="8">8°</option>
+                        <option value="9">9°</option>
+                        <option value="10">10°</option>
+                        <option value="11">11°</option>
+                    </select>
+                    <span class="text-slate-200">|</span>
+                    <select id="section-select" onchange="renderCards()"
+                        class="text-xs font-bold text-slate-600 outline-none"></select>
+                </div>
+
+                <span class="w-px h-4 bg-slate-100 mx-1"></span>
+
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Periodo</span>
+                    <select id="period-select" onchange="updatePeriod()"
+                        class="text-xs font-bold text-blue-500 outline-none bg-transparent">
+                        <option value="1">I Periodo</option>
+                        <option value="2">II Periodo</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <div id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        </div>
+    </main>
+
+    <script>
+        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {
+            admin: { name: 'Docente', institution: 'Institución', subject: 'Asignatura' },
+            groups: [],
+            students: {},
+            settings: { currentPeriod: "1" }
+        };
+
+        function updatePeriod() {
+            const period = document.getElementById('period-select').value;
+            state.settings = state.settings || {};
+            state.settings.currentPeriod = period;
+            localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+
+            // Al cambiar periodo, las tarjetas se refrescan para mostrar datos de ese periodo
+            renderCards();
+        }
+
+        function initPeriod() {
+            if (state.settings && state.settings.currentPeriod) {
+                document.getElementById('period-select').value = state.settings.currentPeriod;
+            }
+        }
+
+        function init() {
+            initPeriod();
+            initGroupSelectors();
+        }
+
+        function initGroupSelectors() {
+            const savedLevel = localStorage.getItem('temp_current_level');
+            const savedSection = localStorage.getItem('temp_current_section');
+
+            if (savedLevel) {
+                document.getElementById('level-select').value = savedLevel;
+            }
+
+            // updateSectionSelector will fill the section dropdown
+            updateSectionSelector(savedSection);
+        }
+
+        function updateSectionSelector(sectionToSelect) {
+            const level = document.getElementById('level-select').value;
+            const sectionSelect = document.getElementById('section-select');
+            const definedGroups = state.groups || [];
+            const filtered = definedGroups.filter(g => g.startsWith(level + '-')).map(g => g.split('-')[1]);
+
+            if (filtered.length > 0) {
+                sectionSelect.innerHTML = filtered.map(sec => `<option value="${sec}">${level}-${sec}</option>`).join('');
+                if (sectionToSelect && filtered.includes(sectionToSelect)) {
+                    sectionSelect.value = sectionToSelect;
+                }
+            } else {
+                sectionSelect.innerHTML = `<option value="1">${level}-1</option>`;
+            }
+            renderCards();
+        }
+
+        function renderCards() {
+            const level = document.getElementById('level-select').value;
+            const section = document.getElementById('section-select').value;
+            const container = document.getElementById('cards-container');
+
+            localStorage.setItem('temp_current_level', level);
+            localStorage.setItem('temp_current_section', section);
+
+            const isDiv = (level === '10' || level === '11');
+            const pctCoti = isDiv ? '35%' : '45%';
+            const pctPruebas = isDiv ? '50%' : '40%';
+
+            const components = [
+                { title: 'Asistencia', desc: 'Registro y ausencias.', pct: '5%', icon: 'clock', color: 'emerald', link: 'asistencia.html' },
+                { title: 'Trabajo Cotidiano', desc: 'Actividades diarias.', pct: pctCoti, icon: 'clipboard-list', color: 'blue', link: 'cotidiano.html?rubro=cotidiano' },
+                { title: 'Tareas', desc: 'Asignaciones extraclase.', pct: '10%', icon: 'book', color: 'purple', link: 'tareas.html' },
+                { title: 'Pruebas', desc: 'Exámenes parciales.', pct: pctPruebas, icon: 'file-text', color: 'rose', link: 'pruebas.html' },
+            ];
+
+            container.innerHTML = components.map(c => `
+        <a href="${c.link}" class="card-premium relative overflow-hidden group">
+            <div class="icon-container" style="--primary-light: var(--${c.color}-light); --primary-vibrant: var(--${c.color}-vibrant);">
+                <i data-lucide="${c.icon}" class="w-6 h-6 icon-vibrant"></i>
+            </div>
+            <h3 class="card-title">${c.title}</h3>
+            <p class="card-text">${c.desc}</p>
+            <span class="inline-block px-4 py-2 bg-white border border-slate-100 text-[10px] font-black text-slate-600 rounded-2xl shadow-sm">
+                ${c.pct}
+            </span>
+        </a>
+    `).join('');
+
+            lucide.createIcons();
+
+            document.getElementById('info-inst').innerText = state.admin.institution || 'MEP';
+            document.getElementById('info-subject').innerText = state.admin.subject || 'Matemáticas';
+            document.getElementById('info-teacher').innerText = state.admin.name || '---';
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+
+</html>

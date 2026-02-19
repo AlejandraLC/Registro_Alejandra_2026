@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Estado del Grupo - Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .page-registro .nav-active {
+            background: var(--primary-light);
+            color: var(--primary-vibrant);
+            box-shadow: var(--nm-shadow-in);
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen page-registro">
+    <aside
+        class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group">
+        <div class="flex flex-col gap-3 p-4 mt-6">
+            <a href="config.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="users"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
+            </a>
+            <a href="index.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all">
+                <i data-lucide="settings"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
+            </a>
+            <a href="estudiantes.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all">
+                <i data-lucide="layout-dashboard"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
+            </a>
+            <a href="bitacora.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book-open"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora</span>
+            </a>
+            <a href="calendario.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Calendario</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-10">
+        <header class="mb-10 flex items-center justify-between border-b border-slate-100 pb-6">
+            <div>
+                <h1><i data-lucide="bar-chart-2" class="title-icon"></i> Estado de Grupo: <span id="group-tag"
+                        class="text-amber-500">--</span></h1>
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Gestión Central de Grupo
+                </p>
+            </div>
+            <button onclick="location.href='index.html'" class="btn-nm">
+                <i data-lucide="arrow-left" class="w-4 h-4 icon-vibrant"></i> Volver al Registro
+            </button>
+        </header>
+
+        <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Requieren Atención Inmediata
+        </h2>
+        <div id="attention-needed" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        </div>
+
+        <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Resumen de Evaluación</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card-premium">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-black text-slate-400 uppercase">Cotidiano</span>
+                    <i data-lucide="book-open" class="text-blue-500 w-5 h-5"></i>
+                </div>
+                <div id="cotidiano-summary"></div>
+            </div>
+            <div class="card-premium">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-black text-slate-400 uppercase">Tareas</span>
+                    <i data-lucide="pen-tool" class="text-amber-500 w-5 h-5"></i>
+                </div>
+                <div id="tareas-summary"></div>
+            </div>
+            <div class="card-premium">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-black text-slate-400 uppercase">Pruebas</span>
+                    <i data-lucide="file-text" class="text-indigo-500 w-5 h-5"></i>
+                </div>
+                <div id="pruebas-summary"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
+        const lvl = localStorage.getItem('temp_current_level') || '7';
+        const sec = localStorage.getItem('temp_current_section') || '1';
+        const period = state.settings?.currentPeriod || '1';
+
+        function init() {
+            document.getElementById('group-tag').innerText = `${lvl}-${sec}`;
+            checkAttentionItems();
+            renderRubricSummaries();
+            lucide.createIcons();
+        }
+
+        function checkAttentionItems() {
+            const container = document.getElementById('attention-needed');
+            let itemsHtml = "";
+
+            // 1. Buscar firmas pendientes en Pruebas de este grupo
+            const groupTests = Object.values(state.tests || {}).filter(t => t.level === lvl && t.section === sec && t.period === period);
+            groupTests.forEach(t => {
+                const evals = state.test_evals?.[t.id] || {};
+                const pending = Object.values(evals).filter(e => !e.isReturned).length;
+                if (pending > 0) {
+                    itemsHtml += `
+                    <div class="action-card border-l-4 border-l-red-400 flex justify-between items-center">
+                        <div>
+                            <span class="badge-alert">Faltan ${pending} firmas</span>
+                            <h4 class="font-bold text-slate-700 mt-1">${t.name}</h4>
+                        </div>
+                        <a href="pruebas.html" class="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-blue-500"><i data-lucide="arrow-right"></i></a>
+                    </div>`;
+                }
+            });
+
+            // 2. Buscar Tareas o Cotidiano con estudiantes sin calificar
+            // (Aquí se podría agregar lógica para ver si faltan puntos por asignar)
+
+            container.innerHTML = itemsHtml || '<p class="text-slate-300 italic text-xs">Todo al día por ahora.</p>';
+        }
+
+        function renderRubricSummaries() {
+            // Ejemplo de cómo mostrar cuántas prácticas llevas de cada una
+            const countC = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === sec && a.period === period).length;
+            document.getElementById('cotidiano-summary').innerHTML = `<p class="text-2xl font-black">${countC}</p><p class="text-[10px] text-slate-400">Prácticas registradas</p>`;
+
+            const countT = Object.values(state.tasks || {}).filter(a => a.level === lvl && a.section === sec && a.period === period).length;
+            document.getElementById('tareas-summary').innerHTML = `<p class="text-2xl font-black">${countT}</p><p class="text-[10px] text-slate-400">Tareas asignadas</p>`;
+
+            const countP = Object.values(state.tests || {}).filter(a => a.level === lvl && a.section === sec && a.period === period).length;
+            document.getElementById('pruebas-summary').innerHTML = `<p class="text-2xl font-black">${countP}</p><p class="text-[10px] text-slate-400">Pruebas aplicadas</p>`;
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estudiantes - Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .page-estudiantes .nav-active {
+            background: var(--primary-light);
+            color: var(--primary-vibrant);
+            box-shadow: var(--nm-shadow-in);
+        }
+
+        .table-premium {
+            background: #f8fafc;
+            border-radius: 2.5rem;
+            box-shadow: var(--nm-shadow-out);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen page-estudiantes">
+    <aside
+        class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group">
+        <div class="flex flex-col gap-3 p-4 mt-6">
+            <a href="config.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="settings"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
+            </a>
+            <a href="index.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all"
+                id="nav-config">
+                <i data-lucide="layout-dashboard"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
+            </a>
+            <a href="estudiantes.html" class="flex items-center gap-4 p-3 rounded-2xl nav-active">
+                <i data-lucide="users"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
+            </a>
+            <a href="bitacora.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book-open"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora</span>
+            </a>
+            <a href="calendario.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Calendario</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-10">
+        <header class="mb-10 flex items-center justify-between border-b border-slate-100 pb-6">
+            <div>
+                <h1><i data-lucide="users" class="title-icon"></i> Estudiantes 2026</h1>
+                <div class="flex gap-4 mt-1">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="home" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-inst">---</span>
+                    </p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="bookmark" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-subject">---</span>
+                    </p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="user" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-teacher">---</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Filtro Grupo</span>
+                <div class="flex items-center gap-2">
+                    <select id="level-filter" onchange="updateView()"
+                        class="text-xs font-bold text-slate-600 outline-none">
+                        <option value="7">7°</option>
+                        <option value="8">8°</option>
+                        <option value="9">9°</option>
+                        <option value="10">10°</option>
+                        <option value="11">11°</option>
+                    </select>
+                    <span class="text-slate-200">|</span>
+                    <select id="section-filter" onchange="renderStudents()"
+                        class="text-xs font-bold text-slate-600 outline-none"></select>
+                </div>
+            </div>
+        </header>
+        <div class="flex flex-wrap gap-4 mb-10 items-center justify-between">
+            <div class="flex gap-4">
+                <input type="text" id="new-id" placeholder="ID Estudiante" class="w-33">
+                <input type="text" id="new-name" placeholder="Nombre Completo" class="w-64">
+                <button onclick="addStudentManual()" class="btn-nm">
+                    <i data-lucide="plus" class="w-4 h-4 icon-vibrant"></i> Agregar
+                </button>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="downloadTemplate()" class="btn-nm">
+                    <i data-lucide="file-text" class="w-4 h-4 icon-vibrant"></i> Plantilla
+                </button>
+                <label class="btn-nm cursor-pointer">
+                    <i data-lucide="upload-cloud" class="w-4 h-4 icon-vibrant"></i> CSV
+                    <input type="file" class="hidden" accept=".csv" onchange="handleCSV(event)">
+                </label>
+                <button onclick="exportStudents()" class="btn-nm">
+                    <i data-lucide="download" class="w-4 h-4 icon-vibrant"></i> Exportar
+                </button>
+                <button onclick="clearAllStudents()" class="btn-nm"
+                    style="--primary-vibrant: #ef4444; --primary-light: #fee2e2;">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <div class="table-premium">
+            <table class="w-full text-left">
+                <thead class="card-text">
+                    <tr>
+                        <th class="p-5">N°</th>
+                        <th class="p-5">Identificación</th>
+                        <th class="p-5">Nombre del Estudiante</th>
+                        <th class="p-5 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="students-body" class="text-sm"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { students: {}, groups: [], admin: {} };
+
+        function init() {
+            const savedLevel = localStorage.getItem('temp_current_level');
+            const savedSection = localStorage.getItem('temp_current_section');
+
+            if (savedLevel) {
+                document.getElementById('level-filter').value = savedLevel;
+            }
+            updateView(savedSection);
+        }
+
+        function updateView(sectionToSelect) {
+            const lvl = document.getElementById('level-filter').value;
+            const secSelect = document.getElementById('section-filter');
+            const groups = (state.groups || []).filter(g => g.startsWith(lvl + '-')).map(g => g.split('-')[1]);
+
+            secSelect.innerHTML = groups.map(s => `<option value="${s}">${lvl}-${s}</option>`).join('') || `<option value="1">${lvl}-1</option>`;
+
+            if (sectionToSelect && groups.includes(sectionToSelect)) {
+                secSelect.value = sectionToSelect;
+            }
+
+            document.getElementById('info-inst').innerText = state.admin.institution || 'MEP';
+            document.getElementById('info-subject').innerText = state.admin.subject || 'Mate';
+            document.getElementById('info-teacher').innerText = state.admin.name || '---';
+
+            renderStudents();
+        }
+
+        function renderStudents() {
+            const lvl = document.getElementById('level-filter').value;
+            const sec = document.getElementById('section-filter').value;
+
+            localStorage.setItem('temp_current_level', lvl);
+            localStorage.setItem('temp_current_section', sec);
+
+            const list = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+
+            document.getElementById('students-body').innerHTML = list.map((s, i) => `
+        <tr class="border-t border-slate-50 group hover:bg-slate-50/50">
+            <td class="p-5 text-slate-300 font-bold text-xs">${i + 1}</td>
+            <td class="p-5 font-medium">${s.id}</td>
+            <td class="p-5 font-bold text-slate-700">${s.name}</td>
+            <td class="p-5 text-right flex justify-end gap-2">
+                <button onclick="viewStudentReport('${lvl}', '${s.id}')" class="text-slate-300 hover:text-blue-500 transition-colors" title="Ver Reporte">
+                    <i data-lucide="file-user" class="w-4 h-4"></i>
+                </button>
+                <button onclick="removeStudent('${lvl}','${s.id}')" class="text-slate-300 hover:text-red-500 transition-colors">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+            lucide.createIcons();
+        }
+
+        function addStudentManual() {
+            const id = document.getElementById('new-id').value.trim();
+            const name = document.getElementById('new-name').value.trim();
+            const lvl = document.getElementById('level-filter').value;
+            const sec = document.getElementById('section-filter').value;
+            if (!id || !name) return alert("Completa los datos");
+            if (!state.students[lvl]) state.students[lvl] = [];
+            state.students[lvl].push({ id, name, section: sec });
+            save();
+        }
+        function removeStudent(level, studentId) {
+            if (confirm("¿Eliminar a este estudiante? Esta acción no se puede deshacer.")) {
+                // Filtramos el array del nivel para quitar al estudiante con ese ID
+                state.students[level] = state.students[level].filter(s => s.id !== studentId);
+
+                // Guardamos los cambios y refrescamos la tabla
+                save();
+            }
+        }
+        function handleCSV(e) {
+            const file = e.target.files[0];
+            const lvl = document.getElementById('level-filter').value;
+            const sec = document.getElementById('section-filter').value;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const rows = evt.target.result.split('\n').slice(1);
+                if (!state.students[lvl]) state.students[lvl] = [];
+                rows.forEach(row => {
+                    const cols = row.split(';'); // Uso de punto y coma
+                    if (cols.length >= 2) {
+                        state.students[lvl].push({ id: cols[0].trim(), name: cols[1].trim(), section: sec });
+                    }
+                });
+                save();
+            };
+            reader.readAsText(file);
+        }
+
+        function downloadTemplate() {
+            const blob = new Blob(["id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia"], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "plantilla_estudiantes.csv";
+            a.click();
+        }
+
+        function clearAllStudents() {
+            if (confirm("¿Borrar TODOS los estudiantes?")) { state.students = {}; save(); }
+        }
+
+        function save() {
+            localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+            renderStudents();
+        }
+        function exportStudents() {
+            const lvl = document.getElementById('level-filter').value;
+            const sec = document.getElementById('section-filter').value;
+            const list = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+
+            if (list.length === 0) return alert("No hay estudiantes en este grupo para exportar.");
+
+            // Encabezados con punto y coma según tu solicitud
+            let csvContent = "id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia\n";
+
+            // Unimos los datos de cada estudiante
+            list.forEach(s => {
+                csvContent += `${s.id};${s.name};;;;\n`;
+            });
+
+            // Creamos el archivo para descarga
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Lista_Estudiantes_${lvl}-${sec}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        function viewStudentReport(level, studentId) {
+            // Guardamos temporalmente el estudiante seleccionado para que la página de reporte sepa a quién cargar
+            localStorage.setItem('temp_report_student_id', studentId);
+            localStorage.setItem('temp_report_level', level);
+            window.location.href = 'reporte-individual.html';
+        }
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
