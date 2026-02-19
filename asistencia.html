@@ -219,7 +219,11 @@
 
             // Sincronizar el input global de lecciones si ya hay registros para ese día
             const periodData = state.attendance?.[period]?.[date] || {};
-            const records = Object.values(periodData);
+            const groupStudentIds = new Set(students.map(s => s.id));
+            const records = Object.entries(periodData)
+                .filter(([id, _]) => groupStudentIds.has(id))
+                .map(([_, r]) => r);
+            
             if (records.length > 0) {
                 const dailyMax = Math.max(...records.map(r => r.lessons || 0), 0);
                 document.getElementById('day-lessons').value = dailyMax;
@@ -227,7 +231,7 @@
 
             const dayLec = parseInt(document.getElementById('day-lessons').value) || 2;
 
-            // Sumatoria total de lecciones dadas en el periodo
+            // Sumatoria total de lecciones dadas en el periodo (filtrado por grupo)
             const totalLecPeriodo = calculateTotalLessons();
             document.getElementById('total-lessons-period').innerText = totalLecPeriodo;
 
@@ -323,13 +327,26 @@
         function calculateTotalLessons() {
             let total = 0;
             const periodData = state.attendance?.[period] || {};
+            
+            // Obtenemos los IDs de los alumnos del grupo actual
+            const groupStudentIds = new Set((state.students[lvl] || [])
+                .filter(s => s.section === sec)
+                .map(s => s.id));
 
-            // Solo sumamos lecciones de fechas que realmente existen y tienen datos
+            // Solo sumamos lecciones de fechas que realmente tienen datos para ESTE grupo
             for (const date in periodData) {
-                const records = Object.values(periodData[date]);
-                if (records.length > 0) {
-                    // Buscamos el valor máximo de lecciones registrado en ese día
-                    const dailyMax = Math.max(...records.map(r => r.lessons || 0), 0);
+                const dailyRecords = periodData[date];
+                const groupRecords = [];
+                
+                for (const studentId in dailyRecords) {
+                    if (groupStudentIds.has(studentId)) {
+                        groupRecords.push(dailyRecords[studentId]);
+                    }
+                }
+
+                if (groupRecords.length > 0) {
+                    // Buscamos el valor máximo de lecciones registrado en ese día para el grupo
+                    const dailyMax = Math.max(...groupRecords.map(r => r.lessons || 0), 0);
                     total += dailyMax;
                 }
             }
@@ -360,8 +377,23 @@
 
         function deleteDate() {
             const date = document.getElementById('att-date').value;
-            if (confirm(`¿Eliminar los registros del día ${date}?`)) {
-                delete state.attendance[period][date];
+            if (confirm(`¿Eliminar los registros del día ${date} para este grupo?`)) {
+                if (state.attendance?.[period]?.[date]) {
+                    const groupStudentIds = new Set((state.students[lvl] || [])
+                        .filter(s => s.section === sec)
+                        .map(s => s.id));
+                    
+                    for (const id in state.attendance[period][date]) {
+                        if (groupStudentIds.has(id)) {
+                            delete state.attendance[period][date][id];
+                        }
+                    }
+                    
+                    // Si el objeto de la fecha queda vacío, lo eliminamos
+                    if (Object.keys(state.attendance[period][date]).length === 0) {
+                        delete state.attendance[period][date];
+                    }
+                }
                 save();
             }
         }
@@ -373,13 +405,19 @@
         function updateAllLessons() {
             const date = document.getElementById('att-date').value;
             const dayLec = parseInt(document.getElementById('day-lessons').value) || 0;
+            
+            const groupStudentIds = new Set((state.students[lvl] || [])
+                .filter(s => s.section === sec)
+                .map(s => s.id));
 
             if (state.attendance?.[period]?.[date]) {
                 const dailyRecords = state.attendance[period][date];
                 for (const id in dailyRecords) {
-                    // Si el registro previo es mayor al nuevo límite, lo bajamos
-                    if (dailyRecords[id].lessons > dayLec) {
-                        dailyRecords[id].lessons = dayLec;
+                    if (groupStudentIds.has(id)) {
+                        // Si el registro previo es mayor al nuevo límite, lo bajamos
+                        if (dailyRecords[id].lessons > dayLec) {
+                            dailyRecords[id].lessons = dayLec;
+                        }
                     }
                 }
             }

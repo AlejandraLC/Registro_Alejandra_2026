@@ -398,10 +398,17 @@
     // MOTOR DE CÁLCULO DE ASISTENCIA (TABLA MEP)
     function calculateAttendanceNota(studentId) {
         const attData = state.attendance?.[period] || {};
+        const student = (state.students?.[lvl] || []).find(s => s.id === studentId);
+        const studentSection = student?.section;
 
-        // Filtramos solo fechas con lecciones reales para evitar "fantasmas"
+        // IDs de todos los estudiantes en el mismo grupo para filtrar lecciones
+        const groupStudentIds = new Set((state.students?.[lvl] || [])
+            .filter(s => s.section === studentSection)
+            .map(s => s.id));
+
+        // Filtramos solo fechas que tienen lecciones para ESTE grupo
         const validDates = Object.keys(attData).filter(date => {
-            return Object.values(attData[date]).some(r => r.lessons > 0);
+            return Object.keys(attData[date]).some(id => groupStudentIds.has(id) && attData[date][id].lessons > 0);
         }).sort().reverse();
 
         let totalLeccionesImpartidas = 0;
@@ -411,7 +418,12 @@
         let historyHtml = "";
 
         validDates.forEach(date => {
-            const dailyMax = Math.max(...Object.values(attData[date]).map(r => r.lessons || 0), 0);
+            // Buscamos el máximo de lecciones del grupo para ese día
+            const groupRecords = Object.entries(attData[date])
+                .filter(([id, _]) => groupStudentIds.has(id))
+                .map(([_, r]) => r);
+
+            const dailyMax = groupRecords.length > 0 ? Math.max(...groupRecords.map(r => r.lessons || 0), 0) : 0;
             totalLeccionesImpartidas += dailyMax;
 
             const record = attData[date][studentId];
