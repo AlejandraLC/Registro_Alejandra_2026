@@ -352,9 +352,60 @@
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
             document.getElementById('grading-body').innerHTML = students.map(s => {
                 const best = calculateBestScores(s.id, a);
-                return `<tr><td class="p-4 font-bold text-slate-700">${s.name}</td>${renderIndicatorButtons(s.id, a, date)}<td class="p-4 font-bold">${best.pts}</td><td class="p-4 font-black text-blue-500">${Math.round(best.nota)}</td><td class="p-4"><input type="text" value="${getObs(s.id, a.id, date)}" onchange="saveObs('${s.id}','${a.id}',this.value)" class="input-soft w-full text-[10px]"></td></tr>`;
+                const obs = getObs(s.id, a.id, date);
+                const isNP = obs === "No presentó la tarea";
+
+                return `<tr>
+                    <td class="p-4 font-bold text-slate-700">
+                        <div class="flex items-center justify-between gap-4">
+                            <span class="${isNP ? 'opacity-40' : ''}">${s.name}</span>
+                            <div onclick="toggleSubmission('${s.id}','${a.id}')" 
+                                 class="relative inline-flex items-center cursor-pointer group shrink-0"
+                                 title="${isNP ? 'Marcar como Entregado' : 'Marcar como No Presentó'}">
+                                <div class="w-10 h-5 ${isNP ? 'bg-red-500' : 'bg-emerald-500'} rounded-full transition-colors duration-200 border-2 border-white shadow-sm ring-1 ring-slate-200"></div>
+                                <div class="absolute left-1 w-3 h-3 bg-white rounded-full transition-all duration-200 shadow-sm ${isNP ? 'translate-x-5' : 'translate-x-0'} flex items-center justify-center">
+                                    <i data-lucide="${isNP ? 'x' : 'check'}" class="w-2 h-2 ${isNP ? 'text-red-500' : 'text-emerald-500'} stroke-[4px]"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    ${renderIndicatorButtons(s.id, a, date)}
+                    <td class="p-4 font-bold ${isNP ? 'text-red-500' : ''}">${best.pts}</td>
+                    <td class="p-4 font-black ${isNP ? 'text-red-600' : 'text-blue-500'}">${Math.round(best.nota)}</td>
+                    <td class="p-4"><input type="text" value="${obs}" onchange="saveObs('${s.id}','${a.id}',this.value)" class="input-soft w-full text-[10px]" ${isNP ? 'readonly' : ''}></td>
+                </tr>`;
             }).join('');
             lucide.createIcons();
+        }
+
+        function toggleSubmission(sId, aId) {
+            const date = document.getElementById('select-grading-date').value;
+            const currentObs = getObs(sId, aId, date);
+            const isCurrentlyNP = currentObs === "No presentó la tarea";
+
+            if (!state.task_evaluations[aId]) state.task_evaluations[aId] = {};
+
+            const a = state.tasks[aId];
+
+            if (!isCurrentlyNP) {
+                // Cambiar a No Presentó
+                if (confirm("¿Marcar como 'No presentó'? Se borrarán las notas de esta tarea para este estudiante.")) {
+                    a.dates.forEach(d => {
+                        if (!state.task_evaluations[aId][d]) state.task_evaluations[aId][d] = {};
+                        state.task_evaluations[aId][d][sId] = { scores: {}, obs: "No presentó la tarea" };
+                    });
+                } else return;
+            } else {
+                // Cambiar a Entregado (limpiar observación)
+                a.dates.forEach(d => {
+                    if (state.task_evaluations[aId]?.[d]?.[sId]?.obs === "No presentó la tarea") {
+                        state.task_evaluations[aId][d][sId].obs = "";
+                    }
+                });
+            }
+
+            save();
+            renderGradingList();
         }
 
         function renderIndicatorButtons(sId, a, date) {
