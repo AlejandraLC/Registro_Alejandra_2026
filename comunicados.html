@@ -82,17 +82,27 @@
                 page-break-inside: avoid;
             }
 
-            .print-grid-green {
+            .print-grid-green,
+            .print-grid-yellow {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 10px;
+            }
+
+            .print-card-yellow {
+                border: 2px solid #eab308;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                height: 48.5vh;
+                box-sizing: border-box;
             }
 
             .print-full-yellow,
             .print-full-red {
                 display: flex;
                 flex-direction: column;
-                height: 100%;
+                height: 100vh;
             }
 
             .print-half {
@@ -289,6 +299,13 @@
 
                     <!-- Amarillo: Seguimiento -->
                     <div id="panel-yellow" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                        <div class="flex items-center gap-4 mb-2">
+                            <div class="w-1/3">
+                                <label class="card-text">Consecutivo #</label>
+                                <input type="number" id="yellow-consecutive" class="input-soft w-full mt-1"
+                                    placeholder="001">
+                            </div>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <label
                                 class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl hover:bg-white transition-all border border-transparent hover:border-amber-200 cursor-pointer">
@@ -307,12 +324,17 @@
                                     class="w-4 h-4">
                                 <span class="text-xs font-bold text-slate-700">Trabajo incompleto</span>
                             </label>
-                            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-transparent">
+                            <div
+                                class="flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-transparent">
                                 <input type="checkbox" name="yellow-item" id="check-absences"
                                     value="Ausencias injustificadas" class="w-4 h-4">
-                                <span class="text-xs font-bold text-slate-700">Ausencias:</span>
+                                <span class="text-xs font-bold text-slate-700 whitespace-nowrap">Ausencias:</span>
                                 <input type="number" id="absences-count"
-                                    class="input-soft !p-1 !rounded-md w-16 text-xs text-center" placeholder="Cant.">
+                                    class="input-soft !p-1 !rounded-md w-12 text-xs text-center" placeholder="Cant.">
+                                <span class="text-[10px] font-bold text-slate-500">de</span>
+                                <input type="number" id="lessons-count"
+                                    class="input-soft !p-1 !rounded-md w-12 text-xs text-center" placeholder="Tot.">
+                                <span class="text-[10px] font-bold text-slate-500">lecciones</span>
                             </div>
                         </div>
                         <div>
@@ -329,7 +351,12 @@
 
                     <!-- Rojo: Disciplinario -->
                     <div id="panel-red" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="card-text">Consecutivo #</label>
+                                <input type="number" id="red-consecutive" class="input-soft w-full mt-1"
+                                    placeholder="001">
+                            </div>
                             <div>
                                 <label class="card-text">Tipo de Falta</label>
                                 <select id="red-type" onchange="updateRedArticles()" class="input-soft w-full mt-1">
@@ -370,11 +397,19 @@
                         </div>
                     </div>
 
-                    <div class="pt-6 flex justify-end gap-4">
-                        <button onclick="window.print()"
-                            class="btn-nm px-12 py-4 shadow-lg hover:shadow-xl transition-all">
-                            <i data-lucide="printer"></i> Preparar Impresión
-                        </button>
+                    <div class="pt-6 flex flex-col items-end gap-3">
+                        <div class="flex gap-4">
+                            <button id="btn-register-print" onclick="registerAndPrint()"
+                                class="btn-nm px-8 py-3 bg-amber-500 text-white border-amber-600 shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+                                <i data-lucide="save"></i> Registrar y Imprimir
+                            </button>
+                            <button id="btn-just-print" onclick="window.print()"
+                                class="btn-nm px-8 py-3 shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+                                <i data-lucide="printer"></i> Solo Imprimir
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-medium italic">El registro permite ver el historial en
+                            la sección de Estudiantes.</p>
                     </div>
                 </section>
             </div>
@@ -410,9 +445,17 @@
         function init() {
             const savedLevel = localStorage.getItem('temp_current_level');
             const savedSection = localStorage.getItem('temp_current_section');
+            const savedRedConsecutive = localStorage.getItem('temp_red_consecutive');
+            const savedYellowConsecutive = localStorage.getItem('temp_yellow_consecutive');
 
             if (savedLevel) {
                 document.getElementById('level-filter').value = savedLevel;
+            }
+            if (savedRedConsecutive) {
+                document.getElementById('red-consecutive').value = savedRedConsecutive;
+            }
+            if (savedYellowConsecutive) {
+                document.getElementById('yellow-consecutive').value = savedYellowConsecutive;
             }
 
             updateSections(savedSection);
@@ -424,7 +467,15 @@
             document.getElementById('fault-date').value = today;
 
             // Listeners para sincronizar vista previa al escribir/cambiar
-            document.addEventListener('input', updatePrintPreview);
+            document.addEventListener('input', (e) => {
+                if (e.target.id === 'red-consecutive') {
+                    localStorage.setItem('temp_red_consecutive', e.target.value);
+                }
+                if (e.target.id === 'yellow-consecutive') {
+                    localStorage.setItem('temp_yellow_consecutive', e.target.value);
+                }
+                updatePrintPreview();
+            });
             document.addEventListener('change', updatePrintPreview);
 
             lucide.createIcons();
@@ -488,6 +539,21 @@
                 document.getElementById(`btn-priority-${type}`).className = `priority-btn px-4 py-2 rounded-xl border text-xs font-bold transition-all ${p === type ? 'active-' + type : ''}`;
                 document.getElementById(`panel-${type}`).classList.toggle('hidden', p !== type);
             });
+
+            // Update action buttons color
+            const btnReg = document.getElementById('btn-register-print');
+            const btnPrint = document.getElementById('btn-just-print');
+
+            if (p === 'green') {
+                btnReg.className = "btn-nm px-8 py-3 bg-green-500 text-white border-green-600 shadow-lg hover:shadow-xl transition-all flex items-center gap-2";
+                btnPrint.className = "btn-nm px-8 py-3 bg-white text-green-600 border-green-100 shadow-lg hover:shadow-xl transition-all flex items-center gap-2";
+            } else if (p === 'yellow') {
+                btnReg.className = "btn-nm px-8 py-3 bg-amber-500 text-white border-amber-600 shadow-lg hover:shadow-xl transition-all flex items-center gap-2";
+                btnPrint.className = "btn-nm px-8 py-3 bg-white text-amber-600 border-amber-100 shadow-lg hover:shadow-xl transition-all flex items-center gap-2";
+            } else if (p === 'red') {
+                btnReg.className = "btn-nm px-8 py-3 bg-red-600 text-white border-red-700 shadow-lg hover:shadow-xl transition-all flex items-center gap-2";
+                btnPrint.className = "btn-nm px-8 py-3 bg-white text-red-600 border-red-100 shadow-lg hover:shadow-xl transition-all flex items-center gap-2";
+            }
 
             if (p === 'red') {
                 setSelectionMode('single');
@@ -628,58 +694,70 @@
                 const itemsSelected = Array.from(document.querySelectorAll('input[name="yellow-item"]:checked')).map(cb => {
                     let text = cb.value;
                     if (text === 'Ausencias injustificadas') {
-                        const count = document.getElementById('absences-count').value;
-                        text += `: <strong>${count || '___'}</strong>`;
+                        const count = document.getElementById('absences-count').value || '___';
+                        const total = document.getElementById('lessons-count').value || '___';
+                        text = `<strong>${count} Ausencias</strong> de <strong>${total} lecciones</strong> impartidas`;
                     }
                     return text;
                 });
                 const other = document.getElementById('msg-yellow-other').value;
+                const yellowConsecutive = document.getElementById('yellow-consecutive').value || '___';
 
-                content = students.map(s => {
-                    const checkboxList = `
-                        <div style="margin: 10px 0;">
-                            <h4 style="text-transform: uppercase; font-weight: 900; margin-bottom: 5px; color: #a16207; font-size: 11px;">Seguimiento Académico/Conductual</h4>
+                const getYellowCard = (s, label) => `
+                    <div class="print-card-yellow" style="font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2px;">
+                            <div style="font-weight: 900; color: #eab308; font-size: 11px;">N° ${yellowConsecutive}</div>
+                            <div style="font-weight: 900; color: #eab308; font-size: 11px;">[ ${label} ]</div>
+                        </div>
+                        ${headerHtml}
+                        
+                        <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 4px 0; color: #a16207; border: 1px solid #eab308; padding: 2px; font-size: 13px !important;">SEGUIMIENTO ACADÉMICO/CONDUCTUAL</h3>
+
+                        <div style="font-size: 12px; line-height: 1.3; margin-bottom: 8px;">
+                            <p>Estimado(a) señor(a): <strong style="font-size: 13px;">${s.guardian}</strong></p>
+                            <p style="margin-top: 6px;">Se le comunica que el(la) estudiante <strong style="font-size: 13px;">${s.name}</strong>, de la sección: <strong>${fullSection}</strong>, el día <strong>${faultDateStr}</strong> ha presentado la(s) siguiente(s) situación(es):</p>
+                        </div>
+
+                        <div style="margin: 8px 0;">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
-                                ${itemsSelected.map(item => `<div style="font-size: 10px;"><span class="checkbox-custom">✓</span> ${item}</div>`).join('')}
-                                ${itemsSelected.length === 0 ? '<div style="font-size: 10px; color: #999;">(No se marcaron ítems específicos)</div>' : ''}
+                                ${itemsSelected.map(item => `<div style="font-size: 11px;"><span class="checkbox-custom" style="width:16px; height:16px; font-size:12px;">✓</span> ${item}</div>`).join('')}
+                                ${itemsSelected.length === 0 ? '<div style="font-size: 11px; color: #999;">(No se marcaron ítems específicos)</div>' : ''}
                             </div>
-                            ${other ? `<div style="font-size: 10px; margin-top: 8px; border-top: 1px dotted #ccc; padding-top: 5px;"><strong>Detalle adicional:</strong> ${other}</div>` : ''}
+                            ${other ? `<div style="font-size: 11px; margin-top: 8px; border-top: 1px dotted #ccc; padding-top: 5px;"><strong>Detalle:</strong> ${other}</div>` : ''}
+                        </div>
+
+                        <div style="font-size: 11px; margin-top: 8px; font-weight: 700; color: #444;">
+                            Favor realizar las acciones pertinentes como encargado legal.
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: auto;">
+                            <div class="signature-line" style="margin-top: 20px; font-size: 11px;">Firma Docente</div>
+                            <div class="signature-line" style="margin-top: 20px; font-size: 11px;">Recibido Estudiante</div>
+                            <div class="signature-line" style="margin-top: 20px; font-size: 11px;">Firma Padre/Encargado</div>
+                        </div>
+                    </div>
+                `;
+
+                let yellowGroupsHtml = '';
+                for (let i = 0; i < students.length; i += 2) {
+                    const studentA = students[i];
+                    const studentB = students[i + 1];
+
+                    let pageContent = getYellowCard(studentA, 'ORIGINAL') + getYellowCard(studentA, 'COPIA');
+                    if (studentB) {
+                        pageContent += getYellowCard(studentB, 'ORIGINAL') + getYellowCard(studentB, 'COPIA');
+                    } else {
+                        // Espacios vacíos si no hay segundo estudiante
+                        pageContent += '<div></div><div></div>';
+                    }
+
+                    yellowGroupsHtml += `
+                        <div class="print-grid-yellow" style="height: 100vh; page-break-after: always;">
+                            ${pageContent}
                         </div>
                     `;
-
-                    const getFullCard = (label) => `
-                        <div style="border: 2px solid #eab308; padding: 15px; flex-grow: 1; display: flex; flex-direction: column; font-family: inherit;">
-                            <div style="text-align: right; font-weight: 900; color: #eab308; font-size: 10px;">[ ${label} ]</div>
-                            ${headerHtml}
-                            
-                            <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 5px 0 10px 0; color: #a16207; border: 1px solid #eab308; padding: 2px; font-size: 12px !important;">SEGUIMIENTO ACADÉMICO/CONDUCTUAL</h3>
-
-                            <div style="font-size: 11px; line-height: 1.4; margin-bottom: 10px;">
-                                <p>Estimado(a) señor(a): <strong style="font-size: 12px;">${s.guardian}</strong></p>
-                                <p style="margin-top: 5px;">Se le comunica que el(la) estudiante <strong style="font-size: 12px;">${s.name}</strong>, de la sección: <strong>${fullSection}</strong>, el día <strong>${faultDateStr}</strong> ha presentado la(s) siguiente(s) situación(es):</p>
-                            </div>
-
-                            ${checkboxList}
-
-                            <div style="font-size: 10px; margin-top: 5px; font-weight: 700; color: #444;">
-                                Favor realizar las acciones pertinentes como encargado legal del estudiante.
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: auto;">
-                                <div class="signature-line">Firma Docente</div>
-                                <div class="signature-line">Recibido Estudiante</div>
-                                <div class="signature-line">Firma Padre/Encargado</div>
-                            </div>
-                        </div>
-                    `;
-
-                    return `
-                        <div class="print-full-yellow" style="height: 100vh; page-break-after: always;">
-                            <div class="print-half">${getFullCard('ORIGINAL')}</div>
-                            <div class="print-half">${getFullCard('COPIA')}</div>
-                        </div>
-                    `;
-                }).join('');
+                }
+                content = yellowGroupsHtml;
 
             } else if (currentPriority === 'red') {
                 const studentName = document.getElementById('student-select').options[document.getElementById('student-select').selectedIndex]?.text || '____________________';
@@ -689,11 +767,15 @@
                 const article = document.getElementById('red-article').value;
                 const facts = document.getElementById('msg-red-facts').value;
                 const action = document.getElementById('red-action').value;
+                const consecutive = document.getElementById('red-consecutive').value || '___';
                 const points = type === 'Muy Leve' ? '5' : '10';
 
                 const getCard = (label) => `
                     <div style="border: 2px solid #ef4444; padding: 10px; flex-grow: 1; display: flex; flex-direction: column; font-family: inherit;">
-                        <div style="text-align: right; font-weight: 900; color: #ef4444; font-size: 9px;">[ ${label} ]</div>
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2px;">
+                            <div style="font-weight: 900; color: #ef4444; font-size: 9px;">N° ${consecutive}</div>
+                            <div style="font-weight: 900; color: #ef4444; font-size: 9px;">[ ${label} ]</div>
+                        </div>
                         ${headerHtml}
                         
                         <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 2px 0 5px 0; color: #b91c1c; border: 1px solid #ef4444; padding: 1px; font-size: 11px !important;">NOTIFICACIÓN DISCIPLINARIA</h3>
@@ -725,7 +807,7 @@
                         </div>
 
                         <div style="font-size: 9px; margin-top: 5px; font-weight: 700; color: #444;">
-                            Favor realizar las acciones pertinentes como encargado legal del estudiante y dar seguimiento al debido proceso.
+                            Favor realizar las acciones pertinentes como encargado legal del estudiante y dar seguimiento al debido proceso. Recuerde que cuenta con tres días hábiles a partir de la fecha de emisión de esta boleta para realizar el descargo y ofrecer pruebas que juzgue oportunas, según el Reglamento de Evaluación de los Aprendizajes, vigente
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: auto;">
@@ -737,7 +819,7 @@
                 `;
 
                 content = `
-                    <div class="print-full-red" style="height: 100vh;">
+                    <div class="print-full-red">
                         <div class="print-half">${getCard('ORIGINAL')}</div>
                         <div class="print-half">${getCard('COPIA')}</div>
                     </div>
@@ -745,6 +827,71 @@
             }
 
             printArea.innerHTML = content;
+        }
+
+        function registerAndPrint() {
+            const today = document.getElementById('comm-date').value;
+            const lvl = document.getElementById('level-filter').value;
+
+            if (!state.commHistory) state.commHistory = {};
+
+            if (currentPriority === 'yellow') {
+                const itemsSelected = Array.from(document.querySelectorAll('input[name="yellow-item"]:checked')).map(cb => {
+                    let text = cb.value;
+                    if (text === 'Ausencias injustificadas') {
+                        const count = document.getElementById('absences-count').value || '0';
+                        const total = document.getElementById('lessons-count').value || '0';
+                        text = `${count} Ausencias de ${total} lecciones`;
+                    }
+                    return text;
+                });
+                const other = document.getElementById('msg-yellow-other').value;
+                const consecutive = document.getElementById('yellow-consecutive').value;
+
+                let selectedStudents = [];
+                if (selectionMode === 'single') {
+                    const id = document.getElementById('student-select').value;
+                    if (id) selectedStudents.push(id);
+                } else {
+                    document.querySelectorAll('input[name="group-student"]:checked').forEach(cb => {
+                        selectedStudents.push(cb.value);
+                    });
+                }
+
+                selectedStudents.forEach(id => {
+                    if (!state.commHistory[id]) state.commHistory[id] = [];
+                    state.commHistory[id].push({
+                        date: today,
+                        type: 'Amarillo',
+                        consecutive: consecutive,
+                        details: itemsSelected.join(', '),
+                        other: other
+                    });
+                });
+
+            } else if (currentPriority === 'red') {
+                const id = document.getElementById('student-select').value;
+                if (!id) return alert("Seleccione un estudiante");
+
+                const type = document.getElementById('red-type').value;
+                const article = document.getElementById('red-article').value;
+                const facts = document.getElementById('msg-red-facts').value;
+                const action = document.getElementById('red-action').value;
+                const consecutive = document.getElementById('red-consecutive').value;
+
+                if (!state.commHistory[id]) state.commHistory[id] = [];
+                state.commHistory[id].push({
+                    date: today,
+                    type: 'Rojo',
+                    consecutive: consecutive,
+                    details: `${type} - ${article}`,
+                    facts: facts,
+                    action: action
+                });
+            }
+
+            localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+            window.print();
         }
 
         function toggleSidebar() {

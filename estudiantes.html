@@ -159,6 +159,40 @@
         </div>
     </main>
 
+    <!-- Modal de Historial de Comunicados -->
+    <div id="modal-history"
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                        <i data-lucide="history" class="text-blue-500"></i> Historial de Comunicados
+                    </h2>
+                    <p id="history-student-name"
+                        class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Estudiante</p>
+                </div>
+                <button onclick="closeHistory()"
+                    class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+                <div id="history-content" class="space-y-4">
+                    <!-- Dinámico -->
+                </div>
+                <div id="history-empty" class="hidden text-center py-10">
+                    <i data-lucide="message-square-off" class="w-12 h-12 text-slate-200 mx-auto mb-3"></i>
+                    <p class="text-slate-400 font-medium">No hay comunicados registrados para este estudiante.</p>
+                </div>
+            </div>
+            <div class="p-6 bg-slate-50/50 border-t border-slate-100 text-right">
+                <button onclick="closeHistory()"
+                    class="btn-nm px-6 py-2 text-xs font-bold uppercase tracking-widest">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { students: {}, groups: [], admin: {} };
 
@@ -208,10 +242,13 @@
             <td class="p-5 font-bold text-slate-700">${s.name}</td>
             <td class="p-5 italic text-slate-500 text-xs">${s.encargado || '---'}</td>
             <td class="p-5 text-right flex justify-end gap-2">
+                <button onclick="showHistory('${s.id}', '${s.name}')" class="text-slate-300 hover:text-blue-500 transition-colors" title="Historial de Comunicados">
+                    <i data-lucide="history" class="w-4 h-4"></i>
+                </button>
                 <button onclick="editStudent('${lvl}', '${s.id}')" class="text-slate-300 hover:text-amber-500 transition-colors" title="Editar Estudiante">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
-                <button onclick="viewStudentReport('${lvl}', '${s.id}')" class="text-slate-300 hover:text-blue-500 transition-colors" title="Ver Reporte">
+                <button onclick="viewStudentReport('${lvl}', '${s.id}')" class="text-slate-300 hover:text-indigo-500 transition-colors" title="Ver Reporte">
                     <i data-lucide="file-user" class="w-4 h-4"></i>
                 </button>
                 <button onclick="removeStudent('${lvl}','${s.id}')" class="text-slate-300 hover:text-red-500 transition-colors" title="Eliminar">
@@ -364,6 +401,49 @@
 
             safeDownloadCSV(csvContent, `Lista_Estudiantes_${lvl}-${sec}.csv`);
         }
+        function showHistory(id, name) {
+            document.getElementById('history-student-name').innerText = name;
+            const history = (state.commHistory || {})[id] || [];
+            const content = document.getElementById('history-content');
+            const empty = document.getElementById('history-empty');
+
+            content.innerHTML = '';
+
+            if (history.length === 0) {
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+                history.reverse().forEach(comm => {
+                    const card = document.createElement('div');
+                    card.className = `p-4 rounded-3xl border ${comm.type === 'Rojo' ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`;
+
+                    const dateParts = comm.date.split('-');
+                    const dateFormatted = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[10px] font-black uppercase tracking-widest ${comm.type === 'Rojo' ? 'text-red-500' : 'text-amber-600'}">
+                                ${comm.type} - N° ${comm.consecutive || '---'}
+                            </span>
+                            <span class="text-[9px] font-bold text-slate-400">${dateFormatted}</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-700 leading-tight">${comm.details}</p>
+                        ${comm.other ? `<p class="text-[10px] mt-2 text-slate-500 italic">Nota: ${comm.other}</p>` : ''}
+                        ${comm.facts ? `<p class="text-[10px] mt-2 text-slate-500 italic">Hechos: ${comm.facts}</p>` : ''}
+                        ${comm.action ? `<p class="text-[10px] mt-1 text-slate-600 font-bold uppercase">Acción: ${comm.action}</p>` : ''}
+                    `;
+                    content.appendChild(card);
+                });
+            }
+
+            document.getElementById('modal-history').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeHistory() {
+            document.getElementById('modal-history').classList.add('hidden');
+        }
+
         function viewStudentReport(level, studentId) {
             // Guardamos temporalmente el estudiante seleccionado para que la página de reporte sepa a quién cargar
             localStorage.setItem('temp_report_student_id', studentId);
@@ -372,6 +452,10 @@
         }
         function toggleSidebar() {
             document.body.classList.toggle('sidebar-expanded');
+        }
+        function save() {
+            localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+            renderStudents();
         }
         document.addEventListener('DOMContentLoaded', init);
     </script>

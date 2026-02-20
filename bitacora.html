@@ -200,10 +200,37 @@
                             t.level === lvl && t.section === sec && t.date === date)
                             .map(t => ({ ...t, type: 'test', icon: 'file-text', label: 'Prueba', color: 'rose', link: 'pruebas.html' }));
 
-                        if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || tests.length > 0) {
+                        // Buscar comunicados del día para estudiantes de esta sección
+                        const sectionStudentIds = (state.students[lvl] || []).filter(s => s.section === sec).map(s => s.id);
+                        const comms = [];
+                        sectionStudentIds.forEach(id => {
+                            const studentComms = (state.commHistory?.[id] || []).filter(c => c.date === date);
+                            studentComms.forEach(c => {
+                                comms.push({
+                                    name: `Envío de Comunicado ${c.type} (N° ${c.consecutive || '---'})`,
+                                    label: 'Comunicado',
+                                    icon: 'message-square',
+                                    color: 'amber',
+                                    link: 'comunicados.html'
+                                });
+                            });
+                        });
+
+                        // Eliminar duplicados si el mismo comunicado se envió a varios (como en modo grupal)
+                        const uniqueComms = [];
+                        const seenComms = new Set();
+                        comms.forEach(c => {
+                            const key = `${c.name}`;
+                            if (!seenComms.has(key)) {
+                                uniqueComms.push(c);
+                                seenComms.add(key);
+                            }
+                        });
+
+                        if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || tests.length > 0 || uniqueComms.length > 0) {
                             hayActividadTotal = true;
 
-                            const combinedActivities = [...cot, ...tasks, ...tests];
+                            const combinedActivities = [...cot, ...tasks, ...tests, ...uniqueComms];
 
                             // AQUÍ EMPIEZA EL DISEÑO CON ORILLAS
                             html += `
