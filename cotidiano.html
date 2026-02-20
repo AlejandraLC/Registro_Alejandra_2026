@@ -793,7 +793,13 @@
             const table = document.getElementById('general-report-table');
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
             const acts = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === sec && a.period === period);
-            const porcComponente = (parseInt(lvl) >= 10) ? 35 : 45;
+
+            // Obtener porcentajes dinámicos
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const porcComponente = (parseInt(lvl) >= 10) ? p.diversificado.coti : p.iiiCiclo.coti;
 
             // Actualizar info del periodo
             const displayPeriod = period === '1' ? 'I' : period === '2' ? 'II' : period;

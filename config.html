@@ -18,6 +18,29 @@
             color: var(--primary-vibrant);
             box-shadow: var(--nm-shadow-in);
         }
+
+        .input-soft-compact {
+            background: #f1f5f9 !important;
+            border: none !important;
+            border-radius: 1rem !important;
+            padding: 0.6rem 1rem !important;
+            box-shadow: var(--nm-shadow-in) !important;
+            outline: none !important;
+            width: 100%;
+            text-align: center;
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: var(--primary-vibrant);
+        }
+
+        /* Reducir padding de las tarjetas de porcentajes para que quepan mejor */
+        .card-cycle {
+            padding: 1.25rem !important;
+            background: #f8fafc;
+            border-radius: 2rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: var(--nm-shadow-out);
+        }
     </style>
 </head>
 
@@ -79,29 +102,29 @@
                     Información técnica
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="card-text">Nombre del Docente</label>
+                    <div class="flex flex-col">
+                        <label class="card-text ml-2">Nombre del Docente</label>
                         <input type="text" id="conf-name" class="input-soft mt-1" placeholder="Nombre completo">
                     </div>
-                    <div>
-                        <label class="card-text">Institución</label>
+                    <div class="flex flex-col">
+                        <label class="card-text ml-2">Institución</label>
                         <input type="text" id="conf-inst" class="input-soft mt-1"
                             placeholder="Nombre del Centro Educativo">
                     </div>
-                    <div>
-                        <label class="card-text">Materia</label>
+                    <div class="flex flex-col">
+                        <label class="card-text ml-2">Materia</label>
                         <input type="text" id="conf-subject" class="input-soft mt-1" placeholder="Asignatura">
                     </div>
-                    <div>
-                        <label class="card-text">Curso Lectivo</label>
+                    <div class="flex flex-col">
+                        <label class="card-text ml-2">Curso Lectivo</label>
                         <input type="text" id="conf-year" class="input-soft mt-1" placeholder="Ej: 2026">
                     </div>
-                    <div>
-                        <label class="card-text">Supervisión Educativa Circuito</label>
+                    <div class="flex flex-col">
+                        <label class="card-text ml-2">Supervisión Educativa Circuito</label>
                         <input type="text" id="conf-circuit" class="input-soft mt-1" placeholder="Ej: 01">
                     </div>
-                    <div>
-                        <label class="card-text">Dirección Regional de Educación</label>
+                    <div class="flex flex-col">
+                        <label class="card-text ml-2">Dirección Regional de Educación</label>
                         <input type="text" id="conf-dre" class="input-soft mt-1" placeholder="Ej: Puriscal">
                     </div>
                 </div>
@@ -132,6 +155,72 @@
                 </div>
             </section>
 
+            <section class="card-premium">
+                <h2 class="card-title">
+                    <div class="icon-vibrant">
+                        <i data-lucide="percent"></i>
+                    </div>
+                    Porcentajes por Ciclo
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- III Ciclo -->
+                    <div class="card-cycle space-y-2">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <i data-lucide="graduation-cap" class="icon-vibrant"></i> III Ciclo (7°, 8°, 9°)
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Cotidiano (%)</label>
+                                <input type="number" id="pct-iii-coti" class="input-soft-compact mt-1" placeholder="45">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Pruebas (%)</label>
+                                <input type="number" id="pct-iii-test" class="input-soft-compact mt-1" placeholder="40">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Tareas (%)</label>
+                                <input type="number" id="pct-iii-task" class="input-soft-compact mt-1" placeholder="10">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Asistencia
+                                    (%)</label>
+                                <input type="number" id="pct-iii-att" class="input-soft-compact mt-1" placeholder="5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Diversificado -->
+                    <div class="card-cycle space-y-2">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <i data-lucide="award" class="icon-vibrant"></i> Diversificado (10°, 11°)
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Cotidiano (%)</label>
+                                <input type="number" id="pct-div-coti" class="input-soft-compact mt-1" placeholder="35">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Pruebas (%)</label>
+                                <input type="number" id="pct-div-test" class="input-soft-compact mt-1" placeholder="50">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Tareas (%)</label>
+                                <input type="number" id="pct-div-task" class="input-soft-compact mt-1" placeholder="10">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Asistencia
+                                    (%)</label>
+                                <input type="number" id="pct-div-att" class="input-soft-compact mt-1" placeholder="5">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[9px] font-medium text-slate-400 mt-4 italic">
+                    <i data-lucide="info" class="w-3 h-3 inline"></i> Nota: La suma de cada ciclo debe ser normalmente
+                    100%. Estas configuraciones se aplicarán a todos los cálculos del registro.
+                </p>
+            </section>
+
             <section class="card-config border-amber-50 bg-amber-50/5">
                 <h2 class="card-title">
                     <div class="icon-vibrant">
@@ -159,7 +248,7 @@
     </main>
 
     <script>
-        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { admin: {}, groups: [], students: {} };
+        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { admin: {}, groups: [], students: {}, settings: {} };
         function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -195,6 +284,22 @@
             document.getElementById('conf-year').value = state.admin.year || '';
             document.getElementById('conf-circuit').value = state.admin.circuit || '';
             document.getElementById('conf-dre').value = state.admin.dre || 'Puriscal';
+
+            // Cargar porcentajes
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+
+            document.getElementById('pct-iii-coti').value = p.iiiCiclo.coti;
+            document.getElementById('pct-iii-test').value = p.iiiCiclo.test;
+            document.getElementById('pct-iii-task').value = p.iiiCiclo.task;
+            document.getElementById('pct-iii-att').value = p.iiiCiclo.att;
+
+            document.getElementById('pct-div-coti').value = p.diversificado.coti;
+            document.getElementById('pct-div-test').value = p.diversificado.test;
+            document.getElementById('pct-div-task').value = p.diversificado.task;
+            document.getElementById('pct-div-att').value = p.diversificado.att;
 
             renderGroups();
             lucide.createIcons();
@@ -257,6 +362,24 @@
                 circuit: document.getElementById('conf-circuit').value,
                 dre: document.getElementById('conf-dre').value
             };
+
+            // Guardar porcentajes
+            state.settings = state.settings || {};
+            state.settings.percentages = {
+                iiiCiclo: {
+                    coti: parseFloat(document.getElementById('pct-iii-coti').value) || 45,
+                    test: parseFloat(document.getElementById('pct-iii-test').value) || 40,
+                    task: parseFloat(document.getElementById('pct-iii-task').value) || 10,
+                    att: parseFloat(document.getElementById('pct-iii-att').value) || 5
+                },
+                diversificado: {
+                    coti: parseFloat(document.getElementById('pct-div-coti').value) || 35,
+                    test: parseFloat(document.getElementById('pct-div-test').value) || 50,
+                    task: parseFloat(document.getElementById('pct-div-task').value) || 10,
+                    att: parseFloat(document.getElementById('pct-div-att').value) || 5
+                }
+            };
+
             localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
             window.location.href = 'index.html';
         }

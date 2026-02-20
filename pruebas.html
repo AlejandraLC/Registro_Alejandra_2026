@@ -157,8 +157,12 @@
         const sec = localStorage.getItem('temp_current_section') || '1';
         const period = state.settings?.currentPeriod || '1';
 
-        // El tope del componente según el nivel
-        const COMPONENT_LIMIT = (parseInt(lvl) >= 10) ? 50 : 40;
+        // El tope del componente según el nivel (dinámico)
+        const p = state.settings?.percentages || {
+            iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+            diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+        };
+        const COMPONENT_LIMIT = (parseInt(lvl) >= 10) ? p.diversificado.test : p.iiiCiclo.test;
         let activeTestId = null;
 
         function init() {

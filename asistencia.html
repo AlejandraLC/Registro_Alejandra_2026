@@ -354,7 +354,14 @@
         }
         // Lógica de la tabla de porcentajes MEP
         function calculateGrade(ai, t, total) {
-            if (total === 0) return 5;
+            if (total === 0) return (parseInt(lvl) >= 10) ? (state.settings?.percentages?.diversificado?.att || 5) : (state.settings?.percentages?.iiiCiclo?.att || 5);
+
+            // Obtener porcentaje de asistencia dinámico
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const valAtt = (parseInt(lvl) >= 10) ? p.diversificado.att : p.iiiCiclo.att;
 
             // REGLA MEP: Cada tardía equivale a media ausencia injustificada (0.5)
             const ausenciasEquivalentes = ai + (t * 0.5);
@@ -362,12 +369,15 @@
             // El porcentaje se calcula sobre la suma de AI + el peso de las tardías
             const porcentajeInjustificado = (ausenciasEquivalentes / total) * 100;
 
-            // Rangos según la tabla que me pasaste
-            if (porcentajeInjustificado < 10) return 5;
-            if (porcentajeInjustificado < 20) return 4;
-            if (porcentajeInjustificado < 30) return 3;
-            if (porcentajeInjustificado < 40) return 2;
-            if (porcentajeInjustificado < 50) return 1;
+            // Factor de escala
+            const factor = valAtt / 5;
+
+            // Rangos según la tabla MEP (escalados)
+            if (porcentajeInjustificado < 10) return 5 * factor;
+            if (porcentajeInjustificado < 20) return 4 * factor;
+            if (porcentajeInjustificado < 30) return 3 * factor;
+            if (porcentajeInjustificado < 40) return 2 * factor;
+            if (porcentajeInjustificado < 50) return 1 * factor;
             return 0; // 50% o más de ausencias equivalentes
         }
 

@@ -489,8 +489,23 @@
     }
 
     function renderCompleteReport(student) {
+        // Obtener porcentajes dinámicos
+        const p = state.settings?.percentages || {
+            iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+            diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+        };
+        const cycle = (parseInt(lvl) >= 10) ? p.diversificado : p.iiiCiclo;
+        const valCot = cycle.coti;
+        const valTest = cycle.test;
+        const valTask = cycle.task;
+        const valAtt = cycle.att;
+
         // A. ASISTENCIA
-        const resAtt = calculateAttendanceNota(student.id);
+        const resAttRaw = calculateAttendanceNota(student.id);
+        // Factor de escala para la asistencia si no es 5%
+        const factorAtt = valAtt / 5;
+        const resAtt = { ...resAttRaw, nota: resAttRaw.nota * factorAtt };
+
         document.getElementById('at-badges').innerHTML = `
                 <span class="badge-at bg-red-50 text-red-500">AI: ${resAtt.ai}</span>
                 <span class="badge-at bg-blue-50 text-blue-500">AJ: ${resAtt.aj}</span>
@@ -498,9 +513,8 @@
         document.getElementById('at-nota').innerText = resAtt.nota.toFixed(1) + "%";
         document.getElementById('at-history').innerHTML = resAtt.html || "Sin registros.";
 
-        // B. COTIDIANO (40/45%)
+        // B. COTIDIANO
         const cotActs = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === student.section && a.period === period);
-        const valCot = (parseInt(lvl) >= 10) ? 40 : 45;
         let sumCot = 0; let cotHtml = "";
         cotActs.forEach(a => {
             const r = calculateActivityMetrics(student.id, a, 'cot');
@@ -512,7 +526,7 @@
         document.getElementById('cot-nota-final').innerText = pCot.toFixed(2) + "%";
         document.getElementById('cot-history').innerHTML = cotHtml || "<p class='text-slate-300 italic text-center p-8'>Sin actividades registradas.</p>";
 
-        // C. TAREAS (10%)
+        // C. TAREAS
         const taskActs = Object.values(state.tasks || {}).filter(a => a.level === lvl && a.section === student.section && a.period === period);
         let pObtT = 0; let pMaxT = 0; let taskHtml = "";
         taskActs.forEach(a => {
@@ -520,13 +534,12 @@
             pObtT += r.pts; pMaxT += r.max;
             taskHtml += renderCard(a, r, 'task');
         });
-        const pTask = pMaxT > 0 ? (pObtT * 10 / pMaxT) : 0;
+        const pTask = pMaxT > 0 ? (pObtT * valTask / pMaxT) : 0;
         document.getElementById('task-nota-final').innerText = pTask.toFixed(2) + "%";
         document.getElementById('task-history').innerHTML = taskHtml || "<p class='text-slate-300 italic text-center p-8'>Sin tareas registradas.</p>";
 
-        // D. PRUEBAS (40/50%)
+        // D. PRUEBAS
         const tests = Object.values(state.tests || {}).filter(t => t.level === lvl && t.section === student.section && t.period === period);
-        const valTest = (parseInt(lvl) >= 10) ? 50 : 40;
         let pTest = 0; let testHtml = "";
         tests.forEach(t => {
             const ev = state.test_evals?.[t.id]?.[student.id] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
@@ -545,9 +558,9 @@
         const total = pCot + pTask + pTest + resAtt.nota;
         const comps = [
             { n: 'Trabajo Cotidiano', v: pCot.toFixed(2) + '%', p: (pCot / valCot) * 100, c: 'bg-blue-500' },
-            { n: 'Tareas', v: pTask.toFixed(2) + '%', p: (pTask / 10) * 100, c: 'bg-purple-500' },
+            { n: 'Tareas', v: pTask.toFixed(2) + '%', p: (pTask / valTask) * 100, c: 'bg-purple-500' },
             { n: 'Pruebas', v: pTest.toFixed(2) + '%', p: (pTest / valTest) * 100, c: 'bg-rose-500' },
-            { n: 'Asistencia', v: resAtt.nota.toFixed(2) + '%', p: (resAtt.nota / 5) * 100, c: 'bg-emerald-500' }
+            { n: 'Asistencia', v: resAtt.nota.toFixed(2) + '%', p: (resAtt.nota / valAtt) * 100, c: 'bg-emerald-500' }
         ];
         document.getElementById('grades-breakdown').innerHTML = comps.map(c => `
                 <div class="space-y-2">

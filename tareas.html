@@ -389,7 +389,14 @@
         // REPORTE GENERAL
         function showGeneralReport() {
             const acts = Object.values(state.tasks).filter(a => a.level === lvl && a.section === sec && a.period === period);
-            const porc = (parseInt(lvl) >= 10) ? 10 : 10; // Valor de tareas en MEP
+
+            // Obtener porcentajes dinámicos
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const porc = (parseInt(lvl) >= 10) ? p.diversificado.task : p.iiiCiclo.task;
+
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
 
             // Actualizar encabezado del modal con periodo y componente
@@ -550,7 +557,14 @@
         function downloadGeneralPDF() {
             const acts = Object.values(state.tasks).filter(a => a.level === lvl && a.section === sec && a.period === period);
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
-            const porc = (parseInt(lvl) >= 10) ? 10 : 10;
+
+            // Obtener porcentajes dinámicos
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const porc = (parseInt(lvl) >= 10) ? p.diversificado.task : p.iiiCiclo.task;
+
             const displayPeriod = period === '1' ? 'I' : period === '2' ? 'II' : period;
 
             // Usamos un iframe oculto para evitar bloqueadores de popups en tablets

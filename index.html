@@ -184,15 +184,18 @@
             localStorage.setItem('temp_current_level', level);
             localStorage.setItem('temp_current_section', section);
 
-            const isDiv = (level === '10' || level === '11');
-            const pctCoti = isDiv ? '35%' : '45%';
-            const pctPruebas = isDiv ? '50%' : '40%';
+            // Obtener porcentajes dinámicos
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
 
             const components = [
-                { title: 'Asistencia', desc: 'Registro y ausencias.', pct: '5%', icon: 'clock', color: 'emerald', link: 'asistencia.html' },
-                { title: 'Trabajo Cotidiano', desc: 'Actividades diarias.', pct: pctCoti, icon: 'clipboard-list', color: 'blue', link: 'cotidiano.html?rubro=cotidiano' },
-                { title: 'Tareas', desc: 'Asignaciones extraclase.', pct: '10%', icon: 'book', color: 'purple', link: 'tareas.html' },
-                { title: 'Pruebas', desc: 'Exámenes parciales.', pct: pctPruebas, icon: 'file-text', color: 'rose', link: 'pruebas.html' },
+                { title: 'Asistencia', desc: 'Registro y ausencias.', pct: cycle.att + '%', icon: 'clock', color: 'emerald', link: 'asistencia.html' },
+                { title: 'Trabajo Cotidiano', desc: 'Actividades diarias.', pct: cycle.coti + '%', icon: 'clipboard-list', color: 'blue', link: 'cotidiano.html?rubro=cotidiano' },
+                { title: 'Tareas', desc: 'Asignaciones extraclase.', pct: cycle.task + '%', icon: 'book', color: 'purple', link: 'tareas.html' },
+                { title: 'Pruebas', desc: 'Exámenes parciales.', pct: cycle.test + '%', icon: 'file-text', color: 'rose', link: 'pruebas.html' },
                 { title: 'Comunicados', desc: 'Notificaciones al hogar.', pct: 'IMPRIMIR', icon: 'message-square', color: 'amber', link: 'comunicados.html' },
             ];
 
