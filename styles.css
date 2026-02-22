@@ -21,6 +21,8 @@
     --emerald-vibrant: #059669;
     --amber-light: #fef3c7;
     --amber-vibrant: #d97706;
+    --orange-light: #fff7ed;
+    --orange-vibrant: #ea580c;
 }
 
 /* Page Specific Colors */
@@ -65,6 +67,12 @@
     --primary-color: #a855f7;
     --primary-light: #f3e8ff;
     --primary-vibrant: #7e22ce;
+}
+
+.page-comunicados {
+    --primary-color: #f97316;
+    --primary-light: #fff7ed;
+    --primary-vibrant: #ea580c;
 }
 
 * {

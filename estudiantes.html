@@ -136,9 +136,9 @@
                 <button onclick="exportStudents()" class="btn-nm">
                     <i data-lucide="download" class="w-4 h-4 icon-vibrant"></i> Exportar
                 </button>
-                <button onclick="clearAllStudents()" class="btn-nm"
+                <button onclick="clearCurrentGroup()" class="btn-nm"
                     style="--primary-vibrant: #ef4444; --primary-light: #fee2e2;">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar Grupo
                 </button>
             </div>
         </div>
@@ -379,8 +379,15 @@
             }, 100);
         }
 
-        function clearAllStudents() {
-            if (confirm("¿Borrar TODOS los estudiantes?")) { state.students = {}; save(); }
+        function clearCurrentGroup() {
+            const lvl = document.getElementById('level-filter').value;
+            const sec = document.getElementById('section-filter').value;
+            if (confirm(`¿Borrar TODOS los estudiantes del grupo ${lvl}-${sec}?`)) {
+                if (state.students[lvl]) {
+                    state.students[lvl] = state.students[lvl].filter(s => s.section !== sec);
+                    save();
+                }
+            }
         }
 
         function save() {

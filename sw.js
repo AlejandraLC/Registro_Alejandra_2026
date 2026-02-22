@@ -1,6 +1,6 @@
 const CACHE_NAME = 'registro-academico-v1';
 const ASSETS = [
-    './Index.html',
+    './index.html',
     './styles.css',
     './icon.svg',
     './manifest.json'

@@ -29,19 +29,19 @@
         <div class="flex flex-col gap-3 p-4 mt-6">
             <a href="config.html"
                 class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
-                <i data-lucide="users"></i>
+                <i data-lucide="settings"></i>
                 <span
                     class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
             </a>
             <a href="index.html"
                 class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all"
                 id="nav-config">
-                <i data-lucide="settings"></i>
+                <i data-lucide="layout-dashboard"></i>
                 <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
             </a>
             <a href="estudiantes.html"
                 class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all">
-                <i data-lucide="layout-dashboard"></i>
+                <i data-lucide="users"></i>
                 <span
                     class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
             </a>
@@ -373,6 +373,14 @@
                 </div>
             </div>
             <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                <div class="flex flex-col gap-1 mr-2 border-r border-slate-100 pr-2">
+                    <button onclick="moveNoteUp(${n.id})" class="text-slate-300 hover:text-emerald-500 transition-all p-0.5">
+                        <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="moveNoteDown(${n.id})" class="text-slate-300 hover:text-emerald-500 transition-all p-0.5">
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </button>
+                </div>
                 <button onclick="editNote(${n.id})" class="text-slate-300 hover:text-blue-500 transition-all p-1">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                 </button>
@@ -390,6 +398,26 @@
                 const date = document.getElementById('view-date').value;
                 if (confirm("¿Borrar esta nota especial?")) {
                     state.specialNotes[date] = state.specialNotes[date].filter(n => n.id !== id);
+                    saveDiaryData();
+                }
+            }
+
+            function moveNoteUp(id) {
+                const date = document.getElementById('view-date').value;
+                const notes = state.specialNotes[date];
+                const index = notes.findIndex(n => n.id === id);
+                if (index > 0) {
+                    [notes[index - 1], notes[index]] = [notes[index], notes[index - 1]];
+                    saveDiaryData();
+                }
+            }
+
+            function moveNoteDown(id) {
+                const date = document.getElementById('view-date').value;
+                const notes = state.specialNotes[date];
+                const index = notes.findIndex(n => n.id === id);
+                if (index < notes.length - 1) {
+                    [notes[index], notes[index + 1]] = [notes[index + 1], notes[index]];
                     saveDiaryData();
                 }
             }
