@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Progreso - Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@3.10.0/build/index.umd.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    <meta name="theme-color" content="#6366f1">
+    <style>
+        .page-analisis .nav-active {
+            background: var(--primary-light);
+            color: var(--primary-vibrant);
+            box-shadow: var(--nm-shadow-in);
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 2rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: var(--nm-shadow-out);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 2.5rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: var(--nm-shadow-out);
+            position: relative;
+            height: 400px;
+        }
+
+        .alert-card {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.25rem;
+            border-radius: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .alert-red {
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+        }
+
+        .alert-yellow {
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .badge-yellow {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .badge-blue {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen page-analisis">
+    <button class="sidebar-toggle no-print" onclick="toggleSidebar()">
+        <i data-lucide="menu"></i>
+    </button>
+
+    <aside
+        class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group">
+        <div class="flex flex-col gap-3 p-4 mt-6">
+            <a href="config.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="settings"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
+            </a>
+            <a href="index.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all">
+                <i data-lucide="layout-dashboard"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
+            </a>
+            <a href="estudiantes.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="users"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
+            </a>
+            <a href="analisis.html" class="flex items-center gap-4 p-3 rounded-2xl nav-active">
+                <i data-lucide="bar-chart-3"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Análisis</span>
+            </a>
+            <a href="comunicados.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="message-square"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Comunicados</span>
+            </a>
+            <a href="bitacora.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book-open"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora</span>
+            </a>
+            <a href="calendario.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Calendario</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-10">
+        <header class="page-title mb-12 flex items-center justify-between border-b border-slate-100 pb-6 uppercase">
+            <div>
+                <h1><i data-lucide="bar-chart-3" class="title-icon"></i> Análisis del Grupo</h1>
+                <div class="flex gap-4 mt-1">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="home" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-inst">---</span>
+                    </p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="bookmark" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-subject">---</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
+                    <select id="level-select" onchange="updateSectionSelector()"
+                        class="text-xs font-bold text-slate-600 outline-none">
+                        <option value="7">7°</option>
+                        <option value="8">8°</option>
+                        <option value="9">9°</option>
+                        <option value="10">10°</option>
+                        <option value="11">11°</option>
+                    </select>
+                    <span class="text-slate-200">|</span>
+                    <select id="section-select" onchange="loadStats()"
+                        class="text-xs font-bold text-slate-600 outline-none"></select>
+                </div>
+                <span class="w-px h-4 bg-slate-100 mx-1"></span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Periodo</span>
+                    <select id="period-select" onchange="loadStats()"
+                        class="text-xs font-bold text-blue-500 outline-none bg-transparent">
+                        <option value="1">I Periodo</option>
+                        <option value="2">II Periodo</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div class="stat-card flex flex-col items-center">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Promedio
+                    Grupal</span>
+                <h2 id="avg-grade" class="text-4xl font-black text-slate-800">0.0</h2>
+                <div class="w-full h-1.5 bg-slate-100 rounded-full mt-4 overflow-hidden">
+                    <div id="avg-progress" class="h-full bg-blue-500 transition-all duration-1000" style="width: 0%">
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card flex flex-col items-center">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Estudiantes en
+                    Alerta</span>
+                <h2 id="alert-count" class="text-4xl font-black text-rose-500">0</h2>
+                <p class="text-[9px] font-bold text-slate-400 mt-2 uppercase">Requieren atención inmediata</p>
+            </div>
+            <div class="stat-card flex flex-col items-center">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">% Aprobación
+                    Estimado</span>
+                <h2 id="passing-rate" class="text-4xl font-black text-emerald-500">0%</h2>
+                <p class="text-[9px] font-bold text-slate-400 mt-2 uppercase">Basado en promedio actual</p>
+            </div>
+        </div>
+
+        <!-- Box Plot Section -->
+        <div class="mb-12">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                    <i data-lucide="box" class="text-indigo-500"></i> Distribución de Calificaciones (Cajas y Bigotes)
+                </h2>
+                <p class="text-[10px] font-bold text-slate-400 uppercase italic">Muestra la dispersión y rendimiento por
+                    componente</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="boxplot-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Early Warning List -->
+        <div>
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                    <i data-lucide="alert-triangle" class="text-rose-500"></i> Alerta Temprana y Dificultades
+                </h2>
+            </div>
+            <div id="alerts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Dynamic alerts -->
+            </div>
+            <div id="no-alerts" class="hidden text-center py-20 bg-emerald-50 rounded-[3rem] border border-emerald-100">
+                <i data-lucide="check-circle-2" class="w-16 h-16 text-emerald-500 mx-auto mb-4"></i>
+                <h3 class="text-emerald-800 font-bold">¡Todo en orden!</h3>
+                <p class="text-emerald-600 text-xs">No se han detectado alertas tempranas en este grupo.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
+        let boxChart = null;
+
+        function init() {
+            initSelectors();
+            loadStats();
+        }
+
+        function initSelectors() {
+            const savedLevel = localStorage.getItem('temp_current_level');
+            const savedSection = localStorage.getItem('temp_current_section');
+
+            if (savedLevel) document.getElementById('level-select').value = savedLevel;
+
+            updateSectionSelector(savedSection);
+
+            if (state.settings?.currentPeriod) {
+                document.getElementById('period-select').value = state.settings.currentPeriod;
+            }
+        }
+
+        function updateSectionSelector(sectionToSelect) {
+            const level = document.getElementById('level-select').value;
+            const sectionSelect = document.getElementById('section-select');
+            const definedGroups = state.groups || [];
+            const filtered = definedGroups.filter(g => g.startsWith(level + '-')).map(g => g.split('-')[1]);
+
+            if (filtered.length > 0) {
+                sectionSelect.innerHTML = filtered.map(sec => `<option value="${sec}">${level}-${sec}</option>`).join('');
+                if (sectionToSelect && filtered.includes(sectionToSelect)) {
+                    sectionSelect.value = sectionToSelect;
+                }
+            } else {
+                sectionSelect.innerHTML = `<option value="1">${level}-1</option>`;
+            }
+            loadStats();
+        }
+
+        function loadStats() {
+            const level = document.getElementById('level-select').value;
+            const section = document.getElementById('section-select').value;
+            const period = document.getElementById('period-select').value;
+
+            document.getElementById('info-inst').innerText = state.admin?.institution || 'MEP';
+            document.getElementById('info-subject').innerText = state.admin?.subject || 'Materia';
+
+            localStorage.setItem('temp_current_level', level);
+            localStorage.setItem('temp_current_section', section);
+
+            const students = (state.students?.[level] || []).filter(s => s.section === section);
+
+            if (students.length === 0) {
+                renderEmpty();
+                return;
+            }
+
+            processData(students, period, level, section);
+            lucide.createIcons();
+        }
+
+        function renderEmpty() {
+            document.getElementById('avg-grade').innerText = "0.0";
+            document.getElementById('avg-progress').style.width = "0%";
+            document.getElementById('alert-count').innerText = "0";
+            document.getElementById('passing-rate').innerText = "0%";
+            document.getElementById('alerts-container').innerHTML = "";
+            document.getElementById('no-alerts').classList.remove('hidden');
+            if (boxChart) boxChart.destroy();
+        }
+
+        function processData(students, period, level, section) {
+            // Percentages
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
+
+            const studentStats = students.map(student => {
+                const sId = student.id;
+
+                // Cotidiano
+                const acts = Object.values(state.activities || {}).filter(a => a.level === level && a.section === section && a.period === period);
+                let cotiScore = 0;
+                let cotiTotalMax = 0;
+                acts.forEach(a => {
+                    let totalPts = 0;
+                    let maxInds = 0;
+                    a.skills.forEach((skill, skIdx) => {
+                        skill.indicators.forEach((ind, inIdx) => {
+                            maxInds += 3;
+                            let best = 0;
+                            a.dates.forEach(d => {
+                                const s = state.evaluations?.[a.id]?.[d]?.[sId]?.scores?.[`${skIdx}-${inIdx}`] || 0;
+                                if (s > best) best = s;
+                            });
+                            totalPts += best;
+                        });
+                    });
+                    if (maxInds > 0) {
+                        const actNote = (totalPts * 100) / maxInds;
+                        cotiScore += actNote;
+                        cotiTotalMax += 100;
+                    }
+                });
+                const cotiFinalNote = cotiTotalMax > 0 ? (cotiScore / cotiTotalMax) * 100 : 0;
+
+                // Pruebas
+                const tests = Object.values(state.tests || {}).filter(t => t.level === level && t.section === section && t.period === period);
+                let testSumPerc = 0;
+                let testMaxPercAvailable = 0;
+                tests.forEach(t => {
+                    const ev = state.test_evals?.[t.id]?.[sId] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
+                    const maxPts = ev.sig ? ev.sigPts : t.points;
+                    const maxP = ev.sig ? ev.sigPerc : t.percent;
+                    const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
+                    testSumPerc += (nota * maxP / 100);
+                    testMaxPercAvailable += maxP;
+                });
+                const testFinalNote = testMaxPercAvailable > 0 ? (testSumPerc / testMaxPercAvailable) * 100 : 0;
+
+                // Tareas
+                const tasks = Object.values(state.tasks || {}).filter(a => a.level === level && a.section === section && a.period === period);
+                let taskSumPts = 0;
+                let taskMaxPossible = 0;
+                tasks.forEach(a => {
+                    a.skills.forEach((sk, skIdx) => sk.indicators.forEach((ind, iIdx) => {
+                        taskMaxPossible += 3;
+                        let best = 0;
+                        a.dates.forEach(d => {
+                            const s = state.task_evaluations?.[a.id]?.[d]?.[sId]?.scores?.[`${skIdx}-${iIdx}`] || 0;
+                            if (s > best) best = s;
+                        });
+                        taskSumPts += best;
+                    }));
+                });
+                const taskFinalNote = taskMaxPossible > 0 ? (taskSumPts * 100) / taskMaxPossible : 0;
+
+                // Asistencia
+                const attData = state.attendance?.[period] || {};
+                let totalLecciones = 0;
+                let ausenciasInjustificadas = 0;
+                Object.entries(attData).forEach(([date, dayData]) => {
+                    // Solo si hay estudiantes del grupo registrados ese día
+                    const groupInDay = Object.values(dayData).some(r => {
+                        const st = students.find(ss => ss.id === r.studentId);
+                        return !!st;
+                    });
+
+                    if (dayData[sId]) {
+                        totalLecciones += dayData[sId].lessons || 0;
+                        if (dayData[sId].status === 'AI') ausenciasInjustificadas += dayData[sId].lessons || 0;
+                    }
+                });
+                // Nota asistencia: (1 - AI/Total) * 100
+                const attFinalNote = totalLecciones > 0 ? Math.max(0, (1 - ausenciasInjustificadas / totalLecciones) * 100) : 100;
+
+                // Overall Estimation
+                const overall = (cotiFinalNote * cycle.coti / 100) +
+                    (testFinalNote * cycle.test / 100) +
+                    (taskFinalNote * cycle.task / 100) +
+                    (attFinalNote * cycle.att / 100);
+
+                return {
+                    id: sId,
+                    name: student.name,
+                    coti: cotiFinalNote,
+                    test: testFinalNote,
+                    task: taskFinalNote,
+                    att: attFinalNote,
+                    overall: overall
+                };
+            });
+
+            // Calculate Box Plot Data
+            const labels = ['Cotidiano', 'Pruebas', 'Tareas', 'Asistencia'];
+            const chartData = [
+                studentStats.map(s => s.coti),
+                studentStats.map(s => s.test),
+                studentStats.map(s => s.task),
+                studentStats.map(s => s.att)
+            ];
+
+            renderChart(labels, chartData);
+
+            // Summary Stats
+            const groupAvg = studentStats.reduce((acc, s) => acc + s.overall, 0) / studentStats.length;
+            document.getElementById('avg-grade').innerText = groupAvg.toFixed(1);
+            document.getElementById('avg-progress').style.width = groupAvg + "%";
+
+            const passingStudents = studentStats.filter(s => s.overall >= 65).length; // MEP threshold is usually 65 or 70
+            const passingRate = (passingStudents / studentStats.length) * 100;
+            document.getElementById('passing-rate').innerText = Math.round(passingRate) + "%";
+
+            // Alerts
+            identifyAlerts(students, studentStats);
+        }
+
+        function renderChart(labels, data) {
+            const ctx = document.getElementById('boxplot-canvas').getContext('2d');
+
+            if (boxChart) boxChart.destroy();
+
+            boxChart = new Chart(ctx, {
+                type: 'boxplot',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Calificaciones',
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        outlierColor: '#999999',
+                        padding: 10,
+                        itemRadius: 2,
+                        data: data
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Nota'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function identifyAlerts(students, stats) {
+            const alertsContainer = document.getElementById('alerts-container');
+            const noAlerts = document.getElementById('no-alerts');
+            alertsContainer.innerHTML = "";
+            let alertCount = 0;
+
+            stats.forEach(s => {
+                const studentData = students.find(ss => ss.id === s.id);
+                const comms = (state.commHistory?.[s.id] || []);
+                const redComms = comms.filter(c => c.type === 'Rojo').length;
+                const yellowComms = comms.filter(c => c.type === 'Amarillo').length;
+
+                let reasons = [];
+                let severity = '';
+
+                if (redComms > 0) {
+                    reasons.push(`${redComms} Comunicado(s) Rojo(s)`);
+                    severity = 'red';
+                }
+                if (yellowComms >= 2) {
+                    reasons.push(`${yellowComms} Comunicados Amarillos`);
+                    if (!severity) severity = 'yellow';
+                }
+                if (s.overall < 60) {
+                    reasons.push(`Promedio bajo (${s.overall.toFixed(1)})`);
+                    severity = 'red';
+                } else if (s.overall < 70) {
+                    reasons.push(`Promedio en riesgo (${s.overall.toFixed(1)})`);
+                    if (!severity) severity = 'yellow';
+                }
+
+                // Check for specific component failure
+                if (s.test < 60) reasons.push('Bajo rendimiento en Pruebas');
+                if (s.att < 80) reasons.push('Alta tasa de ausentismo');
+
+                if (reasons.length > 0) {
+                    alertCount++;
+                    const card = document.createElement('div');
+                    card.className = `alert-card ${severity === 'red' ? 'alert-red' : 'alert-yellow'}`;
+
+                    card.innerHTML = `
+                        <div class="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center ${severity === 'red' ? 'bg-red-100 text-red-500' : 'bg-amber-100 text-amber-500'}">
+                            <i data-lucide="${severity === 'red' ? 'alert-circle' : 'alert-triangle'}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-slate-800 text-sm">${s.name}</h3>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                ${reasons.map(r => `<span class="badge ${severity === 'red' ? 'badge-red' : 'badge-yellow'}">${r}</span>`).join('')}
+                            </div>
+                        </div>
+                        <button onclick="location.href='reporte-individual.html?id=${s.id}'" class="p-2 hover:bg-white rounded-xl transition-all text-slate-400 hover:text-indigo-500" title="Ver Detalle">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    `;
+                    alertsContainer.appendChild(card);
+                }
+            });
+
+            document.getElementById('alert-count').innerText = alertCount;
+            if (alertCount === 0) {
+                noAlerts.classList.remove('hidden');
+            } else {
+                noAlerts.classList.add('hidden');
+            }
+        }
+
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-expanded');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
