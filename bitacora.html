@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diario de Clase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -44,11 +45,6 @@
                 <i data-lucide="users"></i>
                 <span
                     class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
-            </a>
-            <a href="analisis.html"
-                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
-                <i data-lucide="bar-chart-3"></i>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Análisis</span>
             </a>
             <a href="bitacora.html" class="flex items-center gap-4 p-3 rounded-2xl nav-active">
                 <i data-lucide="book-open"></i>
@@ -175,18 +171,16 @@
                 const currentPeriod = state.settings?.currentPeriod || '1';
                 document.getElementById('date-display').innerText = date;
                 const container = document.getElementById('day-activities');
-                let html = "";
-                let hayActividadTotal = false;
 
+                // 1. Recopilar todas las secciones con actividad
+                const activeSections = [];
                 const niveles = Object.keys(state.students || {}).sort((a, b) => a - b);
 
                 niveles.forEach(lvl => {
                     const secciones = [...new Set(state.students[lvl].map(s => s.section))].sort();
-
                     secciones.forEach(sec => {
                         const attData = state.attendance?.[currentPeriod]?.[date];
                         let tieneAsistencia = false;
-
                         if (attData) {
                             tieneAsistencia = state.students[lvl]
                                 .filter(s => s.section === sec)
@@ -205,7 +199,6 @@
                             t.level === lvl && t.section === sec && t.date === date)
                             .map(t => ({ ...t, type: 'test', icon: 'file-text', label: 'Prueba', color: 'rose', link: 'pruebas.html' }));
 
-                        // Buscar comunicados del día para estudiantes de esta sección
                         const sectionStudentIds = (state.students[lvl] || []).filter(s => s.section === sec).map(s => s.id);
                         const comms = [];
                         sectionStudentIds.forEach(id => {
@@ -221,7 +214,6 @@
                             });
                         });
 
-                        // Eliminar duplicados si el mismo comunicado se envió a varios (como en modo grupal)
                         const uniqueComms = [];
                         const seenComms = new Set();
                         comms.forEach(c => {
@@ -233,66 +225,123 @@
                         });
 
                         if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || tests.length > 0 || uniqueComms.length > 0) {
-                            hayActividadTotal = true;
-
-                            const combinedActivities = [...cot, ...tasks, ...tests, ...uniqueComms];
-
-                            // AQUÍ EMPIEZA EL DISEÑO CON ORILLAS
-                            html += `
-                <div class="mb-10 text-left border border-slate-100 p-8 rounded-[2.5rem] bg-white shadow-sm ring-1 ring-slate-50">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-100"></div>
-                        <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Sección ${lvl}-${sec}</h3>
-                    </div>
-                    
-                    <div class="space-y-4 ml-2 mb-8">
-                        ${tieneAsistencia ? `
-                        <div class="bg-slate-50/50 border border-slate-100 p-5 rounded-3xl flex items-center justify-between group cursor-pointer hover:border-emerald-200 transition-all"
-                             onclick="localStorage.setItem('temp_current_level','${lvl}'); localStorage.setItem('temp_current_section','${sec}'); location.href='asistencia.html'">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm shadow-emerald-100">
-                                    <i data-lucide="clock" class="w-6 h-6 icon-vibrant" style="--primary-vibrant: var(--emerald-vibrant); --primary-light: var(--emerald-light);"></i>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Asistencia</p>
-                                    <p class="text-xs font-bold text-slate-700">Registro de Hoy</p>
-                                </div>
-                            </div>
-                            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-200 group-hover:text-emerald-400 transition-colors"></i>
-                        </div>` : ''}
-
-                        ${combinedActivities.map(a => `
-                            <div class="bg-slate-50/50 border border-slate-100 p-5 rounded-3xl flex items-center justify-between group cursor-pointer hover:border-${a.color}-200 transition-all"
-                                 onclick="localStorage.setItem('temp_current_level','${lvl}'); localStorage.setItem('temp_current_section','${sec}'); location.href='${a.link}'">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-${a.color}-500 shadow-sm shadow-${a.color}-100">
-                                        <i data-lucide="${a.icon}" class="w-6 h-6 icon-vibrant" style="--primary-vibrant: var(--${a.color}-vibrant); --primary-light: var(--${a.color}-light);"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] font-black text-${a.color}-500 uppercase tracking-widest">${a.label}</p>
-                                        <p class="text-xs font-bold text-slate-700">${a.name}</p>
-                                    </div>
-                                </div>
-                                <i data-lucide="arrow-right" class="w-5 h-5 text-slate-200 group-hover:text-${a.color}-400 transition-colors"></i>
-                            </div>
-                        `).join('')}
-                    </div>
-
-                    <div class="mt-4">
-                        <label class="text-[10px] font-black text-slate-300 uppercase ml-4 mb-2 block">Bitácora de la Lección</label>
-                        <textarea 
-                            class="w-full bg-emerald-50/30 border border-emerald-100 rounded-[2rem] p-6 text-sm font-medium text-slate-600 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-400 transition-all min-h-[120px] resize-none overflow-hidden"
-                            placeholder="Escribir observaciones de la lección..."
-                            oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; saveDiaryNote('${lvl}-${sec}', '${date}', this.value)"
-                        >${state.diaryNotes?.[date]?.[`${lvl}-${sec}`] || ''}</textarea>
-                    </div>
-                </div>`;
+                            activeSections.push({
+                                id: `${lvl}-${sec}`,
+                                lvl,
+                                sec,
+                                tieneAsistencia,
+                                combinedActivities: [...cot, ...tasks, ...tests, ...uniqueComms]
+                            });
                         }
                     });
                 });
 
-                container.innerHTML = hayActividadTotal ? html : `<p class="text-slate-300 italic text-sm py-10">No hay registros para este día.</p>`;
+                // 2. Ordenar las secciones según el orden guardado o por ID por defecto
+                const savedOrder = state.diaryOrder?.[date] || [];
+                activeSections.sort((a, b) => {
+                    const idxA = savedOrder.indexOf(a.id);
+                    const idxB = savedOrder.indexOf(b.id);
+                    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                    if (idxA !== -1) return -1;
+                    if (idxB !== -1) return 1;
+                    return a.id.localeCompare(b.id);
+                });
+
+                // 3. Generar HTML
+                let html = "";
+                activeSections.forEach((s, index) => {
+                    html += `
+                        <div class="mb-10 text-left border border-slate-100 p-8 rounded-[2.5rem] bg-white shadow-sm ring-1 ring-slate-50 relative group/section">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-100"></div>
+                                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Sección ${s.id}</h3>
+                                </div>
+                                <div class="flex gap-1 opacity-0 group-hover/section:opacity-100 transition-all no-print">
+                                    <button onclick="moveSectionUp('${s.id}')" class="text-slate-300 hover:text-emerald-500 transition-all p-1" title="Subir">
+                                        <i data-lucide="chevron-up" class="w-5 h-5"></i>
+                                    </button>
+                                    <button onclick="moveSectionDown('${s.id}')" class="text-slate-300 hover:text-emerald-500 transition-all p-1" title="Bajar">
+                                        <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4 ml-2 mb-8">
+                                ${s.tieneAsistencia ? `
+                                <div class="bg-slate-50/50 border border-slate-100 p-5 rounded-3xl flex items-center justify-between group cursor-pointer hover:border-emerald-200 transition-all"
+                                     onclick="localStorage.setItem('temp_current_level','${s.lvl}'); localStorage.setItem('temp_current_section','${s.sec}'); location.href='asistencia.html'">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm shadow-emerald-100">
+                                            <i data-lucide="clock" class="w-6 h-6 icon-vibrant" style="--primary-vibrant: var(--emerald-vibrant); --primary-light: var(--emerald-light);"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-700">Asistencia Registrada</p>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="arrow-right" class="w-5 h-5 text-slate-200 group-hover:text-emerald-400 transition-colors"></i>
+                                </div>` : ''}
+
+                                ${s.combinedActivities.map(a => `
+                                    <div class="bg-slate-50/50 border border-slate-100 p-5 rounded-3xl flex items-center justify-between group cursor-pointer hover:border-${a.color}-200 transition-all"
+                                         onclick="localStorage.setItem('temp_current_level','${s.lvl}'); localStorage.setItem('temp_current_section','${s.sec}'); location.href='${a.link}'">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-${a.color}-500 shadow-sm shadow-${a.color}-100">
+                                                <i data-lucide="${a.icon}" class="w-6 h-6 icon-vibrant" style="--primary-vibrant: var(--${a.color}-vibrant); --primary-light: var(--${a.color}-light);"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] font-black text-${a.color}-500 uppercase tracking-widest">${a.label}</p>
+                                                <p class="text-xs font-bold text-slate-700">${a.name}</p>
+                                            </div>
+                                        </div>
+                                        <i data-lucide="arrow-right" class="w-5 h-5 text-slate-200 group-hover:text-${a.color}-400 transition-colors"></i>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="text-[10px] font-black text-slate-300 uppercase ml-4 mb-2 block">Bitácora de la Lección</label>
+                                <textarea 
+                                    class="w-full bg-emerald-50/30 border border-emerald-100 rounded-[2rem] p-6 text-sm font-medium text-slate-600 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-400 transition-all min-h-[120px] resize-none overflow-hidden"
+                                    placeholder="Escribir observaciones de la lección..."
+                                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; saveDiaryNote('${s.id}', '${date}', this.value)"
+                                >${state.diaryNotes?.[date]?.[s.id] || ''}</textarea>
+                            </div>
+                        </div>`;
+                });
+
+                container.innerHTML = activeSections.length > 0 ? html : `<p class="text-slate-300 italic text-sm py-10">No hay registros para este día.</p>`;
                 lucide.createIcons();
+            }
+
+            function moveSectionUp(id) {
+                const date = document.getElementById('view-date').value;
+                const sections = Array.from(document.querySelectorAll('#day-activities > div')).map(el => {
+                    return el.querySelector('h3').innerText.replace('Sección ', '').trim();
+                });
+                const index = sections.indexOf(id);
+                if (index > 0) {
+                    [sections[index - 1], sections[index]] = [sections[index], sections[index - 1]];
+                    if (!state.diaryOrder) state.diaryOrder = {};
+                    state.diaryOrder[date] = sections;
+                    saveDiaryData();
+                    renderDiary();
+                }
+            }
+
+            function moveSectionDown(id) {
+                const date = document.getElementById('view-date').value;
+                const sections = Array.from(document.querySelectorAll('#day-activities > div')).map(el => {
+                    return el.querySelector('h3').innerText.replace('Sección ', '').trim();
+                });
+                const index = sections.indexOf(id);
+                if (index < sections.length - 1 && index !== -1) {
+                    [sections[index], sections[index + 1]] = [sections[index + 1], sections[index]];
+                    if (!state.diaryOrder) state.diaryOrder = {};
+                    state.diaryOrder[date] = sections;
+                    saveDiaryData();
+                    renderDiary();
+                }
             }
             // --- FUNCIONES PARA NOTAS ESPECIALES ---
 
@@ -528,18 +577,23 @@
             }
             function downloadDiaryPDF() {
                 const date = document.getElementById('view-date').value;
-                const activitiesContainer = document.getElementById('day-activities').cloneNode(true);
+                const activitiesContainer = document.getElementById('day-activities');
+                const activitiesClone = activitiesContainer.cloneNode(true);
 
-                // Limpiamos los textareas para que el texto sea visible en el PDF
-                activitiesContainer.querySelectorAll('textarea').forEach(tx => {
+                // Transferir manualmente los valores de los textareas al clon
+                const originalTextareas = activitiesContainer.querySelectorAll('textarea');
+                const clonedTextareas = activitiesClone.querySelectorAll('textarea');
+
+                originalTextareas.forEach((tx, idx) => {
                     const textValue = tx.value;
                     const div = document.createElement('div');
-                    div.style.cssText = "background: #f0fdf4; padding: 15px; border-radius: 10px; font-size: 12px; color: #475569; white-space: pre-wrap; margin-top: 10px; border: 1px solid #dcfce7;";
+                    div.className = "bitacora-text"; // Mantener la clase para el selector CSS posterior
+                    div.style.cssText = "background: #f0fdf4; padding: 8px 12px; border-radius: 8px; font-size: 10px; color: #475569; border: 1px solid #dcfce7; white-space: pre-wrap; margin-top: 5px;";
                     div.innerText = textValue || "Sin observaciones registradas.";
-                    tx.parentNode.replaceChild(div, tx);
+                    clonedTextareas[idx].parentNode.replaceChild(div, clonedTextareas[idx]);
                 });
 
-                const activitiesHtml = activitiesContainer.innerHTML;
+                const activitiesHtml = activitiesClone.innerHTML;
                 const todos = (state.todos || []).filter(t => !t.done);
                 const notes = state.specialNotes?.[date] || [];
 
@@ -560,37 +614,35 @@
             <title>Diario - ${date}</title>
             <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
             <style>
-                body { font-family: 'Outfit', sans-serif; padding: 40px; color: #334155; }
-                .header-pdf { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
-                .header-pdf h1 { margin: 0; font-size: 28px; font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: -1px; }
-                .info-grid { text-align: right; font-size: 11px; font-weight: 700; color: #64748b; line-height: 1.5; }
+                body { font-family: 'Outfit', sans-serif; padding: 20px; color: #334155; line-height: 1.2; font-size: 11px; }
+                @page { margin: 1cm; size: letter; }
+                .header-pdf { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #10b981; padding-bottom: 10px; margin-bottom: 15px; }
+                .header-pdf h1 { margin: 0; font-size: 18px; font-weight: 900; text-transform: uppercase; color: #1e293b; }
+                .info-grid { text-align: right; font-size: 9px; font-weight: 700; color: #64748b; line-height: 1.3; }
                 .info-grid b { color: #10b981; text-transform: uppercase; }
-                h2 { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #1e293b; margin-top: 30px; border-left: 5px solid #10b981; padding-left: 12px; margin-bottom: 15px; }
-                .section-card { border: 1px solid #f1f5f9; padding: 25px; border-radius: 25px; margin-bottom: 20px; page-break-inside: avoid; background: #fafafa; }
                 
-                /* Layout de Actividades por columnas */
-                .activities-wrapper { 
-                    display: grid; 
-                    grid-template-columns: repeat(2, 1fr); 
-                    gap: 15px; 
-                    margin-bottom: 20px;
-                }
-                .activities-wrapper > div { 
-                    margin-top: 0 !important; /* Reset space-y-4 de Tailwind */
-                    height: 100%;
-                }
+                h2 { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #1e293b; margin-top: 15px; border-left: 3px solid #10b981; padding-left: 8px; margin-bottom: 8px; }
                 
-                .bitacora-full { grid-column: 1 / -1; width: 100%; margin-top: 20px; }
+                .sections-container { display: flex; flex-direction: column; gap: 10px; }
+                .section-card { border: 1px solid #e2e8f0; padding: 12px; border-radius: 12px; page-break-inside: avoid; background: #fff; }
+                .section-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
+                .section-header h3 { font-size: 10px; font-weight: 900; color: #10b981; margin: 0; text-transform: uppercase; }
+                
+                .activities-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+                .activity-item { display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #f1f5f9; }
+                .activity-item b { font-size: 8px; text-transform: uppercase; color: #10b981; display: block; }
+                .activity-item span { font-size: 9px; font-weight: 600; color: #475569; }
+                
+                .bitacora-text { background: #f0fdf4; padding: 8px 12px; border-radius: 8px; font-size: 10px; color: #475569; border: 1px solid #dcfce7; white-space: pre-wrap; margin-top: 5px; }
+                .bitacora-label { font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; display: block; }
 
-                .note-title { font-weight: 900; color: #10b981; text-transform: uppercase; font-size: 11px; margin-bottom: 5px; }
-                .footer { margin-top: 50px; display: flex; justify-content: flex-end; }
-                .signature { border-top: 2px solid #cbd5e1; width: 250px; text-align: center; padding-top: 8px; font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; }
-                
-                /* Ajustamos el contenedor de la sección impreso */
-                .mb-10 { page-break-inside: avoid; margin-bottom: 40px !important; }
-                .space-y-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px !important; }
-                .mt-4 { margin-top: 15px !important; clear: both; }
+                .notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+                .note-card { border: 1px solid #e2e8f0; padding: 10px; border-radius: 10px; page-break-inside: avoid; height: fit-content; }
+                .note-card b { font-size: 9px; color: #10b981; text-transform: uppercase; display: block; margin-bottom: 4px; }
 
+                .footer { margin-top: 30px; display: flex; justify-content: flex-end; }
+                .signature { border-top: 1.5px solid #cbd5e1; width: 180px; text-align: center; padding-top: 5px; font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase; }
+                
                 @media print { .no-print { display: none; } }
             </style>
         </head>
@@ -598,7 +650,7 @@
             <div class="header-pdf">
                 <div>
                     <h1>Diario de Clase</h1>
-                    <p style="color:#10b981; font-weight:900; margin: 5px 0 0 0;">FECHA: ${date}</p>
+                    <p style="color:#10b981; font-weight:900; margin: 2px 0 0 0; font-size: 12px;">${date}</p>
                 </div>
                 <div class="info-grid">
                     <p>INSTITUCIÓN: <b>${state.admin?.institution || 'MEP'}</b></p>
@@ -606,12 +658,61 @@
                     <p>DOCENTE: <b>${state.admin?.name || '---'}</b></p>
                 </div>
             </div>
-            <h2>Actividades por Sección</h2>
-            <div style="margin-top:20px;">${activitiesHtml}</div>
+
+            <div class="sections-container">
+                ${Array.from(activitiesClone.children).map(node => {
+                    const sectionTitle = node.querySelector('h3').innerText;
+                    const hasAttendance = node.innerHTML.includes('Asistencia Registrada');
+                    const activities = Array.from(node.querySelectorAll('.space-y-4 > div')).filter(div => !div.innerHTML.includes('Asistencia Registrada'));
+                    const noteTextElement = node.querySelector('div.bitacora-text');
+                    const noteText = noteTextElement ? noteTextElement.innerText : "";
+
+                    return `
+                        <div class="section-card">
+                            <div class="section-header">
+                                <div style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></div>
+                                <h3>${sectionTitle}</h3>
+                            </div>
+                            <div class="activities-mini-grid">
+                                ${hasAttendance ? `
+                                    <div class="activity-item">
+                                        <div style="width: 4px; height: 12px; background: #10b981; border-radius: 2px;"></div>
+                                        <div><b>Asistencia</b><span>Presente</span></div>
+                                    </div>
+                                ` : ''}
+                                ${activities.map(act => {
+                        const label = act.querySelector('p[class*="uppercase"]')?.innerText || "Info";
+                        const name = act.querySelector('p.text-slate-700')?.innerText || "";
+                        const color = act.innerHTML.includes('blue') ? '#3b82f6' :
+                            act.innerHTML.includes('purple') ? '#a855f7' :
+                                act.innerHTML.includes('rose') ? '#f43f5e' : '#f59e0b';
+                        return `
+                                        <div class="activity-item">
+                                            <div style="width: 4px; height: 12px; background: ${color}; border-radius: 2px;"></div>
+                                            <div><b>${label}</b><span>${name}</span></div>
+                                        </div>
+                                    `;
+                    }).join('')}
+                            </div>
+                            ${noteText && noteText !== "Sin observaciones registradas." ? `
+                                <span class="bitacora-label">Bitácora de Lección</span>
+                                <div class="bitacora-text">${noteText}</div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
             
             ${notes.length > 0 ? `
                 <h2>Notas Especiales</h2>
-                ${notes.map(n => `<div class="section-card"><div class="note-title">${n.title}</div><div style="font-size: 12px; line-height: 1.6;">${n.detail}</div></div>`).join('')}
+                <div class="notes-grid">
+                    ${notes.map(n => `
+                        <div class="note-card">
+                            <b>${n.title}</b>
+                            <div style="font-size: 10px; line-height: 1.4;">${n.detail}</div>
+                        </div>
+                    `).join('')}
+                </div>
             ` : ''}
 
             <div class="footer">
