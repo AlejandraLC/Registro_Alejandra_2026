@@ -247,14 +247,17 @@
             const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
             const tbody = document.getElementById('att-body');
 
-            // Sincronizar el input global de lecciones si ya hay registros para ese día
+            // Sincronizar el input global de lecciones
             const periodData = state.attendance?.[period]?.[date] || {};
             const groupStudentIds = new Set(students.map(s => s.id));
             const records = Object.entries(periodData)
                 .filter(([id, _]) => groupStudentIds.has(id))
                 .map(([_, r]) => r);
 
-            if (records.length > 0) {
+            const dateConfig = state.attendance?.[period]?.[date]?.["_group_" + lvl + "_" + sec] || {};
+            if (dateConfig.dayLessons) {
+                document.getElementById('day-lessons').value = dateConfig.dayLessons;
+            } else if (records.length > 0) {
                 const dailyMax = Math.max(...records.map(r => r.lessons || 0), 0);
                 document.getElementById('day-lessons').value = dailyMax;
             }
@@ -304,6 +307,11 @@
             if (!state.attendance) state.attendance = {};
             if (!state.attendance[period]) state.attendance[period] = {};
             if (!state.attendance[period][date]) state.attendance[period][date] = {};
+
+            // Guardar configuración de lecciones del día para el grupo
+            if (!state.attendance[period][date]["_group_" + lvl + "_" + sec]) {
+                state.attendance[period][date]["_group_" + lvl + "_" + sec] = { dayLessons: dayLec };
+            }
 
             let lessons = dayLec;
 
@@ -366,8 +374,16 @@
             // Solo sumamos lecciones de fechas que realmente tienen datos para ESTE grupo
             for (const date in periodData) {
                 const dailyRecords = periodData[date];
-                const groupRecords = [];
 
+                // Prioridad 1: Configuración específica del grupo para ese día
+                const groupConfig = dailyRecords["_group_" + lvl + "_" + sec];
+                if (groupConfig && groupConfig.dayLessons) {
+                    total += groupConfig.dayLessons;
+                    continue;
+                }
+
+                // Prioridad 2: Fallback histórico (máximo de lecciones de estudiantes del grupo)
+                const groupRecords = [];
                 for (const studentId in dailyRecords) {
                     if (groupStudentIds.has(studentId)) {
                         groupRecords.push(dailyRecords[studentId]);
@@ -375,7 +391,6 @@
                 }
 
                 if (groupRecords.length > 0) {
-                    // Buscamos el valor máximo de lecciones registrado en ese día para el grupo
                     const dailyMax = Math.max(...groupRecords.map(r => r.lessons || 0), 0);
                     total += dailyMax;
                 }
@@ -450,14 +465,19 @@
                 .filter(s => s.section === sec)
                 .map(s => s.id));
 
-            if (state.attendance?.[period]?.[date]) {
-                const dailyRecords = state.attendance[period][date];
-                for (const id in dailyRecords) {
-                    if (groupStudentIds.has(id)) {
-                        // Si el registro previo es mayor al nuevo límite, lo bajamos
-                        if (dailyRecords[id].lessons > dayLec) {
-                            dailyRecords[id].lessons = dayLec;
-                        }
+            if (!state.attendance) state.attendance = {};
+            if (!state.attendance[period]) state.attendance[period] = {};
+            if (!state.attendance[period][date]) state.attendance[period][date] = {};
+
+            // Guardar configuración de lecciones del día para el grupo
+            state.attendance[period][date]["_group_" + lvl + "_" + sec] = { dayLessons: dayLec };
+
+            const dailyRecords = state.attendance[period][date];
+            for (const id in dailyRecords) {
+                if (groupStudentIds.has(id)) {
+                    // Si el registro previo es mayor al nuevo límite, lo bajamos
+                    if (dailyRecords[id].lessons > dayLec) {
+                        dailyRecords[id].lessons = dayLec;
                     }
                 }
             }
