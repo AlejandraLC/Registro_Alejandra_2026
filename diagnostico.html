@@ -341,7 +341,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="text-[11px] text-slate-600 leading-relaxed font-medium">${obs.text}</p>
+                    <p class="text-[11px] text-slate-600 leading-relaxed font-medium whitespace-pre-wrap">${obs.text.replace(/\n/g, '<br>')}</p>
                 </div>
             `).join('');
             lucide.createIcons();
