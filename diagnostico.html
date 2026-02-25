@@ -293,6 +293,7 @@
         const sId = localStorage.getItem('temp_diag_student_id');
         const lvl = localStorage.getItem('temp_diag_level');
         let currentArea = "";
+        let editingObsId = null;
 
         function init() {
             if (!sId || !lvl) {
@@ -331,9 +332,14 @@
                 <div class="observation-item group relative">
                     <div class="flex justify-between items-start mb-1">
                         <span class="text-[9px] font-black text-blue-500 uppercase tracking-widest">${obs.date.split('-').reverse().join('/')}</span>
-                        <button onclick="deleteObs('${area}', ${obs.id})" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all no-print">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i>
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="editObs('${area}', ${obs.id})" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-blue-500 transition-all no-print">
+                                <i data-lucide="pencil" class="w-3 h-3"></i>
+                            </button>
+                            <button onclick="deleteObs('${area}', ${obs.id})" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all no-print">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                            </button>
+                        </div>
                     </div>
                     <p class="text-[11px] text-slate-600 leading-relaxed font-medium">${obs.text}</p>
                 </div>
@@ -341,12 +347,28 @@
             lucide.createIcons();
         }
 
-        function openNoteModal(area) {
+        function openNoteModal(area, obsId = null) {
             currentArea = area;
+            editingObsId = obsId;
+
             document.getElementById('modal-area-name').innerText = area.replace(/^\w/, c => c.toUpperCase());
-            document.getElementById('obs-date').valueAsDate = new Date();
-            document.getElementById('obs-text').value = "";
+
+            if (obsId) {
+                const obs = state.diagnostico[sId][area].find(o => o.id === obsId);
+                document.getElementById('modal-title').innerText = "Editar Observación";
+                document.getElementById('obs-date').value = obs.date;
+                document.getElementById('obs-text').value = obs.text;
+            } else {
+                document.getElementById('modal-title').innerText = "Nueva Observación";
+                document.getElementById('obs-date').valueAsDate = new Date();
+                document.getElementById('obs-text').value = "";
+            }
+
             document.getElementById('modal-obs').classList.remove('hidden');
+        }
+
+        function editObs(area, id) {
+            openNoteModal(area, id);
         }
 
         function closeModal() {
@@ -363,11 +385,19 @@
             if (!state.diagnostico[sId]) state.diagnostico[sId] = {};
             if (!state.diagnostico[sId][currentArea]) state.diagnostico[sId][currentArea] = [];
 
-            state.diagnostico[sId][currentArea].push({
-                id: Date.now(),
-                date: date,
-                text: text
-            });
+            if (editingObsId) {
+                const index = state.diagnostico[sId][currentArea].findIndex(o => o.id === editingObsId);
+                if (index !== -1) {
+                    state.diagnostico[sId][currentArea][index].date = date;
+                    state.diagnostico[sId][currentArea][index].text = text;
+                }
+            } else {
+                state.diagnostico[sId][currentArea].push({
+                    id: Date.now(),
+                    date: date,
+                    text: text
+                });
+            }
 
             localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
             renderArea(currentArea);
