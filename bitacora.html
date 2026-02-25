@@ -251,7 +251,7 @@
                 let html = "";
                 activeSections.forEach((s, index) => {
                     html += `
-                        <div class="mb-10 text-left border border-slate-100 p-8 rounded-[2.5rem] bg-white shadow-sm ring-1 ring-slate-50 relative group/section">
+                        <div class="mb-10 text-left border border-slate-100 p-8 rounded-[2.5rem] bg-white shadow-sm ring-1 ring-slate-50 relative group/section" data-section-id="${s.id}">
                             <div class="flex items-center justify-between mb-6">
                                 <div class="flex items-center gap-3">
                                     <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-100"></div>
@@ -316,8 +316,8 @@
 
             function moveSectionUp(id) {
                 const date = document.getElementById('view-date').value;
-                const sections = Array.from(document.querySelectorAll('#day-activities > div')).map(el => {
-                    return el.querySelector('h3').innerText.replace('Sección ', '').trim();
+                const sections = Array.from(document.querySelectorAll('#day-activities > [data-section-id]')).map(el => {
+                    return el.dataset.sectionId;
                 });
                 const index = sections.indexOf(id);
                 if (index > 0) {
@@ -331,8 +331,8 @@
 
             function moveSectionDown(id) {
                 const date = document.getElementById('view-date').value;
-                const sections = Array.from(document.querySelectorAll('#day-activities > div')).map(el => {
-                    return el.querySelector('h3').innerText.replace('Sección ', '').trim();
+                const sections = Array.from(document.querySelectorAll('#day-activities > [data-section-id]')).map(el => {
+                    return el.dataset.sectionId;
                 });
                 const index = sections.indexOf(id);
                 if (index < sections.length - 1 && index !== -1) {
@@ -423,7 +423,7 @@
                 <span class="text-lg">📝</span>
                 <div>
                     <p class="text-xs font-black text-slate-800 uppercase tracking-tight mb-1">${n.title}</p>
-                    <p class="text-[11px] text-slate-500 font-medium leading-relaxed">${n.detail || ''}</p>
+                    <p class="text-[11px] text-slate-500 font-medium leading-relaxed whitespace-pre-wrap">${n.detail || ''}</p>
                 </div>
             </div>
             <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
@@ -665,7 +665,7 @@
                     const hasAttendance = node.innerHTML.includes('Asistencia Registrada');
                     const activities = Array.from(node.querySelectorAll('.space-y-4 > div')).filter(div => !div.innerHTML.includes('Asistencia Registrada'));
                     const noteTextElement = node.querySelector('div.bitacora-text');
-                    const noteText = noteTextElement ? noteTextElement.innerText : "";
+                    const noteText = noteTextElement ? noteTextElement.textContent : "";
 
                     return `
                         <div class="section-card">
@@ -696,7 +696,7 @@
                             </div>
                             ${noteText && noteText !== "Sin observaciones registradas." ? `
                                 <span class="bitacora-label">Bitácora de Lección</span>
-                                <div class="bitacora-text">${noteText}</div>
+                                <div class="bitacora-text" style="white-space: pre-wrap;">${noteText}</div>
                             ` : ''}
                         </div>
                     `;
@@ -709,7 +709,7 @@
                     ${notes.map(n => `
                         <div class="note-card">
                             <b>${n.title}</b>
-                            <div style="font-size: 10px; line-height: 1.4;">${n.detail}</div>
+                            <div style="font-size: 10px; line-height: 1.4; white-space: pre-wrap;">${n.detail}</div>
                         </div>
                     `).join('')}
                 </div>
