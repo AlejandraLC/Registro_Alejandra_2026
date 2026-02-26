@@ -172,21 +172,20 @@
                 document.getElementById('date-display').innerText = date;
                 const container = document.getElementById('day-activities');
 
-                // 1. Recopilar todas las secciones con actividad
-                const activeSections = [];
-                const niveles = Object.keys(state.students || {}).sort((a, b) => a - b);
+                const activeGroups = [];
+                const attData = state.attendance?.[currentPeriod]?.[date] || {};
 
+                // --- 1. PROCESAR MATERIA (NIVELES Y SECCIONES) ---
+                const niveles = Object.keys(state.students || {}).sort((a, b) => a - b);
                 niveles.forEach(lvl => {
                     const secciones = [...new Set(state.students[lvl].map(s => s.section))].sort();
                     secciones.forEach(sec => {
-                        const attData = state.attendance?.[currentPeriod]?.[date];
-                        let tieneAsistencia = false;
-                        if (attData) {
-                            tieneAsistencia = state.students[lvl]
-                                .filter(s => s.section === sec)
-                                .some(s => attData[s.id] !== undefined);
-                        }
+                        const groupId = `_group_${lvl}_${sec}`;
 
+                        // Asistencia
+                        const tieneAsistencia = Object.keys(attData).some(k => k.startsWith(groupId + '_'));
+
+                        // Actividades
                         const cot = Object.values(state.activities || {}).filter(a =>
                             a.level === lvl && a.section === sec && (a.dates || []).includes(date))
                             .map(a => ({ ...a, type: 'cot', icon: 'clipboard-list', label: 'Cotidiano', color: 'blue', link: 'cotidiano.html' }));
@@ -199,6 +198,7 @@
                             t.level === lvl && t.section === sec && t.date === date)
                             .map(t => ({ ...t, type: 'test', icon: 'file-text', label: 'Prueba', color: 'rose', link: 'pruebas.html' }));
 
+                        // Comunicados
                         const sectionStudentIds = (state.students[lvl] || []).filter(s => s.section === sec).map(s => s.id);
                         const comms = [];
                         sectionStudentIds.forEach(id => {
@@ -213,22 +213,14 @@
                                 });
                             });
                         });
-
-                        const uniqueComms = [];
-                        const seenComms = new Set();
-                        comms.forEach(c => {
-                            const key = `${c.name}`;
-                            if (!seenComms.has(key)) {
-                                uniqueComms.push(c);
-                                seenComms.add(key);
-                            }
-                        });
+                        const uniqueComms = Array.from(new Set(comms.map(c => c.name))).map(name => comms.find(c => c.name === name));
 
                         if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || tests.length > 0 || uniqueComms.length > 0) {
-                            activeSections.push({
-                                id: `${lvl}-${sec}`,
-                                lvl,
-                                sec,
+                            activeGroups.push({
+                                id: groupId,
+                                label: `Sección ${lvl}-${sec}`,
+                                mode: 'materia',
+                                lvl, sec,
                                 tieneAsistencia,
                                 combinedActivities: [...cot, ...tasks, ...tests, ...uniqueComms]
                             });
@@ -236,9 +228,60 @@
                     });
                 });
 
-                // 2. Ordenar las secciones según el orden guardado o por ID por defecto
+                // --- 2. PROCESAR TALLERES ---
+                const workshopNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                workshopNames.forEach((wName, idx) => {
+                    const wId = (idx + 1).toString();
+                    const groupId = `_workshop_${wId}`;
+
+                    // Asistencia
+                    const tieneAsistencia = Object.keys(attData).some(k => k.startsWith(groupId + '_'));
+
+                    // Actividades
+                    const cot = Object.values(state.activities || {}).filter(a =>
+                        a.workshopId === wId && (a.dates || []).includes(date))
+                        .map(a => ({ ...a, type: 'cot', icon: 'clipboard-list', label: 'Cotidiano', color: 'blue', link: 'cotidiano.html' }));
+
+                    const tasks = Object.values(state.tasks || {}).filter(t =>
+                        t.workshopId === wId && (t.dates || []).includes(date))
+                        .map(t => ({ ...t, type: 'task', icon: 'book', label: 'Tarea', color: 'purple', link: 'tareas.html' }));
+
+                    // Comunicados (Solo para estudiantes de este taller)
+                    const comms = [];
+                    Object.keys(state.students).forEach(l => {
+                        state.students[l].forEach(s => {
+                            const inWorkshop = Array.isArray(s.workshops) ? s.workshops.includes(wId) : s.workshop === wId;
+                            if (inWorkshop) {
+                                const studentComms = (state.commHistory?.[s.id] || []).filter(c => c.date === date);
+                                studentComms.forEach(c => {
+                                    comms.push({
+                                        name: `Envío de Comunicado ${c.type} (N° ${c.consecutive || '---'})`,
+                                        label: 'Comunicado',
+                                        icon: 'message-square',
+                                        color: 'amber',
+                                        link: 'comunicados.html'
+                                    });
+                                });
+                            }
+                        });
+                    });
+                    const uniqueComms = Array.from(new Set(comms.map(c => c.name))).map(name => comms.find(c => c.name === name));
+
+                    if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || uniqueComms.length > 0) {
+                        activeGroups.push({
+                            id: groupId,
+                            label: wName,
+                            mode: 'taller',
+                            workshopId: wId,
+                            tieneAsistencia,
+                            combinedActivities: [...cot, ...tasks, ...uniqueComms]
+                        });
+                    }
+                });
+
+                // --- 3. ORDENAR Y RENDERIZAR ---
                 const savedOrder = state.diaryOrder?.[date] || [];
-                activeSections.sort((a, b) => {
+                activeGroups.sort((a, b) => {
                     const idxA = savedOrder.indexOf(a.id);
                     const idxB = savedOrder.indexOf(b.id);
                     if (idxA !== -1 && idxB !== -1) return idxA - idxB;
@@ -247,30 +290,34 @@
                     return a.id.localeCompare(b.id);
                 });
 
-                // 3. Generar HTML
                 let html = "";
-                activeSections.forEach((s, index) => {
+                activeGroups.forEach(g => {
+                    // Generar función de clic para guardado de estado previo a redirección
+                    const setContext = g.mode === 'materia'
+                        ? `localStorage.setItem('temp_current_mode','materia'); localStorage.setItem('temp_current_level','${g.lvl}'); localStorage.setItem('temp_current_section','${g.sec}');`
+                        : `localStorage.setItem('temp_current_mode','taller'); localStorage.setItem('temp_current_workshop','${g.workshopId}');`;
+
                     html += `
-                        <div class="mb-10 text-left border border-slate-100 p-8 rounded-[2.5rem] bg-white shadow-sm ring-1 ring-slate-50 relative group/section" data-section-id="${s.id}">
+                        <div class="mb-10 text-left border border-slate-100 p-8 rounded-[2.5rem] bg-white shadow-sm ring-1 ring-slate-50 relative group/section" data-section-id="${g.id}">
                             <div class="flex items-center justify-between mb-6">
                                 <div class="flex items-center gap-3">
                                     <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-100"></div>
-                                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Sección ${s.id}</h3>
+                                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">${g.label}</h3>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover/section:opacity-100 transition-all no-print">
-                                    <button onclick="moveSectionUp('${s.id}')" class="text-slate-300 hover:text-emerald-500 transition-all p-1" title="Subir">
+                                    <button onclick="moveSectionUp('${g.id}')" class="text-slate-300 hover:text-emerald-500 transition-all p-1" title="Subir">
                                         <i data-lucide="chevron-up" class="w-5 h-5"></i>
                                     </button>
-                                    <button onclick="moveSectionDown('${s.id}')" class="text-slate-300 hover:text-emerald-500 transition-all p-1" title="Bajar">
+                                    <button onclick="moveSectionDown('${g.id}')" class="text-slate-300 hover:text-emerald-500 transition-all p-1" title="Bajar">
                                         <i data-lucide="chevron-down" class="w-5 h-5"></i>
                                     </button>
                                 </div>
                             </div>
                             
                             <div class="space-y-4 ml-2 mb-8">
-                                ${s.tieneAsistencia ? `
+                                ${g.tieneAsistencia ? `
                                 <div class="bg-slate-50/50 border border-slate-100 p-5 rounded-3xl flex items-center justify-between group cursor-pointer hover:border-emerald-200 transition-all"
-                                     onclick="localStorage.setItem('temp_current_level','${s.lvl}'); localStorage.setItem('temp_current_section','${s.sec}'); location.href='asistencia.html'">
+                                     onclick="${setContext} location.href='asistencia.html'">
                                     <div class="flex items-center gap-4">
                                         <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm shadow-emerald-100">
                                             <i data-lucide="clock" class="w-6 h-6 icon-vibrant" style="--primary-vibrant: var(--emerald-vibrant); --primary-light: var(--emerald-light);"></i>
@@ -282,9 +329,9 @@
                                     <i data-lucide="arrow-right" class="w-5 h-5 text-slate-200 group-hover:text-emerald-400 transition-colors"></i>
                                 </div>` : ''}
 
-                                ${s.combinedActivities.map(a => `
+                                ${g.combinedActivities.map(a => `
                                     <div class="bg-slate-50/50 border border-slate-100 p-5 rounded-3xl flex items-center justify-between group cursor-pointer hover:border-${a.color}-200 transition-all"
-                                         onclick="localStorage.setItem('temp_current_level','${s.lvl}'); localStorage.setItem('temp_current_section','${s.sec}'); location.href='${a.link}'">
+                                         onclick="${setContext} location.href='${a.link}'">
                                         <div class="flex items-center gap-4">
                                             <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-${a.color}-500 shadow-sm shadow-${a.color}-100">
                                                 <i data-lucide="${a.icon}" class="w-6 h-6 icon-vibrant" style="--primary-vibrant: var(--${a.color}-vibrant); --primary-light: var(--${a.color}-light);"></i>
@@ -304,13 +351,13 @@
                                 <textarea 
                                     class="w-full bg-emerald-50/30 border border-emerald-100 rounded-[2rem] p-6 text-sm font-medium text-slate-600 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-400 transition-all min-h-[120px] resize-none overflow-hidden"
                                     placeholder="Escribir observaciones de la lección..."
-                                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; saveDiaryNote('${s.id}', '${date}', this.value)"
-                                >${state.diaryNotes?.[date]?.[s.id] || ''}</textarea>
+                                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; saveDiaryNote('${g.id}', '${date}', this.value)"
+                                >${state.diaryNotes?.[date]?.[g.id] || ''}</textarea>
                             </div>
                         </div>`;
                 });
 
-                container.innerHTML = activeSections.length > 0 ? html : `<p class="text-slate-300 italic text-sm py-10">No hay registros para este día.</p>`;
+                container.innerHTML = activeGroups.length > 0 ? html : `<p class="text-slate-300 italic text-sm py-10">No hay registros para este día.</p>`;
                 lucide.createIcons();
             }
 
