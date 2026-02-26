@@ -294,6 +294,7 @@
 
             tbody.innerHTML = students.map(s => {
                 // Obtenemos el registro de hoy o creamos uno por defecto (Presente)
+                const todayId = `${groupKey}_${s.id}`;
                 const todayRecord = getRecord(s.id, date) || { status: 'P', lessons: dayLec };
                 const stats = calculateStats(s.id);
                 const grade = calculateGrade(stats.ai, stats.t, totalLecPeriodo);
@@ -346,7 +347,7 @@
                 lessons = dayLec;
             }
 
-            state.attendance[period][date][studentId] = { status: newStatus, lessons: lessons };
+            state.attendance[period][date][`${groupKey}_${studentId}`] = { status: newStatus, lessons: lessons };
             save();
         }
 
@@ -362,8 +363,8 @@
                 newValue = dayLec;
             }
 
-            if (state.attendance?.[period]?.[date]?.[studentId]) {
-                state.attendance[period][date][studentId].lessons = newValue;
+            if (state.attendance?.[period]?.[date]?.[`${groupKey}_${studentId}`]) {
+                state.attendance[period][date][`${groupKey}_${studentId}`].lessons = newValue;
                 save();
             }
         }
@@ -374,7 +375,7 @@
             const periodData = state.attendance?.[period] || {};
 
             for (const date in periodData) {
-                const record = periodData[date][studentId];
+                const record = periodData[date][`${groupKey}_${studentId}`];
                 if (record) {
                     if (record.status === 'AI') ai += record.lessons;
                     if (record.status === 'AJ') aj += record.lessons;
@@ -408,10 +409,8 @@
 
                 // REGLA CRÍTICA: Solo contamos si existe al menos un registro de alumno para este grupo hoy
                 // Esto ignora automáticamente los "datos fantasmas" de días ya borrados
-                const hasStudentRecords = Object.keys(dayData).some(id => studentIds.has(id));
+                const hasStudentRecords = Object.keys(dayData).some(id => id.startsWith(groupKey + '_'));
                 if (!hasStudentRecords) {
-                    // Limpieza opcional de fondo
-                    if (dayData[groupKey]) delete state.attendance[period][date][groupKey];
                     continue;
                 }
 
@@ -424,7 +423,7 @@
                 else {
                     let maxLecFound = 0;
                     for (const id in dayData) {
-                        if (studentIds.has(id)) {
+                        if (id.startsWith(groupKey + '_')) {
                             maxLecFound = Math.max(maxLecFound, parseInt(dayData[id].lessons) || 0);
                         }
                     }
@@ -464,7 +463,7 @@
         }
 
         function getRecord(id, date) {
-            return state.attendance?.[period]?.[date]?.[id];
+            return state.attendance?.[period]?.[date]?.[`${groupKey}_${id}`];
         }
 
         function deleteDate() {
@@ -486,8 +485,9 @@
 
                     // Borrar alumnos
                     students.forEach(s => {
-                        if (state.attendance[period][date][s.id]) {
-                            delete state.attendance[period][date][s.id];
+                        const todayId = `${groupKey}_${s.id}`;
+                        if (state.attendance[period][date][todayId]) {
+                            delete state.attendance[period][date][todayId];
                         }
                     });
 
@@ -534,9 +534,10 @@
 
             const dailyRecords = state.attendance[period][date];
             students.forEach(s => {
-                if (dailyRecords[s.id]) {
-                    if (dailyRecords[s.id].lessons > dayLec) {
-                        dailyRecords[s.id].lessons = dayLec;
+                const todayId = `${groupKey}_${s.id}`;
+                if (dailyRecords[todayId]) {
+                    if (dailyRecords[todayId].lessons > dayLec) {
+                        dailyRecords[todayId].lessons = dayLec;
                     }
                 }
             });
@@ -570,7 +571,7 @@
             // Obtenemos solo las fechas que tienen registros para este grupo
             const periodData = state.attendance?.[period] || {};
             const dates = Object.keys(periodData).filter(date => {
-                return Object.keys(periodData[date]).some(studentId => groupStudentIds.has(studentId));
+                return Object.keys(periodData[date]).some(id => id.startsWith(groupKey + '_'));
             }).sort();
 
             if (dates.length === 0) {
@@ -599,7 +600,7 @@
             <tr class="border-t border-slate-50 text-[11px]">
                 <td class="p-4 font-bold text-slate-700 sticky-col bg-white whitespace-nowrap">${s.name}</td>
                 ${dates.map(d => {
-                    const rec = periodData[d][s.id] || { status: 'P', lessons: 0 };
+                    const rec = periodData[d][`${groupKey}_${s.id}`] || { status: 'P', lessons: 0 };
                     let color = 'text-slate-300';
                     if (rec.status === 'AI') color = 'text-red-500 font-bold';
                     if (rec.status === 'AJ') color = 'text-blue-400 font-bold';
@@ -637,7 +638,7 @@
 
             // Filtrar solo las fechas que pertenecen a este grupo
             const dates = Object.keys(periodData).filter(date => {
-                return Object.keys(periodData[date]).some(id => groupStudentIds.has(id));
+                return Object.keys(periodData[date]).some(id => id.startsWith(groupKey + '_'));
             }).sort();
 
             const totalLecPeriodo = calculateTotalLessons();
@@ -706,7 +707,7 @@
                         <tr>
                             <td class="name-cell">${s.name}</td>
                             ${dates.map(d => {
-                    const rec = (state.attendance?.[period]?.[d]?.[s.id]) || { status: 'P' };
+                    const rec = (state.attendance?.[period]?.[d]?.[`${groupKey}_${s.id}`]) || { status: 'P' };
                     let color = '#64748b';
                     if (rec.status === 'AI') color = '#ef4444';
                     if (rec.status === 'AJ') color = '#0ea5e9';

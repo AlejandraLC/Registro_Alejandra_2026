@@ -191,9 +191,13 @@
         function initGroupSelectors() {
             const savedLevel = localStorage.getItem('temp_current_level');
             const savedSection = localStorage.getItem('temp_current_section');
+            const savedWorkshop = localStorage.getItem('temp_current_workshop');
 
             if (savedLevel) {
                 document.getElementById('level-select').value = savedLevel;
+            }
+            if (savedWorkshop) {
+                document.getElementById('workshop-select').value = savedWorkshop;
             }
 
             // updateSectionSelector will fill the section dropdown

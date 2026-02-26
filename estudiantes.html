@@ -220,10 +220,14 @@
         function init() {
             const savedLevel = localStorage.getItem('temp_current_level');
             const savedSection = localStorage.getItem('temp_current_section');
-            const savedMode = localStorage.getItem('temp_est_filter_mode') || 'materia';
+            const savedWorkshop = localStorage.getItem('temp_current_workshop');
+            const savedMode = localStorage.getItem('temp_current_mode') || 'materia';
 
             if (savedLevel) {
                 document.getElementById('level-filter').value = savedLevel;
+            }
+            if (savedWorkshop) {
+                document.getElementById('workshop-filter').value = savedWorkshop;
             }
 
             document.getElementById('type-filter').value = savedMode;
@@ -249,7 +253,7 @@
             const matF = document.getElementById('materia-filters');
             const talF = document.getElementById('taller-filters');
 
-            localStorage.setItem('temp_est_filter_mode', type);
+            localStorage.setItem('temp_current_mode', type);
 
             if (type === 'materia') {
                 matF.classList.remove('hidden');
@@ -258,6 +262,8 @@
             } else {
                 matF.classList.add('hidden');
                 talF.classList.remove('hidden');
+                const wId = document.getElementById('workshop-filter').value;
+                localStorage.setItem('temp_current_workshop', wId);
                 renderStudents();
             }
         }
@@ -295,6 +301,7 @@
                 list = (state.students[lvl] || []).filter(s => s.section === sec);
             } else {
                 const workshop = document.getElementById('workshop-filter').value;
+                localStorage.setItem('temp_current_workshop', workshop);
                 // Buscar en todos los niveles
                 Object.keys(state.students).forEach(lvl => {
                     if (Array.isArray(state.students[lvl])) {

@@ -376,6 +376,9 @@
     const sId = localStorage.getItem('temp_report_student_id');
     const lvl = localStorage.getItem('temp_report_level');
     const period = state.settings?.currentPeriod || '1';
+    const mode = localStorage.getItem('temp_current_mode') || 'materia';
+    const workshopId = localStorage.getItem('temp_current_workshop') || '1';
+    let groupKey = "";
 
     function init() {
         let student = null;
@@ -396,6 +399,7 @@
 
         // Variable global para que otras funciones la usen
         window.currentStudentLvl = levelFound;
+        groupKey = mode === 'materia' ? `_group_${levelFound}_${student.section}` : `_workshop_${workshopId}`;
 
         // Header Web
         document.getElementById('student-header-name').innerText = student.name;
@@ -416,34 +420,38 @@
         const attData = state.attendance?.[period] || {};
         const studentLvl = window.currentStudentLvl;
         const student = (state.students?.[studentLvl] || []).find(s => s.id === studentId);
-        const studentSection = student?.section;
-
-        // IDs de todos los estudiantes en el mismo grupo para filtrar lecciones
-        const groupStudentIds = new Set((state.students?.[studentLvl] || [])
-            .filter(s => s.section === studentSection)
-            .map(s => s.id));
+        if (!student) return { nota: 0, porc: 0, total: 0, ai: 0, aj: 0, t: 0, html: "" };
 
         // Filtramos solo fechas que tienen lecciones para ESTE grupo
         const validDates = Object.keys(attData).filter(date => {
-            return Object.keys(attData[date]).some(id => groupStudentIds.has(id) && attData[date][id].lessons > 0);
+            return Object.keys(attData[date]).some(id => id.startsWith(groupKey + '_'));
         }).sort().reverse();
 
         let totalLeccionesImpartidas = 0;
         let aiLecciones = 0;
         let ajLecciones = 0;
-        let tardiasCount = 0; // Contador de eventos de tardía
+        let tardiasCount = 0;
         let historyHtml = "";
 
         validDates.forEach(date => {
-            // Buscamos el máximo de lecciones del grupo para ese día
-            const groupRecords = Object.entries(attData[date])
-                .filter(([id, _]) => groupStudentIds.has(id))
-                .map(([_, r]) => r);
-
-            const dailyMax = groupRecords.length > 0 ? Math.max(...groupRecords.map(r => r.lessons || 0), 0) : 0;
+            const dayData = attData[date];
+            // 1. Prioridad: Configuración del grupo
+            let dailyMax = 0;
+            if (dayData[groupKey] && dayData[groupKey].dayLessons > 0) {
+                dailyMax = parseInt(dayData[groupKey].dayLessons);
+            } else {
+                // 2. Fallback: Máximo de lecciones de los alumnos de este grupo hoy
+                let maxFound = 0;
+                for (const id in dayData) {
+                    if (id.startsWith(groupKey + '_')) {
+                        maxFound = Math.max(maxFound, parseInt(dayData[id].lessons) || 0);
+                    }
+                }
+                dailyMax = maxFound;
+            }
             totalLeccionesImpartidas += dailyMax;
 
-            const record = attData[date][studentId];
+            const record = dayData[`${groupKey}_${studentId}`];
             if (record && record.status !== 'P') {
                 if (record.status === 'AI') aiLecciones += record.lessons;
                 if (record.status === 'AJ') ajLecciones += record.lessons;
@@ -512,11 +520,20 @@
             iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
             diversificado: { coti: 35, test: 50, task: 10, att: 5 }
         };
-        const cycle = (parseInt(studentLvl) >= 10) ? p.diversificado : p.iiiCiclo;
-        const valCot = cycle.coti;
-        const valTest = cycle.test;
-        const valTask = cycle.task;
-        const valAtt = cycle.att;
+        if (mode === 'materia') {
+            const cycle = (parseInt(studentLvl) >= 10) ? p.diversificado : p.iiiCiclo;
+            valCot = cycle.coti;
+            valTest = cycle.test;
+            valTask = cycle.task;
+            valAtt = cycle.att;
+        } else {
+            const wP = state.settings?.workshopPercentages || {};
+            valCot = wP.coti || 30;
+            valTest = 0; // Workshops don't have tests
+            valTask = wP.task || 20;
+            valAtt = wP.att || 10;
+            // Project is 40 by default in workshops?
+        }
 
         // A. ASISTENCIA
         const resAttRaw = calculateAttendanceNota(student.id);
@@ -532,7 +549,13 @@
         document.getElementById('at-history').innerHTML = resAtt.html || "Sin registros.";
 
         // B. COTIDIANO
-        const cotActs = Object.values(state.activities || {}).filter(a => a.level === studentLvl && a.section === student.section && a.period === period);
+        const cotActs = Object.values(state.activities || {}).filter(a => {
+            if (mode === 'materia') {
+                return a.level === studentLvl && a.section === student.section && a.period === period;
+            } else {
+                return a.workshopId === workshopId && a.period === period;
+            }
+        });
         let sumCot = 0; let cotHtml = "";
         cotActs.forEach(a => {
             const r = calculateActivityMetrics(student.id, a, 'cot');
@@ -545,7 +568,13 @@
         document.getElementById('cot-history').innerHTML = cotHtml || "<p class='text-slate-300 italic text-center p-8'>Sin actividades registradas.</p>";
 
         // C. TAREAS
-        const taskActs = Object.values(state.tasks || {}).filter(a => a.level === studentLvl && a.section === student.section && a.period === period);
+        const taskActs = Object.values(state.tasks || {}).filter(a => {
+            if (mode === 'materia') {
+                return a.level === studentLvl && a.section === student.section && a.period === period;
+            } else {
+                return a.workshopId === workshopId && a.period === period;
+            }
+        });
         let pObtT = 0; let pMaxT = 0; let taskHtml = "";
         taskActs.forEach(a => {
             const r = calculateActivityMetrics(student.id, a, 'task');
