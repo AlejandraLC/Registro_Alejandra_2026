@@ -360,62 +360,68 @@
             return { ai, aj, t };
         }
 
-        // Sumatoria de lecciones dadas (Total del Periodo)
-        // Sumatoria de lecciones dadas (Total del Periodo) - CORREGIDO
+        // Sumatoria de lecciones dadas (Total del Periodo) - INTELIGENTE
         function calculateTotalLessons() {
             let total = 0;
-            const periodData = state.attendance?.[period] || {};
+            if (!state.attendance || !state.attendance[period]) return 0;
 
-            const groupStudentIds = (state.students[lvl] || [])
-                .filter(s => s.section === sec)
-                .map(s => s.id);
+            const groupKey = "_group_" + lvl + "_" + sec;
+            const students = (state.students[lvl] || []).filter(s => s.section === sec);
+            const studentIds = new Set(students.map(s => s.id));
 
-            const groupStudentSet = new Set(groupStudentIds);
+            for (const date in state.attendance[period]) {
+                const dayData = state.attendance[period][date];
+                if (!dayData) continue;
 
-            for (const date in periodData) {
-                const dailyRecords = periodData[date];
-                const groupKey = "_group_" + lvl + "_" + sec;
-
-                // Verificamos si hay configuración o si al menos un estudiante del grupo tiene registro real
-                const hasGroupConfig = dailyRecords[groupKey] && dailyRecords[groupKey].dayLessons > 0;
-                const hasStudentRecords = Object.keys(dailyRecords).some(id => groupStudentSet.has(id));
-
-                if (hasGroupConfig) {
-                    total += dailyRecords[groupKey].dayLessons;
-                } else if (hasStudentRecords) {
-                    const groupLessons = groupStudentIds.map(id => dailyRecords[id]?.lessons || 0);
-                    total += Math.max(...groupLessons, 0);
+                // REGLA CRÍTICA: Solo contamos si existe al menos un registro de alumno para este grupo hoy
+                // Esto ignora automáticamente los "datos fantasmas" de días ya borrados
+                const hasStudentRecords = Object.keys(dayData).some(id => studentIds.has(id));
+                if (!hasStudentRecords) {
+                    // Limpieza opcional de fondo
+                    if (dayData[groupKey]) delete state.attendance[period][date][groupKey];
+                    continue;
                 }
+
+                let dayLec = 0;
+                // 1. Prioridad: Configuración del grupo
+                if (dayData[groupKey] && dayData[groupKey].dayLessons > 0) {
+                    dayLec = parseInt(dayData[groupKey].dayLessons);
+                }
+                // 2. Fallback: Máximo de lecciones de los alumnos presentes
+                else {
+                    let maxLecFound = 0;
+                    for (const id in dayData) {
+                        if (studentIds.has(id)) {
+                            maxLecFound = Math.max(maxLecFound, parseInt(dayData[id].lessons) || 0);
+                        }
+                    }
+                    dayLec = maxLecFound;
+                }
+
+                total += dayLec;
             }
             return total;
         }
+
         // Lógica de la tabla de porcentajes MEP
         function calculateGrade(ai, t, total) {
             if (total === 0) return (parseInt(lvl) >= 10) ? (state.settings?.percentages?.diversificado?.att || 5) : (state.settings?.percentages?.iiiCiclo?.att || 5);
 
-            // Obtener porcentaje de asistencia dinámico
             const p = state.settings?.percentages || {
                 iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
                 diversificado: { coti: 35, test: 50, task: 10, att: 5 }
             };
             const valAtt = (parseInt(lvl) >= 10) ? p.diversificado.att : p.iiiCiclo.att;
-
-            // REGLA MEP: Cada tardía equivale a media ausencia injustificada (0.5)
             const ausenciasEquivalentes = ai + (t * 0.5);
-
-            // El porcentaje se calcula sobre la suma de AI + el peso de las tardías
             const porcentajeInjustificado = (ausenciasEquivalentes / total) * 100;
-
-            // Factor de escala
             const factor = valAtt / 5;
 
-            // Rangos según la tabla MEP (escalados)
             if (porcentajeInjustificado < 10) return 5 * factor;
             if (porcentajeInjustificado < 20) return 4 * factor;
             if (porcentajeInjustificado < 30) return 3 * factor;
             if (porcentajeInjustificado < 40) return 2 * factor;
             if (porcentajeInjustificado < 50) return 1 * factor;
-            return 0; // 50% o más de ausencias equivalentes
+            return 0;
         }
 
         function getRecord(id, date) {
@@ -424,25 +430,25 @@
 
         function deleteDate() {
             const date = document.getElementById('att-date').value;
-            if (confirm(`¿Eliminar los registros del día ${date} para este grupo?`)) {
+            if (!date) return;
+            if (confirm(`¿Eliminar permanentemente los registros del día ${date} para este grupo?`)) {
                 if (state.attendance?.[period]?.[date]) {
-                    const groupStudentIds = new Set((state.students[lvl] || [])
-                        .filter(s => s.section === sec)
-                        .map(s => s.id));
-
-                    for (const id in state.attendance[period][date]) {
-                        if (groupStudentIds.has(id)) {
-                            delete state.attendance[period][date][id];
-                        }
-                    }
-
-                    // También eliminar la configuración de lecciones del grupo para ese día
                     const groupKey = "_group_" + lvl + "_" + sec;
+                    const students = (state.students[lvl] || []).filter(s => s.section === sec);
+
+                    // Borrar alumnos
+                    students.forEach(s => {
+                        if (state.attendance[period][date][s.id]) {
+                            delete state.attendance[period][date][s.id];
+                        }
+                    });
+
+                    // Borrar config de grupo
                     if (state.attendance[period][date][groupKey]) {
                         delete state.attendance[period][date][groupKey];
                     }
 
-                    // Si el objeto de la fecha queda vacío, lo eliminamos
+                    // Limpiar fecha si quedó totalmente vacía
                     if (Object.keys(state.attendance[period][date]).length === 0) {
                         delete state.attendance[period][date];
                     }
@@ -455,32 +461,30 @@
             localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
             renderAttendance();
         }
+
         function updateAllLessons() {
             const date = document.getElementById('att-date').value;
             const dayLec = parseInt(document.getElementById('day-lessons').value) || 0;
-
-            const groupStudentIds = new Set((state.students[lvl] || [])
-                .filter(s => s.section === sec)
-                .map(s => s.id));
+            const students = (state.students[lvl] || []).filter(s => s.section === sec);
 
             if (!state.attendance) state.attendance = {};
             if (!state.attendance[period]) state.attendance[period] = {};
             if (!state.attendance[period][date]) state.attendance[period][date] = {};
 
-            // Guardar configuración de lecciones del día para el grupo
-            state.attendance[period][date]["_group_" + lvl + "_" + sec] = { dayLessons: dayLec };
+            const groupKey = "_group_" + lvl + "_" + sec;
+            state.attendance[period][date][groupKey] = { dayLessons: dayLec };
 
             const dailyRecords = state.attendance[period][date];
-            for (const id in dailyRecords) {
-                if (groupStudentIds.has(id)) {
-                    // Si el registro previo es mayor al nuevo límite, lo bajamos
-                    if (dailyRecords[id].lessons > dayLec) {
-                        dailyRecords[id].lessons = dayLec;
+            students.forEach(s => {
+                if (dailyRecords[s.id]) {
+                    if (dailyRecords[s.id].lessons > dayLec) {
+                        dailyRecords[s.id].lessons = dayLec;
                     }
                 }
-            }
+            });
             save();
         }
+
         function showHistory() {
             const modal = document.getElementById('modal-history');
             const table = document.getElementById('history-table');
@@ -657,7 +661,7 @@
     <div id="modal-history"
         class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-6xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
-            <div class="p-8 border-b border-slate-50 flex justify-between items-center">
+            <div class="p-8 border-b border-slate-100 flex justify-between items-center">
                 <div>
                     <h2 class="text-xl font-extrabold text-slate-800 uppercase tracking-tighter">
                         <i data-lucide="clock" class="w-6 h-6 icon-vibrant inline-block mr-2 mb-1"></i> Histórico de
