@@ -366,33 +366,25 @@
             let total = 0;
             const periodData = state.attendance?.[period] || {};
 
-            // Obtenemos los IDs de los alumnos del grupo actual
-            const groupStudentIds = new Set((state.students[lvl] || [])
+            const groupStudentIds = (state.students[lvl] || [])
                 .filter(s => s.section === sec)
-                .map(s => s.id));
+                .map(s => s.id);
 
-            // Solo sumamos lecciones de fechas que realmente tienen datos para ESTE grupo
+            const groupStudentSet = new Set(groupStudentIds);
+
             for (const date in periodData) {
                 const dailyRecords = periodData[date];
+                const groupKey = "_group_" + lvl + "_" + sec;
 
-                // Prioridad 1: Configuración específica del grupo para ese día
-                const groupConfig = dailyRecords["_group_" + lvl + "_" + sec];
-                if (groupConfig && groupConfig.dayLessons) {
-                    total += groupConfig.dayLessons;
-                    continue;
-                }
+                // Verificamos si hay configuración o si al menos un estudiante del grupo tiene registro real
+                const hasGroupConfig = dailyRecords[groupKey] && dailyRecords[groupKey].dayLessons > 0;
+                const hasStudentRecords = Object.keys(dailyRecords).some(id => groupStudentSet.has(id));
 
-                // Prioridad 2: Fallback histórico (máximo de lecciones de estudiantes del grupo)
-                const groupRecords = [];
-                for (const studentId in dailyRecords) {
-                    if (groupStudentIds.has(studentId)) {
-                        groupRecords.push(dailyRecords[studentId]);
-                    }
-                }
-
-                if (groupRecords.length > 0) {
-                    const dailyMax = Math.max(...groupRecords.map(r => r.lessons || 0), 0);
-                    total += dailyMax;
+                if (hasGroupConfig) {
+                    total += dailyRecords[groupKey].dayLessons;
+                } else if (hasStudentRecords) {
+                    const groupLessons = groupStudentIds.map(id => dailyRecords[id]?.lessons || 0);
+                    total += Math.max(...groupLessons, 0);
                 }
             }
             return total;
@@ -442,6 +434,12 @@
                         if (groupStudentIds.has(id)) {
                             delete state.attendance[period][date][id];
                         }
+                    }
+
+                    // También eliminar la configuración de lecciones del grupo para ese día
+                    const groupKey = "_group_" + lvl + "_" + sec;
+                    if (state.attendance[period][date][groupKey]) {
+                        delete state.attendance[period][date][groupKey];
                     }
 
                     // Si el objeto de la fecha queda vacío, lo eliminamos
