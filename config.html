@@ -152,9 +152,54 @@
             <section class="card-premium">
                 <h2 class="card-title">
                     <div class="icon-vibrant">
+                        <i data-lucide="puzzle"></i>
+                    </div>
+                    Talleres Especiales
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Nombres de Talleres</h3>
+                        <div class="space-y-2">
+                            <input type="text" id="taller-1" class="input-soft" placeholder="Nombre Taller 1">
+                            <input type="text" id="taller-2" class="input-soft" placeholder="Nombre Taller 2">
+                            <input type="text" id="taller-3" class="input-soft" placeholder="Nombre Taller 3">
+                        </div>
+                    </div>
+
+                    <div class="card-cycle space-y-2 bg-indigo-50/30 border-indigo-100">
+                        <h3
+                            class="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                            <i data-lucide="percent" class="icon-vibrant"></i> Esquema Talleres
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Cotidiano (%)</label>
+                                <input type="number" id="pct-tal-coti" class="input-soft-compact mt-1" placeholder="30">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Proyecto (%)</label>
+                                <input type="number" id="pct-tal-proj" class="input-soft-compact mt-1" placeholder="40">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Tareas (%)</label>
+                                <input type="number" id="pct-tal-task" class="input-soft-compact mt-1" placeholder="20">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase ml-2">Asistencia
+                                    (%)</label>
+                                <input type="number" id="pct-tal-att" class="input-soft-compact mt-1" placeholder="10">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card-premium">
+                <h2 class="card-title">
+                    <div class="icon-vibrant">
                         <i data-lucide="percent"></i>
                     </div>
-                    Porcentajes por Ciclo
+                    Porcentajes por Ciclo (Materia)
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- III Ciclo -->
@@ -295,6 +340,18 @@
             document.getElementById('pct-div-task').value = p.diversificado.task;
             document.getElementById('pct-div-att').value = p.diversificado.att;
 
+            // Cargar Talleres
+            const w = state.admin.workshops || ['', '', ''];
+            document.getElementById('taller-1').value = w[0];
+            document.getElementById('taller-2').value = w[1];
+            document.getElementById('taller-3').value = w[2];
+
+            const wp = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
+            document.getElementById('pct-tal-coti').value = wp.coti;
+            document.getElementById('pct-tal-proj').value = wp.proj;
+            document.getElementById('pct-tal-task').value = wp.task;
+            document.getElementById('pct-tal-att').value = wp.att;
+
             renderGroups();
             lucide.createIcons();
         }
@@ -372,6 +429,20 @@
                     task: parseFloat(document.getElementById('pct-div-task').value) || 10,
                     att: parseFloat(document.getElementById('pct-div-att').value) || 5
                 }
+            };
+
+            // Guardar Talleres
+            state.admin.workshops = [
+                document.getElementById('taller-1').value,
+                document.getElementById('taller-2').value,
+                document.getElementById('taller-3').value
+            ];
+
+            state.settings.workshopPercentages = {
+                coti: parseFloat(document.getElementById('pct-tal-coti').value) || 30,
+                proj: parseFloat(document.getElementById('pct-tal-proj').value) || 40,
+                task: parseFloat(document.getElementById('pct-tal-task').value) || 20,
+                att: parseFloat(document.getElementById('pct-tal-att').value) || 10
             };
 
             localStorage.setItem('academicApp_2026_data', JSON.stringify(state));

@@ -219,15 +219,23 @@
         let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { activities: {}, evaluations: {}, admin: {} };
         if (!state.activities) state.activities = {};
 
+        const mode = localStorage.getItem('temp_current_mode') || 'materia';
         const lvl = localStorage.getItem('temp_current_level') || '7';
         const sec = localStorage.getItem('temp_current_section') || '1';
+        const workshopId = localStorage.getItem('temp_current_workshop') || '1';
         const period = state.settings?.currentPeriod || '1';
         let currentActivityDates = [];
 
         function init() {
-            document.getElementById('display-group').innerText = `${lvl}-${sec}`;
+            if (mode === 'materia') {
+                document.getElementById('display-group').innerText = `${lvl}-${sec}`;
+                document.getElementById('info-subject').innerText = state.admin.subject || 'Matemáticas';
+            } else {
+                const wNames = state.admin.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                document.getElementById('display-group').innerText = wNames[workshopId - 1];
+                document.getElementById('info-subject').innerText = wNames[workshopId - 1];
+            }
             document.getElementById('display-period').innerText = `P-${period}`;
-            document.getElementById('info-subject').innerText = state.admin.subject || 'Matemáticas';
             document.getElementById('info-teacher').innerText = state.admin.name || '---';
             renderActivities();
             lucide.createIcons();
@@ -353,8 +361,9 @@
             state.activities[id] = {
                 id,
                 name,
-                level: lvl,
-                section: sec,
+                level: mode === 'materia' ? lvl : null,
+                section: mode === 'materia' ? sec : null,
+                workshopId: mode === 'taller' ? workshopId : null,
                 period,
                 skills,
                 dates: currentActivityDates
@@ -410,7 +419,13 @@
 
         function renderActivities() {
             const container = document.getElementById('activities-container');
-            const acts = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === sec && a.period === period);
+            const acts = Object.values(state.activities || {}).filter(a => {
+                if (mode === 'materia') {
+                    return a.level === lvl && a.section === sec && a.period === period;
+                } else {
+                    return a.workshopId === workshopId && a.period === period;
+                }
+            });
 
             if (acts.length === 0) {
                 container.innerHTML = '<p class="text-slate-300 text-center py-20 w-full col-span-full italic text-xs">No hay prácticas creadas.</p>';
@@ -509,7 +524,20 @@
         function renderGradingList() {
             const a = state.activities[activeActivityId];
             const date = document.getElementById('select-grading-date').value;
-            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name));
+
             const tbody = document.getElementById('grading-body');
 
             tbody.innerHTML = students.map(s => {
@@ -661,7 +689,18 @@
 
         function downloadActivityPDF() {
             const a = state.activities[activeActivityId];
-            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name));
             // Usamos un iframe oculto para evitar bloqueadores de popups en tablets
             let printFrame = document.getElementById('printFrame');
             if (!printFrame) {
@@ -740,7 +779,7 @@
         <div class="professional-header">
             <div>
                 <h1 style="margin:0; font-size:24px; color:#1e293b; font-weight:900; text-transform:uppercase;">${a.name}</h1>
-                <p style="margin:5px 0 0 0; color:#3b82f6; font-weight:900; text-transform:uppercase; font-size:12px;">NIVEL: ${lvl} | SECCIÓN: ${sec} | PERIODO: ${period === '1' ? 'I' : period === '2' ? 'II' : period}</p>
+                <p style="margin:5px 0 0 0; color:#3b82f6; font-weight:900; text-transform:uppercase; font-size:12px;">${mode === 'materia' ? 'NIVEL: ' + lvl + ' | SECCIÓN: ' + sec : 'TALLER: ' + (state.admin.workshops ? state.admin.workshops[workshopId - 1] : 'Taller ' + workshopId)} | PERIODO: ${period === '1' ? 'I' : period === '2' ? 'II' : period}</p>
             </div>
             <div class="prof-data">
                 <p>INSTITUCIÓN: <b>${state.admin.institution || 'MEP'}</b></p>

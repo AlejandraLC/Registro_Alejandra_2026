@@ -378,8 +378,24 @@
     const period = state.settings?.currentPeriod || '1';
 
     function init() {
-        const student = (state.students?.[lvl] || []).find(s => s.id === sId);
-        if (!student) return;
+        let student = null;
+        let levelFound = null;
+        Object.keys(state.students).forEach(l => {
+            const found = (state.students[l] || []).find(s => s.id === sId);
+            if (found) {
+                student = found;
+                levelFound = l;
+            }
+        });
+
+        if (!student) {
+            alert("Estudiante no encontrado.");
+            location.href = 'estudiantes.html';
+            return;
+        }
+
+        // Variable global para que otras funciones la usen
+        window.currentStudentLvl = levelFound;
 
         // Header Web
         document.getElementById('student-header-name').innerText = student.name;
@@ -398,11 +414,12 @@
     // MOTOR DE CÁLCULO DE ASISTENCIA (TABLA MEP)
     function calculateAttendanceNota(studentId) {
         const attData = state.attendance?.[period] || {};
-        const student = (state.students?.[lvl] || []).find(s => s.id === studentId);
+        const studentLvl = window.currentStudentLvl;
+        const student = (state.students?.[studentLvl] || []).find(s => s.id === studentId);
         const studentSection = student?.section;
 
         // IDs de todos los estudiantes en el mismo grupo para filtrar lecciones
-        const groupStudentIds = new Set((state.students?.[lvl] || [])
+        const groupStudentIds = new Set((state.students?.[studentLvl] || [])
             .filter(s => s.section === studentSection)
             .map(s => s.id));
 
@@ -489,12 +506,13 @@
     }
 
     function renderCompleteReport(student) {
+        const studentLvl = window.currentStudentLvl;
         // Obtener porcentajes dinámicos
         const p = state.settings?.percentages || {
             iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
             diversificado: { coti: 35, test: 50, task: 10, att: 5 }
         };
-        const cycle = (parseInt(lvl) >= 10) ? p.diversificado : p.iiiCiclo;
+        const cycle = (parseInt(studentLvl) >= 10) ? p.diversificado : p.iiiCiclo;
         const valCot = cycle.coti;
         const valTest = cycle.test;
         const valTask = cycle.task;
@@ -514,7 +532,7 @@
         document.getElementById('at-history').innerHTML = resAtt.html || "Sin registros.";
 
         // B. COTIDIANO
-        const cotActs = Object.values(state.activities || {}).filter(a => a.level === lvl && a.section === student.section && a.period === period);
+        const cotActs = Object.values(state.activities || {}).filter(a => a.level === studentLvl && a.section === student.section && a.period === period);
         let sumCot = 0; let cotHtml = "";
         cotActs.forEach(a => {
             const r = calculateActivityMetrics(student.id, a, 'cot');
@@ -527,7 +545,7 @@
         document.getElementById('cot-history').innerHTML = cotHtml || "<p class='text-slate-300 italic text-center p-8'>Sin actividades registradas.</p>";
 
         // C. TAREAS
-        const taskActs = Object.values(state.tasks || {}).filter(a => a.level === lvl && a.section === student.section && a.period === period);
+        const taskActs = Object.values(state.tasks || {}).filter(a => a.level === studentLvl && a.section === student.section && a.period === period);
         let pObtT = 0; let pMaxT = 0; let taskHtml = "";
         taskActs.forEach(a => {
             const r = calculateActivityMetrics(student.id, a, 'task');
@@ -539,7 +557,7 @@
         document.getElementById('task-history').innerHTML = taskHtml || "<p class='text-slate-300 italic text-center p-8'>Sin tareas registradas.</p>";
 
         // D. PRUEBAS
-        const tests = Object.values(state.tests || {}).filter(t => t.level === lvl && t.section === student.section && t.period === period);
+        const tests = Object.values(state.tests || {}).filter(t => t.level === studentLvl && t.section === student.section && t.period === period);
         let pTest = 0; let testHtml = "";
         tests.forEach(t => {
             const ev = state.test_evals?.[t.id]?.[student.id] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
@@ -570,7 +588,7 @@
         document.getElementById('final-period-grade').innerText = total.toFixed(2);
 
         // --- F. CÁLCULO ANUAL (I P-50% / II P-50%) ---
-        const notaMinima = (parseInt(lvl) >= 10) ? 70 : 65;
+        const notaMinima = (parseInt(studentLvl) >= 10) ? 70 : 65;
 
         // Calculamos la nota del periodo actual que tenemos en pantalla
         const currentPeriodGrade = parseFloat(document.getElementById('final-period-grade').innerText) || 0;
@@ -579,9 +597,9 @@
         let p1 = 0; let p2 = 0;
         if (period === '1') {
             p1 = currentPeriodGrade;
-            p2 = state.grades?.[lvl]?.[student.id]?.p2 || 0;
+            p2 = state.grades?.[studentLvl]?.[student.id]?.p2 || 0;
         } else {
-            p1 = state.grades?.[lvl]?.[student.id]?.p1 || 0;
+            p1 = state.grades?.[studentLvl]?.[student.id]?.p1 || 0;
             p2 = currentPeriodGrade;
         }
 

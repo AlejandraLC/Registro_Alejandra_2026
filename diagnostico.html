@@ -296,15 +296,28 @@
         let editingObsId = null;
 
         function init() {
-            if (!sId || !lvl) {
+            if (!sId) {
                 alert("Debe seleccionar un estudiante primero.");
                 location.href = 'estudiantes.html';
                 return;
             }
 
-            const student = (state.students?.[lvl] || []).find(s => s.id === sId);
+            let student = null;
+            let levelFound = null;
+            Object.keys(state.students).forEach(l => {
+                const found = (state.students[l] || []).find(s => s.id === sId);
+                if (found) {
+                    student = found;
+                    levelFound = l;
+                }
+            });
+
             if (student) {
-                document.getElementById('student-name-header').innerText = `${student.name} | ${lvl}-${student.section}`;
+                document.getElementById('student-name-header').innerText = `${student.name} | ${levelFound}-${student.section}`;
+            } else {
+                alert("Estudiante no encontrado.");
+                location.href = 'estudiantes.html';
+                return;
             }
 
             renderAllAreas();

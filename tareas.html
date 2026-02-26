@@ -218,16 +218,24 @@
         if (!state.task_evaluations) state.task_evaluations = {};
         if (!state.admin) state.admin = {};
 
+        const mode = localStorage.getItem('temp_current_mode') || 'materia';
         const lvl = localStorage.getItem('temp_current_level') || '7';
         const sec = localStorage.getItem('temp_current_section') || '1';
+        const workshopId = localStorage.getItem('temp_current_workshop') || '1';
         const period = state.settings?.currentPeriod || '1';
         let currentActivityDates = [];
         let activeActivityId = null;
 
         function init() {
-            document.getElementById('display-group').innerText = `${lvl}-${sec}`;
+            if (mode === 'materia') {
+                document.getElementById('display-group').innerText = `${lvl}-${sec}`;
+                document.getElementById('info-subject').innerText = state.admin.subject || 'Matemáticas';
+            } else {
+                const wNames = state.admin.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                document.getElementById('display-group').innerText = wNames[workshopId - 1];
+                document.getElementById('info-subject').innerText = wNames[workshopId - 1];
+            }
             document.getElementById('display-period').innerText = `P-${period}`;
-            document.getElementById('info-subject').innerText = state.admin.subject || 'Matemáticas';
             document.getElementById('info-teacher').innerText = state.admin.name || '---';
             renderActivities();
             lucide.createIcons();
@@ -312,12 +320,27 @@
                 });
                 if (indicators.length) skills.push({ name: card.querySelector('input').value, indicators });
             });
-            state.tasks[id] = { id, name, level: lvl, section: sec, period, skills, dates: currentActivityDates };
+            state.tasks[id] = {
+                id,
+                name,
+                level: mode === 'materia' ? lvl : null,
+                section: mode === 'materia' ? sec : null,
+                workshopId: mode === 'taller' ? workshopId : null,
+                period,
+                skills,
+                dates: currentActivityDates
+            };
             save(); modal.removeAttribute('data-editing-id'); closeActivityModal(); renderActivities();
         }
 
         function renderActivities() {
-            const acts = Object.values(state.tasks).filter(a => a.level === lvl && a.section === sec && a.period === period);
+            const acts = Object.values(state.tasks).filter(a => {
+                if (mode === 'materia') {
+                    return a.level === lvl && a.section === sec && a.period === period;
+                } else {
+                    return a.workshopId === workshopId && a.period === period;
+                }
+            });
             document.getElementById('activities-container').innerHTML = acts.length ? acts.map(a => `
                 <div class="card-premium group">
                     <div class="flex justify-between items-start mb-4">
@@ -379,7 +402,18 @@
 
         function renderGradingList() {
             const a = state.tasks[activeActivityId]; const date = document.getElementById('select-grading-date').value;
-            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name));
             document.getElementById('grading-body').innerHTML = students.map(s => {
                 const best = calculateBestScores(s.id, a);
                 const obs = getObs(s.id, a.id, date);
@@ -469,16 +503,38 @@
 
         // REPORTE GENERAL
         function showGeneralReport() {
-            const acts = Object.values(state.tasks).filter(a => a.level === lvl && a.section === sec && a.period === period);
+            const acts = Object.values(state.tasks).filter(a => {
+                if (mode === 'materia') {
+                    return a.level === lvl && a.section === sec && a.period === period;
+                } else {
+                    return a.workshopId === workshopId && a.period === period;
+                }
+            });
 
             // Obtener porcentajes dinámicos
-            const p = state.settings?.percentages || {
-                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
-                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
-            };
-            const porc = (parseInt(lvl) >= 10) ? p.diversificado.task : p.iiiCiclo.task;
+            let porc = 10;
+            if (mode === 'materia') {
+                const p = state.settings?.percentages || {
+                    iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                    diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+                };
+                porc = (parseInt(lvl) >= 10) ? p.diversificado.task : p.iiiCiclo.task;
+            } else {
+                porc = state.settings?.workshopPercentages?.task || 20;
+            }
 
-            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name));
 
             // Actualizar encabezado del modal con periodo y componente
             const displayPeriod = period === '1' ? 'I' : period === '2' ? 'II' : period;
@@ -636,15 +692,38 @@
         }
 
         function downloadGeneralPDF() {
-            const acts = Object.values(state.tasks).filter(a => a.level === lvl && a.section === sec && a.period === period);
-            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            const acts = Object.values(state.tasks).filter(a => {
+                if (mode === 'materia') {
+                    return a.level === lvl && a.section === sec && a.period === period;
+                } else {
+                    return a.workshopId === workshopId && a.period === period;
+                }
+            });
 
             // Obtener porcentajes dinámicos
-            const p = state.settings?.percentages || {
-                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
-                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
-            };
-            const porc = (parseInt(lvl) >= 10) ? p.diversificado.task : p.iiiCiclo.task;
+            let porc = 10;
+            if (mode === 'materia') {
+                const p = state.settings?.percentages || {
+                    iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                    diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+                };
+                porc = (parseInt(lvl) >= 10) ? p.diversificado.task : p.iiiCiclo.task;
+            } else {
+                porc = state.settings?.workshopPercentages?.task || 20;
+            }
+
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name));
 
             const displayPeriod = period === '1' ? 'I' : period === '2' ? 'II' : period;
 

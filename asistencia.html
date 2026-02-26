@@ -224,17 +224,29 @@
     <script>
         // Recuperamos el estado global y las variables de navegación
         let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { students: {}, attendance: {}, admin: {}, settings: {} };
+        const mode = localStorage.getItem('temp_current_mode') || 'materia';
         const lvl = localStorage.getItem('temp_current_level') || '7';
         const sec = localStorage.getItem('temp_current_section') || '1';
+        const workshopId = localStorage.getItem('temp_current_workshop') || '1';
         const period = state.settings?.currentPeriod || '1';
+
+        const groupKey = mode === 'materia' ? `_group_${lvl}_${sec}` : `_workshop_${workshopId}`;
 
         // Inicialización de la página
         function init() {
             document.getElementById('att-date').valueAsDate = new Date();
-            document.getElementById('display-group').innerText = `${lvl}-${sec}`;
+
+            if (mode === 'materia') {
+                document.getElementById('display-group').innerText = `${lvl}-${sec}`;
+                document.getElementById('info-subject').innerText = state.admin?.subject || 'Mate';
+            } else {
+                const wNames = state.admin.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                document.getElementById('display-group').innerText = wNames[workshopId - 1];
+                document.getElementById('info-subject').innerText = wNames[workshopId - 1];
+            }
+
             document.getElementById('display-period').innerText = `P-${period}`;
             document.getElementById('info-inst').innerText = state.admin?.institution || 'MEP';
-            document.getElementById('info-subject').innerText = state.admin?.subject || 'Mate';
             document.getElementById('info-teacher').innerText = state.admin?.name || '---';
 
             renderAttendance();
@@ -244,7 +256,19 @@
         // Renderizado de la lista con cálculos en tiempo real
         function renderAttendance() {
             const date = document.getElementById('att-date').value;
-            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name));
+
             const tbody = document.getElementById('att-body');
 
             // Sincronizar el input global de lecciones
@@ -254,7 +278,7 @@
                 .filter(([id, _]) => groupStudentIds.has(id))
                 .map(([_, r]) => r);
 
-            const dateConfig = state.attendance?.[period]?.[date]?.["_group_" + lvl + "_" + sec] || {};
+            const dateConfig = state.attendance?.[period]?.[date]?.[groupKey] || {};
             if (dateConfig.dayLessons) {
                 document.getElementById('day-lessons').value = dateConfig.dayLessons;
             } else if (records.length > 0) {
@@ -309,8 +333,8 @@
             if (!state.attendance[period][date]) state.attendance[period][date] = {};
 
             // Guardar configuración de lecciones del día para el grupo
-            if (!state.attendance[period][date]["_group_" + lvl + "_" + sec]) {
-                state.attendance[period][date]["_group_" + lvl + "_" + sec] = { dayLessons: dayLec };
+            if (!state.attendance[period][date][groupKey]) {
+                state.attendance[period][date][groupKey] = { dayLessons: dayLec };
             }
 
             let lessons = dayLec;
@@ -365,8 +389,17 @@
             let total = 0;
             if (!state.attendance || !state.attendance[period]) return 0;
 
-            const groupKey = "_group_" + lvl + "_" + sec;
-            const students = (state.students[lvl] || []).filter(s => s.section === sec);
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
             const studentIds = new Set(students.map(s => s.id));
 
             for (const date in state.attendance[period]) {
@@ -405,13 +438,19 @@
 
         // Lógica de la tabla de porcentajes MEP
         function calculateGrade(ai, t, total) {
-            if (total === 0) return (parseInt(lvl) >= 10) ? (state.settings?.percentages?.diversificado?.att || 5) : (state.settings?.percentages?.iiiCiclo?.att || 5);
+            if (total === 0) return 100; // placeholder grade
 
-            const p = state.settings?.percentages || {
-                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
-                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
-            };
-            const valAtt = (parseInt(lvl) >= 10) ? p.diversificado.att : p.iiiCiclo.att;
+            let valAtt = 5;
+            if (mode === 'materia') {
+                const p = state.settings?.percentages || {
+                    iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                    diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+                };
+                valAtt = (parseInt(lvl) >= 10) ? p.diversificado.att : p.iiiCiclo.att;
+            } else {
+                valAtt = state.settings?.workshopPercentages?.att || 10;
+            }
+
             const ausenciasEquivalentes = ai + (t * 0.5);
             const porcentajeInjustificado = (ausenciasEquivalentes / total) * 100;
             const factor = valAtt / 5;
@@ -433,8 +472,17 @@
             if (!date) return;
             if (confirm(`¿Eliminar permanentemente los registros del día ${date} para este grupo?`)) {
                 if (state.attendance?.[period]?.[date]) {
-                    const groupKey = "_group_" + lvl + "_" + sec;
-                    const students = (state.students[lvl] || []).filter(s => s.section === sec);
+                    let students = [];
+                    if (mode === 'materia') {
+                        students = (state.students[lvl] || []).filter(s => s.section === sec);
+                    } else {
+                        Object.keys(state.students).forEach(l => {
+                            students = students.concat(state.students[l].filter(stu => {
+                                if (Array.isArray(stu.workshops)) return stu.workshops.includes(workshopId);
+                                return stu.workshop === workshopId;
+                            }));
+                        });
+                    }
 
                     // Borrar alumnos
                     students.forEach(s => {
@@ -465,13 +513,23 @@
         function updateAllLessons() {
             const date = document.getElementById('att-date').value;
             const dayLec = parseInt(document.getElementById('day-lessons').value) || 0;
-            const students = (state.students[lvl] || []).filter(s => s.section === sec);
+
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(stu => stu.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(stu => {
+                        if (Array.isArray(stu.workshops)) return stu.workshops.includes(workshopId);
+                        return stu.workshop === workshopId;
+                    }));
+                });
+            }
 
             if (!state.attendance) state.attendance = {};
             if (!state.attendance[period]) state.attendance[period] = {};
             if (!state.attendance[period][date]) state.attendance[period][date] = {};
 
-            const groupKey = "_group_" + lvl + "_" + sec;
             state.attendance[period][date][groupKey] = { dayLessons: dayLec };
 
             const dailyRecords = state.attendance[period][date];
@@ -488,7 +546,19 @@
         function showHistory() {
             const modal = document.getElementById('modal-history');
             const table = document.getElementById('history-table');
-            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name));
 
             // Actualizar info del periodo
             const displayPeriod = period === '1' ? 'I' : period === '2' ? 'II' : period;
@@ -550,7 +620,18 @@
             document.getElementById('modal-history').classList.add('hidden');
         }
         function downloadPDF() {
-            const students = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name));
             const groupStudentIds = new Set(students.map(s => s.id));
             const periodData = state.attendance?.[period] || {};
 
@@ -599,7 +680,7 @@
         <div class="professional-header">
             <div>
                 <h1>Histórico de Asistencia</h1>
-                <p style="margin:5px 0 0 0; color:#10b981; font-weight:900; text-transform:uppercase; font-size:12px;">NIVEL: ${lvl} | SECCIÓN: ${sec} | PERIODO: ${period === '1' ? 'I' : period === '2' ? 'II' : period}</p>
+                <p style="margin:5px 0 0 0; color:#10b981; font-weight:900; text-transform:uppercase; font-size:12px;">${mode === 'materia' ? 'NIVEL: ' + lvl + ' | SECCIÓN: ' + sec : 'TALLER: ' + (state.admin.workshops ? state.admin.workshops[workshopId - 1] : 'Taller ' + workshopId)} | PERIODO: ${period === '1' ? 'I' : period === '2' ? 'II' : period}</p>
             </div>
             <div class="prof-data">
                 <p>INSTITUCIÓN: <b>${state.admin.institution || 'MEP'}</b></p>

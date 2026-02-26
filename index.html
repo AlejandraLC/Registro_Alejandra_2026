@@ -80,7 +80,13 @@
                 </div>
             </div>
             <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
-                <div class="flex items-center gap-2">
+                <select id="mode-select" onchange="toggleMode()"
+                    class="text-[8px] font-black text-indigo-500 uppercase tracking-widest outline-none bg-indigo-50 px-2 py-0.5 rounded-md">
+                    <option value="materia">Materia</option>
+                    <option value="taller">Taller</option>
+                </select>
+
+                <div id="materia-selectors" class="flex items-center gap-2">
                     <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
                     <select id="level-select" onchange="updateSectionSelector()"
                         class="text-xs font-bold text-slate-600 outline-none">
@@ -93,6 +99,16 @@
                     <span class="text-slate-200">|</span>
                     <select id="section-select" onchange="renderCards()"
                         class="text-xs font-bold text-slate-600 outline-none"></select>
+                </div>
+
+                <div id="taller-selectors" class="hidden flex items-center gap-2">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Taller</span>
+                    <select id="workshop-select" onchange="renderCards()"
+                        class="text-xs font-bold text-slate-600 outline-none">
+                        <option value="1">Taller 1</option>
+                        <option value="2">Taller 2</option>
+                        <option value="3">Taller 3</option>
+                    </select>
                 </div>
 
                 <span class="w-px h-4 bg-slate-100 mx-1"></span>
@@ -139,6 +155,37 @@
         function init() {
             initPeriod();
             initGroupSelectors();
+            initWorkshopNames();
+
+            const savedMode = localStorage.getItem('temp_current_mode') || 'materia';
+            document.getElementById('mode-select').value = savedMode;
+            toggleMode(false); // Update UI but don't force re-render yet (initGroupSelectors does it)
+        }
+
+        function initWorkshopNames() {
+            if (state.admin.workshops) {
+                const wSelect = document.getElementById('workshop-select');
+                for (let i = 0; i < 3; i++) {
+                    if (state.admin.workshops[i]) wSelect.options[i].text = state.admin.workshops[i];
+                }
+            }
+        }
+
+        function toggleMode(shouldRender = true) {
+            const mode = document.getElementById('mode-select').value;
+            const matS = document.getElementById('materia-selectors');
+            const talS = document.getElementById('taller-selectors');
+
+            localStorage.setItem('temp_current_mode', mode);
+
+            if (mode === 'materia') {
+                matS.classList.remove('hidden');
+                talS.classList.add('hidden');
+            } else {
+                matS.classList.add('hidden');
+                talS.classList.remove('hidden');
+            }
+            if (shouldRender) renderCards();
         }
 
         function initGroupSelectors() {
@@ -171,29 +218,46 @@
         }
 
         function renderCards() {
-            const level = document.getElementById('level-select').value;
-            const section = document.getElementById('section-select').value;
+            const mode = document.getElementById('mode-select').value;
             const container = document.getElementById('cards-container');
 
-            localStorage.setItem('temp_current_level', level);
-            localStorage.setItem('temp_current_section', section);
+            let level, section, workshop;
+            let cycle;
 
-            // Obtener porcentajes dinámicos
-            const p = state.settings?.percentages || {
-                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
-                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
-            };
-            const cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
+            if (mode === 'materia') {
+                level = document.getElementById('level-select').value;
+                section = document.getElementById('section-select').value;
+                localStorage.setItem('temp_current_level', level);
+                localStorage.setItem('temp_current_section', section);
+
+                const p = state.settings?.percentages || {
+                    iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                    diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+                };
+                cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
+            } else {
+                workshop = document.getElementById('workshop-select').value;
+                localStorage.setItem('temp_current_workshop', workshop);
+                cycle = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
+            }
 
             const components = [
                 { title: 'Asistencia', desc: 'Registro y ausencias.', pct: cycle.att + '%', icon: 'clock', color: 'emerald', link: 'asistencia.html' },
                 { title: 'Trabajo Cotidiano', desc: 'Actividades diarias.', pct: cycle.coti + '%', icon: 'clipboard-list', color: 'blue', link: 'cotidiano.html?rubro=cotidiano' },
                 { title: 'Tareas', desc: 'Asignaciones extraclase.', pct: cycle.task + '%', icon: 'book', color: 'purple', link: 'tareas.html' },
-                { title: 'Pruebas', desc: 'Exámenes parciales.', pct: cycle.test + '%', icon: 'file-text', color: 'rose', link: 'pruebas.html' },
+            ];
+
+            if (mode === 'materia') {
+                components.push({ title: 'Pruebas', desc: 'Exámenes parciales.', pct: cycle.test + '%', icon: 'file-text', color: 'rose', link: 'pruebas.html' });
+            } else {
+                components.push({ title: 'Proyecto', desc: 'Evaluación por etapas.', pct: cycle.proj + '%', icon: 'puzzle', color: 'amber', link: 'proyecto.html' });
+            }
+
+            components.push(
                 { title: 'Análisis', desc: 'Progreso y alertas.', pct: 'GRÁFICOS', icon: 'bar-chart-3', color: 'indigo', link: 'analisis.html' },
                 { title: 'E. Diagnóstica', desc: 'Perfil del estudiante.', pct: 'PERFIL', icon: 'search', color: 'emerald', link: 'estudiantes.html' },
-                { title: 'Comunicados', desc: 'Notificaciones al hogar.', pct: 'IMPRIMIR', icon: 'message-square', color: 'orange', link: 'comunicados.html' },
-            ];
+                { title: 'Comunicados', desc: 'Notificaciones al hogar.', pct: 'IMPRIMIR', icon: 'message-square', color: 'orange', link: 'comunicados.html' }
+            );
 
             container.innerHTML = components.map(c => `
         <a href="${c.link}" class="card-premium relative overflow-hidden group">
