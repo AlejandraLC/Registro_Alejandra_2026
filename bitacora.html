@@ -712,7 +712,7 @@
                     const hasAttendance = node.innerHTML.includes('Asistencia Registrada');
                     const activities = Array.from(node.querySelectorAll('.space-y-4 > div')).filter(div => !div.innerHTML.includes('Asistencia Registrada'));
                     const noteTextElement = node.querySelector('div.bitacora-text');
-                    const noteText = noteTextElement ? noteTextElement.textContent : "";
+                    const noteText = noteTextElement ? noteTextElement.innerHTML : "";
 
                     return `
                         <div class="section-card">
@@ -743,7 +743,7 @@
                             </div>
                             ${noteText && noteText !== "Sin observaciones registradas." ? `
                                 <span class="bitacora-label">Bitácora de Lección</span>
-                                <div class="bitacora-text" style="white-space: pre-wrap;">${noteText}</div>
+                                <div class="bitacora-text">${noteText}</div>
                             ` : ''}
                         </div>
                     `;
