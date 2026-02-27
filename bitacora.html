@@ -338,7 +338,7 @@
                                             </div>
                                             <div>
                                                 <p class="text-[10px] font-black text-${a.color}-500 uppercase tracking-widest">${a.label}</p>
-                                                <p class="text-xs font-bold text-slate-700">${a.name}</p>
+                                                <p class="text-xs font-bold text-slate-700 whitespace-pre-wrap">${a.name}</p>
                                             </div>
                                         </div>
                                         <i data-lucide="arrow-right" class="w-5 h-5 text-slate-200 group-hover:text-${a.color}-400 transition-colors"></i>
@@ -676,11 +676,11 @@
                 .section-header h3 { font-size: 10px; font-weight: 900; color: #10b981; margin: 0; text-transform: uppercase; }
                 
                 .activities-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-                .activity-item { display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #f1f5f9; }
+                .activity-item { display: flex; align-items: flex-start; gap: 6px; background: #f8fafc; padding: 6px 8px; border-radius: 6px; border: 1px solid #f1f5f9; }
                 .activity-item b { font-size: 8px; text-transform: uppercase; color: #10b981; display: block; }
-                .activity-item span { font-size: 9px; font-weight: 600; color: #475569; }
+                .activity-item span { font-size: 9px; font-weight: 600; color: #475569; white-space: pre-wrap; }
                 
-                .bitacora-text { background: #f0fdf4; padding: 8px 12px; border-radius: 8px; font-size: 10px; color: #475569; border: 1px solid #dcfce7; white-space: pre-wrap; margin-top: 5px; }
+                .bitacora-text { background: #f0fdf4; padding: 12px; border-radius: 8px; font-size: 10px; color: #475569; border: 1px solid #dcfce7; white-space: pre-wrap; margin-top: 5px; line-height: 1.5; }
                 .bitacora-label { font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; display: block; }
 
                 .notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
