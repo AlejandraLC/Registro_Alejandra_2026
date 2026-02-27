@@ -635,7 +635,7 @@
                     const textValue = tx.value;
                     const div = document.createElement('div');
                     div.className = "bitacora-text"; // Mantener la clase para el selector CSS posterior
-                    div.style.cssText = "background: #f0fdf4; padding: 8px 12px; border-radius: 8px; font-size: 10px; color: #475569; border: 1px solid #dcfce7; white-space: pre-wrap; margin-top: 5px;";
+                    div.style.cssText = "background: #f0fdf4; padding: 12px; border-radius: 8px; font-size: 10px; color: #475569; border: 1px solid #dcfce7; white-space: pre-wrap; margin-top: 5px; line-height: 1.5;";
                     div.innerText = textValue || "Sin observaciones registradas.";
                     clonedTextareas[idx].parentNode.replaceChild(div, clonedTextareas[idx]);
                 });
