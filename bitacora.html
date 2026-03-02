@@ -120,17 +120,44 @@
                 </div>
 
                 <div class="lg:col-span-4 space-y-8">
-                    <div class="card-premium relative overflow-hidden">
-                        <div class="absolute -top-4 -right-4 w-20 h-20 bg-emerald-50 rounded-full opacity-50"></div>
-                        <h2>Mis Pendientes</h2>
-                        <div class="flex gap-2">
-                            <input type="text" id="new-todo" placeholder="Agregar un pendiente..."
-                                class="flex-1 bg-slate-50 border-none rounded-2xl p-4 text-sm font-medium focus:ring-2 focus:ring-emerald-500 outline-none">
-                            <button onclick="addTodo()"
-                                class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-100 hover:bg-emerald-600"><i
-                                    data-lucide="check" class="w-6 h-6"></i></button>
+                    <div class="card-premium relative overflow-hidden bg-white/50 border border-slate-100/50">
+                        <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-50 rounded-full opacity-30"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div
+                                    class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-100">
+                                    <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-black text-slate-800">Planificación</h2>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        Actividades Semanales</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="relative">
+                                    <select id="todo-group"
+                                        class="w-full bg-slate-50 border-none rounded-2xl p-4 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 outline-none appearance-none cursor-pointer">
+                                        <option value="general">📍 Tarea General</option>
+                                    </select>
+                                    <i data-lucide="chevron-down"
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <input type="text" id="new-todo" placeholder="¿Qué harás con este grupo?"
+                                        class="flex-1 bg-slate-50 border-none rounded-2xl p-4 text-sm font-medium focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <button onclick="addTodo()"
+                                        class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-100 hover:bg-emerald-600 transition-all">
+                                        <i data-lucide="plus" class="w-6 h-6"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="todo-list"
+                                class="mt-8 space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"></div>
                         </div>
-                        <div id="todo-list" class="mt-6 space-y-3"></div>
                     </div>
 
                     <div class="bg-amber-50/50 border border-amber-100 p-8 rounded-[2.5rem]">
@@ -159,11 +186,38 @@
                 const dateInput = document.getElementById('view-date');
                 if (dateInput) dateInput.valueAsDate = new Date();
 
+                populateGroupSelector();
                 renderDiary();
                 renderTodos();
                 renderNotes();
 
                 lucide.createIcons();
+            }
+
+            function populateGroupSelector() {
+                const selector = document.getElementById('todo-group');
+                if (!selector) return;
+
+                // Limpiar pero mantener 'General'
+                selector.innerHTML = '<option value="general">📍 Tarea General</option>';
+
+                // Niveles y Secciones
+                const niveles = Object.keys(state.students || {}).sort((a, b) => a - b);
+                niveles.forEach(lvl => {
+                    const secciones = [...new Set(state.students[lvl].map(s => s.section))].sort();
+                    secciones.forEach(sec => {
+                        const id = `_group_${lvl}_${sec}`;
+                        const label = `Sección ${lvl}-${sec}`;
+                        selector.innerHTML += `<option value="${id}">👥 ${label}</option>`;
+                    });
+                });
+
+                // Talleres
+                const workshopNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                workshopNames.forEach((wName, idx) => {
+                    const id = `_workshop_${idx + 1}`;
+                    selector.innerHTML += `<option value="${id}">🛠️ ${wName}</option>`;
+                });
             }
 
             function renderDiary() {
@@ -215,7 +269,9 @@
                         });
                         const uniqueComms = Array.from(new Set(comms.map(c => c.name))).map(name => comms.find(c => c.name === name));
 
-                        if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || tests.length > 0 || uniqueComms.length > 0) {
+                        const tieneNota = !!(state.diaryNotes?.[date]?.[groupId]);
+
+                        if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || tests.length > 0 || uniqueComms.length > 0 || tieneNota) {
                             activeGroups.push({
                                 id: groupId,
                                 label: `Sección ${lvl}-${sec}`,
@@ -267,7 +323,9 @@
                     });
                     const uniqueComms = Array.from(new Set(comms.map(c => c.name))).map(name => comms.find(c => c.name === name));
 
-                    if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || uniqueComms.length > 0) {
+                    const tieneNota = !!(state.diaryNotes?.[date]?.[groupId]);
+
+                    if (tieneAsistencia || cot.length > 0 || tasks.length > 0 || uniqueComms.length > 0 || tieneNota) {
                         activeGroups.push({
                             id: groupId,
                             label: wName,
@@ -539,11 +597,12 @@
                 document.getElementById('note-detail').value = "";
                 editNoteId = null;
             }
-            // --- FUNCIONES DE MIS PENDIENTES ---
-
             function addTodo() {
                 const input = document.getElementById('new-todo');
+                const groupSelector = document.getElementById('todo-group');
                 const text = input.value.trim();
+                const groupId = groupSelector.value;
+                const groupLabel = groupSelector.options[groupSelector.selectedIndex].text;
 
                 if (!text) return;
 
@@ -552,7 +611,10 @@
                 state.todos.push({
                     id: Date.now(),
                     text: text,
-                    done: false
+                    groupId: groupId,
+                    groupLabel: groupLabel,
+                    done: false,
+                    sentToDiary: false
                 });
 
                 input.value = "";
@@ -563,6 +625,23 @@
                 const todo = state.todos.find(t => t.id === id);
                 if (todo) {
                     todo.done = !todo.done;
+
+                    // Si se marca como hecho y tiene grupo, agregar a la bitácora
+                    if (todo.done && todo.groupId !== 'general' && !todo.sentToDiary) {
+                        const date = document.getElementById('view-date').value;
+                        const currentNote = state.diaryNotes?.[date]?.[todo.groupId] || '';
+
+                        // Formatear nota con bullet point
+                        const noteToAdd = `• ${todo.text}`;
+                        const newNote = currentNote ? `${currentNote}\n${noteToAdd}` : noteToAdd;
+
+                        saveDiaryNote(todo.groupId, date, newNote);
+                        todo.sentToDiary = true; // Marcar para no repetir
+
+                        // Refrescar bitácora para mostrar el cambio
+                        renderDiary();
+                    }
+
                     saveDiaryData();
                 }
             }
@@ -572,30 +651,56 @@
                 if (!list) return;
 
                 if (!state.todos || state.todos.length === 0) {
-                    list.innerHTML = "";
+                    list.innerHTML = `<div class="text-center py-10 opacity-50">
+                        <i data-lucide="sparkles" class="w-6 h-6 mx-auto mb-2 text-slate-300"></i>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Todo al día</p>
+                    </div>`;
+                    lucide.createIcons();
                     return;
                 }
 
-                list.innerHTML = state.todos.map(t => `
-        <div class="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-[1.5rem] mb-3 shadow-sm transition-all hover:border-emerald-200 group">
-            <div class="flex items-center gap-4">
-                <button onclick="toggleTodo(${t.id})" 
-                    class="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all 
-                    ${t.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-200'}">
-                    ${t.done ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
-                </button>
-                
-                <span class="text-[13px] font-black tracking-tight ${t.done ? 'text-slate-300 line-through' : 'text-slate-700'}">
-                    ${t.text}
-                </span>
-            </div>
+                list.innerHTML = state.todos.map(t => {
+                    const isGroup = t.groupId && t.groupId !== 'general';
+                    const groupColor = t.groupId && t.groupId.includes('workshop') ? 'amber' : 'emerald';
 
-            <button onclick="deleteTodo(${t.id})" 
-                class="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 transition-all">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
-        </div>
-    `).join('');
+                    return `
+                    <div class="flex flex-col p-5 bg-white border border-slate-100 rounded-[1.5rem] mb-3 shadow-sm transition-all hover:border-emerald-200 group relative">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start gap-4">
+                                <button onclick="toggleTodo(${t.id})" 
+                                    class="mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0
+                                    ${t.done ? 'bg-emerald-500 border-emerald-500 shadow-sm shadow-emerald-100' : 'border-slate-200'}">
+                                    ${t.done ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
+                                </button>
+                                
+                                <div>
+                                    ${isGroup ? `
+                                        <span class="text-[9px] font-black uppercase tracking-tighter text-${groupColor}-500 bg-${groupColor}-50/50 px-2.5 py-1 rounded-lg mb-2 inline-block">
+                                            ${t.groupLabel}
+                                        </span>
+                                    ` : `
+                                        <span class="text-[9px] font-black uppercase tracking-tighter text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg mb-2 inline-block">
+                                            📌 General
+                                        </span>
+                                    `}
+                                    <p class="text-[13px] font-bold tracking-tight leading-snug ${t.done ? 'text-slate-300 line-through' : 'text-slate-700'}">
+                                        ${t.text}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button onclick="deleteTodo(${t.id})" 
+                                class="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 transition-all">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        ${t.sentToDiary ? `
+                            <div class="mt-3 pt-3 border-t border-slate-50 flex items-center gap-2 text-[9px] font-black text-emerald-500/70 uppercase tracking-widest ml-10">
+                                <i data-lucide="book-check" class="w-3.5 h-3.5"></i> Enviado a bitácora
+                            </div>
+                        ` : ''}
+                    </div>
+                `}).join('');
 
                 lucide.createIcons();
             }
