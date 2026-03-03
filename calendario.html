@@ -279,7 +279,8 @@
 
         <script>
             let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
-            let currentDate = new Date(2026, 1, 1); // Empezamos en Feb 2026
+            let currentDate = new Date();
+            currentDate.setDate(1); // Inicia en el primer día del mes actual para evitar saltos accidentales entre meses.
             let editingEventId = null;
 
             function init() {
