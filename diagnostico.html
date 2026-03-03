@@ -262,6 +262,16 @@
                 <button onclick="openNoteModal('resolucion')" class="btn-nm w-full no-print">+ Agregar
                     Observación</button>
             </div>
+
+            <div class="area-card" data-area="perfil">
+                <div class="area-icon"><i data-lucide="graduation-cap"></i></div>
+                <h2 class="text-xl font-black text-slate-800 mb-2">Perfil Académico</h2>
+                <p class="text-[10px] text-slate-400 font-bold uppercase mb-6 leading-relaxed">Historial escolar,
+                    rendimiento general y apoyos educativos.</p>
+                <div class="observations-list mb-6"></div>
+                <button onclick="openNoteModal('perfil')" class="btn-nm w-full no-print">+ Agregar Observación</button>
+            </div>
+
         </div>
     </main>
 
@@ -325,7 +335,7 @@
         }
 
         function renderAllAreas() {
-            const areas = ['cognoscitiva', 'socioafectiva', 'psicomotriz', 'estilos', 'resolucion'];
+            const areas = ['cognoscitiva', 'socioafectiva', 'psicomotriz', 'estilos', 'resolucion', 'perfil'];
             areas.forEach(renderArea);
         }
 
@@ -364,7 +374,9 @@
             currentArea = area;
             editingObsId = obsId;
 
-            document.getElementById('modal-area-name').innerText = area.replace(/^\w/, c => c.toUpperCase());
+            const card = document.querySelector(`.area-card[data-area="${area}"]`);
+            const title = card ? card.querySelector('h2').innerText : area;
+            document.getElementById('modal-area-name').innerText = title;
 
             if (obsId) {
                 const obs = state.diagnostico[sId][area].find(o => o.id === obsId);

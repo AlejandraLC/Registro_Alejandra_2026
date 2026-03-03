@@ -547,7 +547,7 @@
                                 ${reasons.map(r => `<span class="badge ${severity === 'red' ? 'badge-red' : 'badge-yellow'}">${r}</span>`).join('')}
                             </div>
                         </div>
-                        <button onclick="location.href='reporte-individual.html?id=${s.id}'" class="p-2 hover:bg-white rounded-xl transition-all text-slate-400 hover:text-indigo-500" title="Ver Detalle">
+                        <button onclick="viewStudentReport('${s.id}')" class="p-2 hover:bg-white rounded-xl transition-all text-slate-400 hover:text-indigo-500" title="Ver Detalle">
                             <i data-lucide="chevron-right"></i>
                         </button>
                     `;
@@ -561,6 +561,11 @@
             } else {
                 noAlerts.classList.add('hidden');
             }
+        }
+
+        function viewStudentReport(studentId) {
+            localStorage.setItem('temp_report_student_id', studentId);
+            window.location.href = 'reporte-individual.html';
         }
 
         function toggleSidebar() {
