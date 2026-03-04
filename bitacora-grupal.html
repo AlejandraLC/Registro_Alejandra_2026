@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora por Grupo - Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    <meta name="theme-color" content="#10b981">
+    <style>
+        .page-bitacora-grupal .nav-active {
+            background: #f0fdf4;
+            color: #10b981;
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                padding: 0;
+                background: white !important;
+                font-size: 10px !important;
+                line-height: 1.2;
+            }
+
+            main {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .card-premium {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+                margin-bottom: 15px !important;
+                padding: 12px !important;
+                break-inside: avoid;
+                border-radius: 1rem !important;
+            }
+
+            .history-item-header {
+                margin-bottom: 8px !important;
+            }
+
+            #history-container {
+                max-width: 100% !important;
+            }
+        }
+
+        /* Estilos del Encabezado Profesional (solo para impresión) */
+        .print-header {
+            display: none;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #10b981;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        @media print {
+            .print-header {
+                display: flex !important;
+            }
+        }
+
+        .prof-data p {
+            margin: 2px 0;
+            font-size: 9px;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .prof-data b {
+            color: #1e293b;
+        }
+
+        .print-footer {
+            display: none;
+            margin-top: 40px;
+            justify-content: flex-end;
+        }
+
+        @media print {
+            .print-footer {
+                display: flex !important;
+            }
+        }
+
+        .signature-box {
+            border-top: 1.5px solid #cbd5e1;
+            width: 200px;
+            text-align: center;
+            padding-top: 8px;
+            font-size: 9px;
+            font-weight: 900;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen page-bitacora-grupal">
+    <button class="sidebar-toggle no-print" onclick="toggleSidebar()">
+        <i data-lucide="menu"></i>
+    </button>
+    <aside
+        class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group no-print">
+        <div class="flex flex-col gap-3 p-4 mt-6">
+            <a href="config.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="settings"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
+            </a>
+            <a href="index.html"
+                class="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 text-slate-400 transition-all">
+                <i data-lucide="layout-dashboard"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
+            </a>
+            <a href="estudiantes.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="users"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
+            </a>
+            <a href="bitacora.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book-open"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora
+                    Diaria</span>
+            </a>
+            <a href="bitacora-grupal.html" class="flex items-center gap-4 p-3 rounded-2xl nav-active transition-all">
+                <i data-lucide="library"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora
+                    Grupal</span>
+            </a>
+            <a href="calendario.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Calendario</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-10">
+        <header class="mb-10 flex items-center justify-between border-b border-slate-100 pb-6 no-print">
+            <div class="flex items-center gap-4">
+                <div class="icon-vibrant">
+                    <i data-lucide="library"></i>
+                </div>
+                <div>
+                    <h1>Bitácora por Grupo</h1>
+                    <p class="info-profesional">Historial cronológico de actividades por sección</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 no-print">
+                <div
+                    class="flex items-center gap-2 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                    <select id="mode-filter" onchange="toggleMode()"
+                        class="text-[8px] font-black text-indigo-500 uppercase tracking-widest outline-none bg-indigo-50 px-2 py-0.5 rounded-md">
+                        <option value="materia">Materia</option>
+                        <option value="taller">Taller</option>
+                    </select>
+
+                    <div id="materia-selectors" class="flex items-center gap-2">
+                        <select id="level-filter" onchange="updateSectionSelector()"
+                            class="text-xs font-bold text-slate-600 outline-none">
+                            <option value="7">7°</option>
+                            <option value="8">8°</option>
+                            <option value="9">9°</option>
+                            <option value="10">10°</option>
+                            <option value="11">11°</option>
+                        </select>
+                        <span class="text-slate-200">|</span>
+                        <select id="section-filter" onchange="renderHistory()"
+                            class="text-xs font-bold text-slate-600 outline-none"></select>
+                    </div>
+
+                    <div id="taller-selectors" class="hidden flex items-center gap-2">
+                        <select id="workshop-filter" onchange="renderHistory()"
+                            class="text-xs font-bold text-slate-600 outline-none">
+                            <option value="1">Taller 1</option>
+                            <option value="2">Taller 2</option>
+                            <option value="3">Taller 3</option>
+                        </select>
+                    </div>
+
+                    <span class="w-px h-4 bg-slate-100 mx-1"></span>
+
+                    <select id="period-filter" onchange="renderHistory()"
+                        class="text-xs font-bold text-blue-500 outline-none bg-transparent">
+                        <option value="1">Periodo I</option>
+                        <option value="2">Periodo II</option>
+                    </select>
+                </div>
+
+                <button onclick="window.print()" class="btn-nm">
+                    <i data-lucide="printer"></i> Imprimir
+                </button>
+            </div>
+        </header>
+
+        <div id="history-container" class="space-y-6 max-w-4xl mx-auto">
+            <!-- Encabezado Profesional para Impresión -->
+            <div class="print-header" id="header-pdf">
+                <div>
+                    <h1 style="font-size: 22px; font-weight: 900; color: #1e293b; letter-spacing: -1px;">BITÁCORA GRUPAL
+                    </h1>
+                    <p id="print-group-info"
+                        style="color:#10b981; font-weight:900; margin: 5px 0 0 0; font-size: 11px;">---</p>
+                </div>
+                <div class="prof-data" style="text-align: right;">
+                    <p>INSTITUCIÓN: <b id="print-inst">---</b></p>
+                    <p>MATERIA: <b id="print-subject">---</b></p>
+                    <p>DOCENTE: <b id="print-teacher">---</b></p>
+                </div>
+            </div>
+            <div id="history-list" class="space-y-6"></div>
+
+            <div class="print-footer">
+                <div class="signature-box">Firma del Docente</div>
+            </div>
+        </div>
+
+        <div id="empty-state" class="hidden text-center py-20">
+            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="book-open" class="w-10 h-10 text-slate-200"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-400 uppercase tracking-widest">Sin registros</h2>
+            <p class="text-slate-400 font-medium mt-2">No se han encontrado actividades para este grupo en el periodo
+                seleccionado.</p>
+        </div>
+    </main>
+
+    <script>
+        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { students: {}, groups: [], admin: {} };
+
+        function init() {
+            const savedMode = localStorage.getItem('temp_current_mode') || 'materia';
+            const savedLevel = localStorage.getItem('temp_current_level') || '7';
+            const savedSection = localStorage.getItem('temp_current_section') || '1';
+            const savedWorkshop = localStorage.getItem('temp_current_workshop') || '1';
+            const currentPeriod = state.settings?.currentPeriod || '1';
+
+            document.getElementById('mode-filter').value = savedMode;
+            document.getElementById('level-filter').value = savedLevel;
+            document.getElementById('period-filter').value = currentPeriod;
+
+            initWorkshopNames();
+            toggleMode(false);
+            updateSectionSelector(savedSection);
+
+            if (savedMode === 'taller') {
+                document.getElementById('workshop-filter').value = savedWorkshop;
+            }
+
+            renderHistory();
+            lucide.createIcons();
+        }
+
+        function initWorkshopNames() {
+            if (state.admin.workshops) {
+                const wSelect = document.getElementById('workshop-filter');
+                for (let i = 0; i < 3; i++) {
+                    if (state.admin.workshops[i]) wSelect.options[i].text = state.admin.workshops[i];
+                }
+            }
+        }
+
+        function toggleMode(shouldRender = true) {
+            const mode = document.getElementById('mode-filter').value;
+            const matS = document.getElementById('materia-selectors');
+            const talS = document.getElementById('taller-selectors');
+
+            localStorage.setItem('temp_current_mode', mode);
+
+            if (mode === 'materia') {
+                matS.classList.remove('hidden');
+                talS.classList.add('hidden');
+            } else {
+                matS.classList.add('hidden');
+                talS.classList.remove('hidden');
+            }
+            if (shouldRender) renderHistory();
+        }
+
+        function updateSectionSelector(sectionToSelect) {
+            const level = document.getElementById('level-filter').value;
+            const sectionSelect = document.getElementById('section-filter');
+            const definedGroups = state.groups || [];
+            const filtered = definedGroups.filter(g => g.startsWith(level + '-')).map(g => g.split('-')[1]);
+
+            if (filtered.length > 0) {
+                sectionSelect.innerHTML = filtered.map(sec => `<option value="${sec}">${level}-${sec}</option>`).join('');
+                if (sectionToSelect && filtered.includes(sectionToSelect)) {
+                    sectionSelect.value = sectionToSelect;
+                }
+            } else {
+                sectionSelect.innerHTML = `<option value="1">${level}-1</option>`;
+            }
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const mode = document.getElementById('mode-filter').value;
+            const level = document.getElementById('level-filter').value;
+            const section = document.getElementById('section-filter').value;
+            const workshopId = document.getElementById('workshop-filter').value;
+            const period = document.getElementById('period-filter').value;
+            const container = document.getElementById('history-list');
+            const emptyState = document.getElementById('empty-state');
+
+            // Actualizar Encabezado de Impresión
+            document.getElementById('print-inst').innerText = state.admin?.institution || 'MEP';
+            document.getElementById('print-subject').innerText = state.admin?.subject || 'MATERIA';
+            document.getElementById('print-teacher').innerText = state.admin?.name || '---';
+
+            const groupLabel = mode === 'materia' ? `${level}-${section}` : (state.admin.workshops?.[workshopId - 1] || 'TALLER');
+            document.getElementById('print-group-info').innerText = `GRUPO: ${groupLabel} | PERIODO: ${period === '1' ? 'I' : 'II'}`;
+
+            const groupId = mode === 'materia' ? `_group_${level}_${section}` : `_workshop_${workshopId}`;
+
+            // Guardar contexto para coherencia en otras páginas
+            localStorage.setItem('temp_current_mode', mode);
+            if (mode === 'materia') {
+                localStorage.setItem('temp_current_level', level);
+                localStorage.setItem('temp_current_section', section);
+            } else {
+                localStorage.setItem('temp_current_workshop', workshopId);
+            }
+
+            const allDatesSet = new Set();
+
+            // 1. Fechas de notas de bitácora
+            Object.keys(state.diaryNotes || {}).forEach(date => {
+                if (state.diaryNotes[date][groupId]) allDatesSet.add(date);
+            });
+
+            // 2. Fechas de actividades, tareas, pruebas
+            const filterFn = (item) => {
+                if (mode === 'materia') {
+                    return item.level === level && item.section === section;
+                } else {
+                    return item.workshopId === workshopId;
+                }
+            };
+
+            Object.values(state.activities || {}).filter(filterFn).forEach(a => {
+                (a.dates || []).forEach(d => allDatesSet.add(d));
+            });
+            Object.values(state.tasks || {}).filter(filterFn).forEach(t => {
+                (t.dates || []).forEach(d => allDatesSet.add(d));
+            });
+            Object.values(state.tests || {}).filter(filterFn).forEach(t => {
+                if (t.date) allDatesSet.add(t.date);
+            });
+
+            // 3. Fechas de asistencia
+            const attDates = Object.keys(state.attendance?.[period] || {}).filter(date => {
+                return Object.keys(state.attendance[period][date]).some(k => k.startsWith(groupId + '_'));
+            });
+            attDates.forEach(d => allDatesSet.add(d));
+
+            // Ordenar fechas cronológicamente (descendente)
+            const sortedDates = Array.from(allDatesSet).sort((a, b) => b.localeCompare(a));
+
+            if (sortedDates.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            let html = '';
+            sortedDates.forEach(date => {
+                const activities = [];
+
+                // Asistencia
+                const dayData = state.attendance?.[period]?.[date] || {};
+                const hasAttendance = Object.keys(dayData).some(k => k.startsWith(groupId + '_'));
+                if (hasAttendance) {
+                    const lessons = dayData[groupId]?.dayLessons || 0;
+                    activities.push({
+                        type: 'Asistencia',
+                        icon: 'clock',
+                        color: 'emerald',
+                        name: `Lección impartida (${lessons} lecc.)`
+                    });
+                }
+
+                // Cotidiano
+                Object.values(state.activities || {}).filter(filterFn).forEach(a => {
+                    if ((a.dates || []).includes(date)) {
+                        activities.push({ type: 'Cotidiano', icon: 'clipboard-list', color: 'blue', name: a.name });
+                    }
+                });
+
+                // Tareas
+                Object.values(state.tasks || {}).filter(filterFn).forEach(t => {
+                    if ((t.dates || []).includes(date)) {
+                        activities.push({ type: 'Tarea', icon: 'book', color: 'purple', name: t.name });
+                    }
+                });
+
+                // Pruebas
+                Object.values(state.tests || {}).filter(filterFn).forEach(t => {
+                    if (t.date === date) {
+                        activities.push({ type: 'Prueba', icon: 'file-text', color: 'rose', name: t.name });
+                    }
+                });
+
+                // Comunicados
+                const studentsInGroup = [];
+                if (mode === 'materia') {
+                    (state.students[level] || []).filter(s => s.section === section).forEach(s => studentsInGroup.push(s));
+                } else {
+                    Object.keys(state.students).forEach(l => {
+                        (state.students[l] || []).filter(s => {
+                            return Array.isArray(s.workshops) ? s.workshops.includes(workshopId) : s.workshop === workshopId;
+                        }).forEach(s => studentsInGroup.push(s));
+                    });
+                }
+
+                studentsInGroup.forEach(s => {
+                    // Solo si hubo asistencia registrada para este grupo hoy
+                    const hasGroupAtt = state.attendance?.[period]?.[date]?.[s.id] &&
+                        (mode === 'materia' ? !state.attendance[period][date][s.id].workshopId : state.attendance[period][date][s.id].workshopId === workshopId);
+
+                    if (hasGroupAtt) {
+                        const studentComms = (state.commHistory?.[s.id] || []).filter(c => c.date === date);
+                        studentComms.forEach(c => {
+                            activities.push({ type: 'Comunicado', icon: 'message-square', color: 'amber', name: `${s.name}: ${c.type}` });
+                        });
+                    }
+                });
+
+                const diaryNote = state.diaryNotes?.[date]?.[groupId] || '';
+
+                const dateParts = date.split('-');
+                const displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+                html += `
+                    <div class="card-premium">
+                        <div class="flex items-center justify-between mb-4 history-item-header">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                                </div>
+                                <h3 class="text-base font-black text-slate-800">${displayDate}</h3>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2 ml-1 mb-3 print:grid-cols-2">
+                            ${activities.map(a => `
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 md:w-8 md:h-8 bg-${a.color}-50 rounded-lg flex items-center justify-center text-${a.color}-500 shrink-0">
+                                        <i data-lucide="${a.icon}" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-[7px] md:text-[8px] font-black text-${a.color}-500 uppercase tracking-widest leading-none mb-0.5">${a.type}</p>
+                                        <p class="text-[10px] md:text-xs font-bold text-slate-700 truncate">${a.name}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        ${diaryNote ? `
+                            <div class="mt-3 p-4 bg-emerald-50/30 border border-emerald-100 rounded-2xl">
+                                <p class="text-[8px] font-black text-emerald-500/70 uppercase tracking-widest mb-1.5 px-0.5">Observaciones de la Lección</p>
+                                <p class="text-[11px] font-medium text-slate-600 whitespace-pre-wrap leading-tight">${diaryNote}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-expanded');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
