@@ -256,6 +256,9 @@
                         const sectionStudentIds = (state.students[lvl] || []).filter(s => s.section === sec).map(s => s.id);
                         const comms = [];
                         sectionStudentIds.forEach(id => {
+                            // Solo mostrar el comunicado si el estudiante tuvo registro de asistencia en este grupo ese día
+                            if (!attData[`${groupId}_${id}`]) return;
+
                             const studentComms = (state.commHistory?.[id] || []).filter(c => c.date === date);
                             studentComms.forEach(c => {
                                 comms.push({
@@ -308,6 +311,9 @@
                         state.students[l].forEach(s => {
                             const inWorkshop = Array.isArray(s.workshops) ? s.workshops.includes(wId) : s.workshop === wId;
                             if (inWorkshop) {
+                                // Solo mostrar el comunicado si el estudiante tuvo registro de asistencia en este taller ese día
+                                if (!attData[`${groupId}_${s.id}`]) return;
+
                                 const studentComms = (state.commHistory?.[s.id] || []).filter(c => c.date === date);
                                 studentComms.forEach(c => {
                                     comms.push({
