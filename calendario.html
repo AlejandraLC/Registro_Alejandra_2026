@@ -353,16 +353,26 @@
 
             function getEvaluationsForDate(date) {
                 let tags = "";
+                const workshops = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+
                 // Recorremos actividades (Cotidianos)
                 Object.values(state.activities || {}).forEach(a => {
                     if (a.dates && a.dates.includes(date)) {
-                        tags += `<div class="event-tag bg-emerald-50 text-emerald-600"><i data-lucide="edit-3" class="w-2.5 h-2.5"></i> ${a.level}-${a.section} COT</div>`;
+                        const label = a.workshopId ? (workshops[a.workshopId - 1] || `Taller ${a.workshopId}`) : `${a.level}-${a.section}`;
+                        tags += `<div class="event-tag bg-emerald-50 text-emerald-600"><i data-lucide="edit-3" class="w-2.5 h-2.5"></i> ${label} COT</div>`;
                     }
                 });
                 // Recorremos tareas
                 Object.values(state.tasks || {}).forEach(t => {
                     if (t.dates && t.dates.includes(date)) {
-                        tags += `<div class="event-tag bg-blue-50 text-blue-600"><i data-lucide="book" class="w-2.5 h-2.5"></i> ${t.level}-${t.section} TAR</div>`;
+                        const label = t.workshopId ? (workshops[t.workshopId - 1] || `Taller ${t.workshopId}`) : `${t.level}-${t.section}`;
+                        tags += `<div class="event-tag bg-blue-50 text-blue-600"><i data-lucide="book" class="w-2.5 h-2.5"></i> ${label} TAR</div>`;
+                    }
+                });
+                // Recorremos pruebas
+                Object.values(state.tests || {}).forEach(p => {
+                    if (p.date === date) {
+                        tags += `<div class="event-tag bg-rose-50 text-rose-600"><i data-lucide="file-text" class="w-2.5 h-2.5"></i> ${p.level}-${p.section} PRU</div>`;
                     }
                 });
                 return tags;
