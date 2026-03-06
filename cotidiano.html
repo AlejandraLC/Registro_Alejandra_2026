@@ -230,6 +230,7 @@
         const sec = localStorage.getItem('temp_current_section') || '1';
         const workshopId = localStorage.getItem('temp_current_workshop') || '1';
         const period = state.settings?.currentPeriod || '1';
+        const groupKey = mode === 'materia' ? `_group_${lvl}_${sec}` : `_workshop_${workshopId}`;
         let currentActivityDates = [];
 
         function init() {
@@ -547,8 +548,11 @@
             const tbody = document.getElementById('grading-body');
 
             tbody.innerHTML = students.map(s => {
+                const todayId = `${groupKey}_${s.id}`;
+                const dailyData = state.attendance?.[period]?.[date] || {};
+                const att = dailyData[todayId];
+
                 const isAbsent = checkAbsence(s.id, date);
-                const att = state.attendance?.[period]?.[date]?.[s.id];
                 const isTardy = att && att.status === 'T';
 
                 // Es ausencia parcial si tiene AI o AJ pero no se bloqueó (checkAbsence = false)
@@ -657,17 +661,21 @@
         function checkAbsence(sId, date) {
             const periodData = state.attendance?.[period] || {};
             const dailyData = periodData[date] || {};
-            const att = dailyData[sId];
+            const todayId = `${groupKey}_${sId}`;
+            const att = dailyData[todayId];
 
             if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return false;
 
-            // Buscamos el valor máximo de lecciones registrado para ese día en asistencia
-            // Esto define el total de lecciones del bloque de ese día.
-            const records = Object.values(dailyData);
-            const dailyMax = records.length > 0 ? Math.max(...records.map(r => r.lessons || 0), 0) : 0;
+            // Buscamos el valor de lecciones del día (preferir config de grupo)
+            let dailyMax = 0;
+            if (dailyData[groupKey] && dailyData[groupKey].dayLessons) {
+                dailyMax = dailyData[groupKey].dayLessons;
+            } else {
+                const records = Object.values(dailyData);
+                dailyMax = records.length > 0 ? Math.max(...records.map(r => r.lessons || 0), 0) : 0;
+            }
 
             // Solo bloqueamos si el estudiante faltó a TODAS las lecciones registradas
-            // Si faltó menos (ej: 1 de 2 lecciones), se permite evaluarlo.
             return att.lessons >= dailyMax;
         }
 
