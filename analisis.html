@@ -181,7 +181,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2" id="group-selector-container">
                     <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
                     <select id="level-select" onchange="updateSectionSelector()"
                         class="text-xs font-bold text-slate-600 outline-none">
@@ -194,6 +194,15 @@
                     <span class="text-slate-200">|</span>
                     <select id="section-select" onchange="loadStats()"
                         class="text-xs font-bold text-slate-600 outline-none"></select>
+                </div>
+                <div class="flex items-center gap-2 hidden" id="workshop-selector-container">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Taller</span>
+                    <select id="workshop-select" onchange="loadStats()"
+                        class="text-xs font-bold text-slate-600 outline-none">
+                        <option value="1">Taller 1</option>
+                        <option value="2">Taller 2</option>
+                        <option value="3">Taller 3</option>
+                    </select>
                 </div>
                 <span class="w-px h-4 bg-slate-100 mx-1"></span>
                 <div class="flex items-center gap-2">
@@ -263,10 +272,10 @@
             </div>
         </div>
     </main>
-
     <script>
         let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
         let boxChart = null;
+        const mode = localStorage.getItem('temp_current_mode') || 'materia';
 
         function init() {
             initSelectors();
@@ -274,15 +283,26 @@
         }
 
         function initSelectors() {
-            const savedLevel = localStorage.getItem('temp_current_level');
-            const savedSection = localStorage.getItem('temp_current_section');
-
-            if (savedLevel) document.getElementById('level-select').value = savedLevel;
-
-            updateSectionSelector(savedSection);
-
+            const periodSelect = document.getElementById('period-select');
             if (state.settings?.currentPeriod) {
-                document.getElementById('period-select').value = state.settings.currentPeriod;
+                periodSelect.value = state.settings.currentPeriod;
+            }
+
+            if (mode === 'taller') {
+                document.getElementById('group-selector-container').classList.add('hidden');
+                document.getElementById('workshop-selector-container').classList.remove('hidden');
+
+                const wSelect = document.getElementById('workshop-select');
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                wSelect.innerHTML = wNames.map((name, i) => `<option value="${i + 1}">${name || `Taller ${i + 1}`}</option>`).join('');
+
+                const savedWorkshop = localStorage.getItem('temp_current_workshop');
+                if (savedWorkshop) wSelect.value = savedWorkshop;
+            } else {
+                const savedLevel = localStorage.getItem('temp_current_level');
+                const savedSection = localStorage.getItem('temp_current_section');
+                if (savedLevel) document.getElementById('level-select').value = savedLevel;
+                updateSectionSelector(savedSection);
             }
         }
 
@@ -304,24 +324,43 @@
         }
 
         function loadStats() {
-            const level = document.getElementById('level-select').value;
-            const section = document.getElementById('section-select').value;
             const period = document.getElementById('period-select').value;
-
             document.getElementById('info-inst').innerText = state.admin?.institution || 'MEP';
             document.getElementById('info-subject').innerText = state.admin?.subject || 'Materia';
 
-            localStorage.setItem('temp_current_level', level);
-            localStorage.setItem('temp_current_section', section);
+            let students = [];
+            let level = "";
+            let section = "";
+            let workshopId = "";
 
-            const students = (state.students?.[level] || []).filter(s => s.section === section);
+            if (mode === 'taller') {
+                workshopId = document.getElementById('workshop-select').value;
+                localStorage.setItem('temp_current_workshop', workshopId);
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                document.getElementById('info-subject').innerText = wNames[workshopId - 1] || 'Taller';
+
+                // Get all students in this workshop
+                Object.keys(state.students || {}).forEach(l => {
+                    const filtered = (state.students[l] || []).filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    });
+                    students = [...students, ...filtered];
+                });
+            } else {
+                level = document.getElementById('level-select').value;
+                section = document.getElementById('section-select').value;
+                localStorage.setItem('temp_current_level', level);
+                localStorage.setItem('temp_current_section', section);
+                students = (state.students?.[level] || []).filter(s => s.section === section);
+            }
 
             if (students.length === 0) {
                 renderEmpty();
                 return;
             }
 
-            processData(students, period, level, section);
+            processData(students, period, level, section, workshopId);
             lucide.createIcons();
         }
 
@@ -335,19 +374,25 @@
             if (boxChart) boxChart.destroy();
         }
 
-        function processData(students, period, level, section) {
+        function processData(students, period, level, section, workshopId) {
             // Percentages
             const p = state.settings?.percentages || {
                 iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
                 diversificado: { coti: 35, test: 50, task: 10, att: 5 }
             };
-            const cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
+            const wP = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
+            const cycle = (mode === 'taller') ? { ...wP, test: 0 } : ((parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo);
 
             const studentStats = students.map(student => {
                 const sId = student.id;
+                let earnedPoints = 0;
+                let activeWeight = 0;
 
-                // Cotidiano
-                const acts = Object.values(state.activities || {}).filter(a => a.level === level && a.section === section && a.period === period);
+                // 1. Cotidiano
+                const acts = Object.values(state.activities || {}).filter(a => {
+                    if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
+                    return a.level === level && a.section === section && a.period === period;
+                });
                 let cotiScore = 0;
                 let cotiTotalMax = 0;
                 acts.forEach(a => {
@@ -365,29 +410,67 @@
                         });
                     });
                     if (maxInds > 0) {
-                        const actNote = (totalPts * 100) / maxInds;
-                        cotiScore += actNote;
+                        cotiScore += (totalPts * 100) / maxInds;
                         cotiTotalMax += 100;
                     }
                 });
                 const cotiFinalNote = cotiTotalMax > 0 ? (cotiScore / cotiTotalMax) * 100 : 0;
+                if (cotiTotalMax > 0) {
+                    activeWeight += cycle.coti;
+                    earnedPoints += (cotiFinalNote * cycle.coti / 100);
+                }
 
-                // Pruebas
-                const tests = Object.values(state.tests || {}).filter(t => t.level === level && t.section === section && t.period === period);
+                // 2. Pruebas (Solo Materia)
                 let testSumPerc = 0;
                 let testMaxPercAvailable = 0;
-                tests.forEach(t => {
-                    const ev = state.test_evals?.[t.id]?.[sId] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
-                    const maxPts = ev.sig ? ev.sigPts : t.points;
-                    const maxP = ev.sig ? ev.sigPerc : t.percent;
-                    const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
-                    testSumPerc += (nota * maxP / 100);
-                    testMaxPercAvailable += maxP;
-                });
-                const testFinalNote = testMaxPercAvailable > 0 ? (testSumPerc / testMaxPercAvailable) * 100 : 0;
+                if (mode === 'materia') {
+                    const tests = Object.values(state.tests || {}).filter(t => t.level === level && t.section === section && t.period
+                        === period);
+                    tests.forEach(t => {
+                        const ev = state.test_evals?.[t.id]?.[sId] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
+                        const maxPts = ev.sig ? ev.sigPts : t.points;
+                        const maxP = ev.sig ? ev.sigPerc : t.percent;
+                        const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
+                        testSumPerc += (nota * maxP / 100);
+                        testMaxPercAvailable += maxP;
+                    });
+                    if (testMaxPercAvailable > 0) {
+                        activeWeight += testMaxPercAvailable;
+                        earnedPoints += testSumPerc;
+                    }
+                }
 
-                // Tareas
-                const tasks = Object.values(state.tasks || {}).filter(a => a.level === level && a.section === section && a.period === period);
+                // 3. Proyecto (Solo Taller)
+                let projFinalNote = 0;
+                if (mode === 'taller') {
+                    const projects = Object.values(state.projects || {}).filter(p => p.workshopId === workshopId && p.period ===
+                        period);
+                    let sumProj = 0;
+                    projects.forEach(p => {
+                        let pPts = 0; let pMax = 0;
+                        p.skills.forEach((sk, skI) => sk.indicators.forEach((ind, inI) => {
+                            pMax += 3;
+                            let best = 0;
+                            p.dates.forEach(d => {
+                                const s = state.projectEvaluations?.[p.id]?.[d]?.[sId]?.scores?.[`${skI}-${inI}`] || 0;
+                                if (s > best) best = s;
+                            });
+                            pPts += best;
+                        }));
+                        if (pMax > 0) sumProj += (pPts * 100 / pMax);
+                    });
+                    projFinalNote = projects.length > 0 ? (sumProj / projects.length) : 0;
+                    if (projects.length > 0) {
+                        activeWeight += cycle.proj;
+                        earnedPoints += (projFinalNote * cycle.proj / 100);
+                    }
+                }
+
+                // 4. Tareas
+                const tasks = Object.values(state.tasks || {}).filter(a => {
+                    if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
+                    return a.level === level && a.section === section && a.period === period;
+                });
                 let taskSumPts = 0;
                 let taskMaxPossible = 0;
                 tasks.forEach(a => {
@@ -402,65 +485,69 @@
                     }));
                 });
                 const taskFinalNote = taskMaxPossible > 0 ? (taskSumPts * 100) / taskMaxPossible : 0;
+                if (taskMaxPossible > 0) {
+                    activeWeight += cycle.task;
+                    earnedPoints += (taskFinalNote * cycle.task / 100);
+                }
 
-                // Asistencia
+                // 5. Asistencia
                 const attData = state.attendance?.[period] || {};
                 let totalLecciones = 0;
-                let ausenciasInjustificadas = 0;
+                let aiLecciones = 0;
+                const groupPrefix = mode === 'taller' ? `_workshop_${workshopId}_` : `_group_${level}_${section}_`;
                 Object.entries(attData).forEach(([date, dayData]) => {
-                    // Solo si hay estudiantes del grupo registrados ese día
-                    const groupInDay = Object.values(dayData).some(r => {
-                        const st = students.find(ss => ss.id === r.studentId);
-                        return !!st;
-                    });
-
-                    if (dayData[sId]) {
-                        totalLecciones += dayData[sId].lessons || 0;
-                        if (dayData[sId].status === 'AI') ausenciasInjustificadas += dayData[sId].lessons || 0;
+                    const record = dayData[`${groupPrefix}${sId}`];
+                    if (record) {
+                        totalLecciones += record.lessons || 0;
+                        if (record.status === 'AI') aiLecciones += record.lessons || 0;
                     }
                 });
-                // Nota asistencia: (1 - AI/Total) * 100
-                const attFinalNote = totalLecciones > 0 ? Math.max(0, (1 - ausenciasInjustificadas / totalLecciones) * 100) : 100;
+                const attFinalNote = totalLecciones > 0 ? Math.max(0, (1 - aiLecciones / totalLecciones) * 100) : 100;
+                if (totalLecciones > 0) {
+                    activeWeight += cycle.att;
+                    earnedPoints += (attFinalNote * cycle.att / 100);
+                }
 
-                // Overall Estimation
-                const overall = (cotiFinalNote * cycle.coti / 100) +
-                    (testFinalNote * cycle.test / 100) +
-                    (taskFinalNote * cycle.task / 100) +
-                    (attFinalNote * cycle.att / 100);
+                // Total Final (Acumulado) y Performance (Normalizado)
+                const overall = earnedPoints;
+                const performance = activeWeight > 0 ? (earnedPoints / activeWeight) * 100 : 100;
 
                 return {
                     id: sId,
                     name: student.name,
                     coti: cotiFinalNote,
-                    test: testFinalNote,
+                    test: (mode === 'materia') ? (testMaxPercAvailable > 0 ? (testSumPerc / testMaxPercAvailable * 100) : 0) : 0,
+                    proj: projFinalNote,
                     task: taskFinalNote,
                     att: attFinalNote,
-                    overall: overall
+                    overall: overall,
+                    performance: performance
                 };
             });
 
             // Calculate Box Plot Data
-            const labels = ['Cotidiano', 'Pruebas', 'Tareas', 'Asistencia'];
-            const chartData = [
-                studentStats.map(s => s.coti),
-                studentStats.map(s => s.test),
-                studentStats.map(s => s.task),
-                studentStats.map(s => s.att)
-            ];
+            const labelsMap = mode === 'taller'
+                ? ['Cotidiano', 'Proyecto', 'Tareas', 'Asistencia']
+                : ['Cotidiano', 'Pruebas', 'Tareas', 'Asistencia'];
 
-            renderChart(labels, chartData);
+            const chartData = mode === 'taller'
+                ? [studentStats.map(s => s.coti), studentStats.map(s => s.proj), studentStats.map(s => s.task), studentStats.map(s => s.att)]
+                : [studentStats.map(s => s.coti), studentStats.map(s => s.test), studentStats.map(s => s.task), studentStats.map(s => s.att)];
 
-            // Summary Stats
-            const groupAvg = studentStats.reduce((acc, s) => acc + s.overall, 0) / studentStats.length;
-            document.getElementById('avg-grade').innerText = groupAvg.toFixed(1);
-            document.getElementById('avg-progress').style.width = groupAvg + "%";
+            renderChart(labelsMap, chartData);
 
-            const passingStudents = studentStats.filter(s => s.overall >= 65).length; // MEP threshold is usually 65 or 70
+            // Summary Stats (Usamos Performance para reflejar realidad actual)
+            const groupAvgPerformance = studentStats.reduce((acc, s) => acc + s.performance, 0) / studentStats.length;
+            document.getElementById('avg-grade').innerText = groupAvgPerformance.toFixed(1);
+            document.getElementById('avg-progress').style.width = groupAvgPerformance + "%";
+
+            const threshold = (parseInt(level) >= 10) ? 70 : 65;
+            const passingStudents = studentStats.filter(s => s.performance >= threshold).length;
             const passingRate = (passingStudents / studentStats.length) * 100;
             document.getElementById('passing-rate').innerText = Math.round(passingRate) + "%";
 
             // Alerts
-            identifyAlerts(students, studentStats);
+            identifyAlerts(students, studentStats, threshold);
         }
 
         function renderChart(labels, data) {
@@ -503,14 +590,13 @@
             });
         }
 
-        function identifyAlerts(students, stats) {
+        function identifyAlerts(students, stats, threshold) {
             const alertsContainer = document.getElementById('alerts-container');
             const noAlerts = document.getElementById('no-alerts');
             alertsContainer.innerHTML = "";
             let alertCount = 0;
 
             stats.forEach(s => {
-                const studentData = students.find(ss => ss.id === s.id);
                 const comms = (state.commHistory?.[s.id] || []);
                 const redComms = comms.filter(c => c.type === 'Rojo').length;
                 const yellowComms = comms.filter(c => c.type === 'Amarillo').length;
@@ -526,17 +612,18 @@
                     reasons.push(`${yellowComms} Comunicados Amarillos`);
                     if (!severity) severity = 'yellow';
                 }
-                if (s.overall < 60) {
-                    reasons.push(`Promedio bajo (${s.overall.toFixed(1)})`);
+
+                // Alert logic based on PERFORMANCE (current developed percentage)
+                if (s.performance < threshold) {
+                    reasons.push(`Rendimiento bajo (${s.performance.toFixed(1)}%)`);
                     severity = 'red';
-                } else if (s.overall < 70) {
-                    reasons.push(`Promedio en riesgo (${s.overall.toFixed(1)})`);
+                } else if (s.performance < threshold + 5) {
+                    reasons.push(`Rendimiento en riesgo (${s.performance.toFixed(1)}%)`);
                     if (!severity) severity = 'yellow';
                 }
 
                 // Check for specific component failure
-                if (s.test < 60) reasons.push('Bajo rendimiento en Pruebas');
-                if (s.att < 80) reasons.push('Alta tasa de ausentismo');
+                if (s.att < 80) reasons.push('Baja asistencia');
 
                 if (reasons.length > 0) {
                     alertCount++;
