@@ -660,6 +660,14 @@
                 ${dates.map(d => `<th class="p-4 text-center border-l border-slate-100">${d.split('-').reverse().slice(0, 2).join('/')}</th>`).join('')}
                 <th class="p-4 text-center bg-emerald-200 text-emerald-800 border-l border-emerald-300 font-black uppercase tracking-tighter shadow-sm">Nota (5%)</th>
             </tr>
+            <tr class="bg-slate-100/50 text-slate-500">
+                <th class="p-2 sticky-col bg-slate-100/50 text-right pr-4 italic">Lecciones:</th>
+                ${dates.map(d => {
+                    const dayLec = state.attendance?.[period]?.[d]?.[groupKey]?.dayLessons || 0;
+                    return `<th class="p-2 text-center border-l border-slate-200 font-bold">${dayLec}</th>`;
+                }).join('')}
+                <th class="p-2 text-center border-l border-slate-200 bg-emerald-100 text-emerald-700">${totalLecPeriodo}</th>
+            </tr>
         </thead>`;
 
             // Construir filas de estudiantes
@@ -777,6 +785,14 @@
                     <th style="width:200px">Estudiante</th>
                     ${dates.map(d => `<th>${d.split('-').reverse().slice(0, 2).join('/')}</th>`).join('')}
                     <th style="width:60px">Nota (5%)</th>
+                </tr>
+                <tr style="background:#f1f5f9; color:#64748b;">
+                    <th style="text-align:right; padding-right:10px; font-style:italic;">Lecciones:</th>
+                    ${dates.map(d => {
+                        const dayLec = state.attendance?.[period]?.[d]?.[groupKey]?.dayLessons || 0;
+                        return `<th>${dayLec}</th>`;
+                    }).join('')}
+                    <th style="background:#dcfce7; color:#15803d;">${totalLecPeriodo}</th>
                 </tr>
             </thead>
             <tbody>
