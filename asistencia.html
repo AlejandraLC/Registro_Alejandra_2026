@@ -187,8 +187,13 @@
                     <input type="number" id="day-lessons" value="2" class="input-lesson-small"
                         onchange="updateAllLessons()">
                 </div>
-                <button onclick="deleteDate()" class="p-2 text-slate-300 hover:text-red-400 transition-all"><i
-                        data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <div class="w-px h-8 bg-slate-100"></div>
+                <button onclick="registerDay()" class="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Registrar Día
+                </button>
+                <button onclick="deleteDate()" class="p-2 text-slate-300 hover:text-red-400 transition-all" title="Eliminar registros de este día">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
             </div>
 
             <div class="bg-blue-50 border border-blue-100 p-4 rounded-[1.5rem] text-center px-8">
@@ -302,10 +307,13 @@
                 // Obtenemos el registro de hoy o creamos uno por defecto (Presente)
                 const joinDate = s.joinDate || '2026-01-01';
                 const isPreJoin = date < joinDate;
-                const todayRecord = getRecord(s.id, date) || { status: isPreJoin ? '-' : 'P', lessons: isPreJoin ? 0 : dayLec };
+                const record = getRecord(s.id, date);
+                const todayRecord = record || { status: isPreJoin ? '-' : 'P', lessons: isPreJoin ? 0 : dayLec };
                 const stats = calculateStats(s.id, joinDate);
                 const studentTotalAtJoin = calculateTotalLessons(joinDate);
                 const grade = calculateGrade(stats.ai, stats.t, studentTotalAtJoin);
+
+                const isSaved = !!record;
 
                 return `
         <tr class="border-t border-slate-50 group hover:bg-slate-50/30 transition-all ${isPreJoin ? 'opacity-30' : ''}">
@@ -314,7 +322,7 @@
                 ${isPreJoin ? '<br><span class="text-[7px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase font-black">Pre-Ingreso</span>' : ''}
             </td>
             <td class="p-5">
-                <div class="flex justify-center gap-1">
+                <div class="flex justify-center gap-1 ${!isSaved && !isPreJoin ? 'opacity-50' : ''}">
                     <button onclick="setStatus('${s.id}', 'P')" ${isPreJoin ? 'disabled' : ''} class="btn-status ${todayRecord.status === 'P' ? 'active-p' : 'inactive'}">P</button>
                     <button onclick="setStatus('${s.id}', 'AI')" ${isPreJoin ? 'disabled' : ''} class="btn-status ${todayRecord.status === 'AI' ? 'active-ai' : 'inactive'}">AI</button>
                     <button onclick="setStatus('${s.id}', 'AJ')" ${isPreJoin ? 'disabled' : ''} class="btn-status ${todayRecord.status === 'AJ' ? 'active-aj' : 'inactive'}">AJ</button>
@@ -479,6 +487,56 @@
             return state.attendance?.[period]?.[date]?.[`${groupKey}_${id}`];
         }
 
+        function registerDay() {
+            const date = document.getElementById('att-date').value;
+            const dayLec = parseInt(document.getElementById('day-lessons').value) || 2;
+
+            if (!date) return;
+
+            let students = [];
+            if (mode === 'materia') {
+                students = (state.students[lvl] || []).filter(s => s.section === sec);
+            } else {
+                Object.keys(state.students).forEach(l => {
+                    students = students.concat(state.students[l].filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    }));
+                });
+            }
+
+            if (!state.attendance) state.attendance = {};
+            if (!state.attendance[period]) state.attendance[period] = {};
+            if (!state.attendance[period][date]) state.attendance[period][date] = {};
+
+            // Configuración del día
+            state.attendance[period][date][groupKey] = { dayLessons: dayLec };
+
+            // Registrar a todos como presentes por defecto (si no tienen ya un registro)
+            students.forEach(s => {
+                const joinDate = s.joinDate || '2026-01-01';
+                if (date >= joinDate) {
+                    const studentKey = `${groupKey}_${s.id}`;
+                    if (!state.attendance[period][date][studentKey]) {
+                        state.attendance[period][date][studentKey] = { status: 'P', lessons: dayLec };
+                    }
+                }
+            });
+
+            save();
+            // Feedback visual suave
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> ¡Registrado!';
+            btn.classList.replace('bg-emerald-500', 'bg-blue-500');
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.replace('bg-blue-500', 'bg-emerald-500');
+                lucide.createIcons();
+            }, 2000);
+        }
+
         function deleteDate() {
             const date = document.getElementById('att-date').value;
             if (!date) return;
@@ -622,11 +680,11 @@
                         return `<td class="p-4 text-center border-l border-slate-50 text-slate-200">${isPreJoinDate ? '-' : 'P'}</td>`;
                     }
 
-                    let color = 'text-slate-300';
+                    let color = 'text-slate-400';
                     if (rec.status === 'AI') color = 'text-red-500 font-bold';
                     if (rec.status === 'AJ') color = 'text-blue-400 font-bold';
                     if (rec.status === 'T') color = 'text-amber-500 font-bold';
-                    if (rec.status === 'P') color = 'text-slate-400';
+                    if (rec.status === 'P') color = 'text-slate-600 font-bold'; // Un poco más oscuro para que se vea bien
 
                     return `<td class="p-4 text-center border-l border-slate-50 ${color}">${rec.status}${rec.status !== 'P' ? '(' + rec.lessons + ')' : ''}</td>`;
                 }).join('')}
