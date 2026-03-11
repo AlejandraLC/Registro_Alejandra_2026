@@ -659,6 +659,15 @@
         }
 
         function checkAbsence(sId, date) {
+            // Find student to get joinDate
+            let student = null;
+            Object.keys(state.students || {}).forEach(l => {
+                if (student) return;
+                student = (state.students[l] || []).find(s => s.id === sId);
+            });
+            const joinDate = (student && student.joinDate) ? student.joinDate : '2026-01-01';
+            if (date < joinDate) return true; // Already joined before? No.
+
             const periodData = state.attendance?.[period] || {};
             const dailyData = periodData[date] || {};
             const todayId = `${groupKey}_${sId}`;

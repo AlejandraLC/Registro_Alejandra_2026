@@ -385,6 +385,26 @@
 
             const studentStats = students.map(student => {
                 const sId = student.id;
+                const joinDate = student.joinDate || '2026-01-01';
+                const todayGroupKey = mode === 'taller' ? `_workshop_${workshopId}` : `_group_${level}_${section}`;
+
+                const isPre = (date) => (date < joinDate);
+                const isAbs = (date) => {
+                    const dailyData = (state.attendance?.[period] || {})[date] || {};
+                    const att = dailyData[`${todayGroupKey}_${sId}`];
+                    if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return false;
+                    let dailyMax = 0;
+                    if (dailyData[todayGroupKey] && dailyData[todayGroupKey].dayLessons) {
+                        dailyMax = dailyData[todayGroupKey].dayLessons;
+                    } else {
+                        const recs = Object.values(dailyData);
+                        dailyMax = recs.length > 0 ? Math.max(...recs.map(r => r.lessons || 0), 0) : 0;
+                    }
+                    return att.lessons >= dailyMax;
+                };
+
+                const checkAbsence = (date) => isPre(date) || isAbs(date);
+
                 let earnedPoints = 0;
                 let activeWeight = 0;
 
@@ -392,7 +412,7 @@
                 const acts = Object.values(state.activities || {}).filter(a => {
                     if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
                     return a.level === level && a.section === section && a.period === period;
-                });
+                }).filter(a => a.dates.some(d => !checkAbsence(d)));
                 let cotiScore = 0;
                 let cotiTotalMax = 0;
                 acts.forEach(a => {
@@ -424,8 +444,8 @@
                 let testSumPerc = 0;
                 let testMaxPercAvailable = 0;
                 if (mode === 'materia') {
-                    const tests = Object.values(state.tests || {}).filter(t => t.level === level && t.section === section && t.period
-                        === period);
+                    const tests = Object.values(state.tests || {}).filter(t => t.level === level && t.section === section && t.period === period)
+                        .filter(t => t.date >= joinDate);
                     tests.forEach(t => {
                         const ev = state.test_evals?.[t.id]?.[sId] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
                         const maxPts = ev.sig ? ev.sigPts : t.points;
@@ -443,8 +463,8 @@
                 // 3. Proyecto (Solo Taller)
                 let projFinalNote = 0;
                 if (mode === 'taller') {
-                    const projects = Object.values(state.projects || {}).filter(p => p.workshopId === workshopId && p.period ===
-                        period);
+                    const projects = Object.values(state.projects || {}).filter(p => p.workshopId === workshopId && p.period === period)
+                        .filter(p => p.dates.some(d => !isPre(d)));
                     let sumProj = 0;
                     projects.forEach(p => {
                         let pPts = 0; let pMax = 0;
@@ -470,7 +490,7 @@
                 const tasks = Object.values(state.tasks || {}).filter(a => {
                     if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
                     return a.level === level && a.section === section && a.period === period;
-                });
+                }).filter(a => a.dates.some(d => !isPre(d)));
                 let taskSumPts = 0;
                 let taskMaxPossible = 0;
                 tasks.forEach(a => {
@@ -494,12 +514,31 @@
                 const attData = state.attendance?.[period] || {};
                 let totalLecciones = 0;
                 let aiLecciones = 0;
-                const groupPrefix = mode === 'taller' ? `_workshop_${workshopId}_` : `_group_${level}_${section}_`;
                 Object.entries(attData).forEach(([date, dayData]) => {
-                    const record = dayData[`${groupPrefix}${sId}`];
+                    if (isPre(date)) return;
+                    const record = dayData[`${todayGroupKey}_${sId}`];
+
+                    // Buscar lecciones del día
+                    let dayLec = 0;
+                    const hasGroupRecords = Object.keys(dayData).some(id => id.startsWith(todayGroupKey + '_'));
+                    if (!hasGroupRecords) return;
+
+                    if (dayData[todayGroupKey] && dayData[todayGroupKey].dayLessons > 0) {
+                        dayLec = parseInt(dayData[todayGroupKey].dayLessons);
+                    } else {
+                        let maxLecFound = 0;
+                        for (const id in dayData) {
+                            if (id.startsWith(todayGroupKey + '_')) {
+                                maxLecFound = Math.max(maxLecFound, parseInt(dayData[id].lessons) || 0);
+                            }
+                        }
+                        dayLec = maxLecFound;
+                    }
+                    totalLecciones += dayLec;
+
                     if (record) {
-                        totalLecciones += record.lessons || 0;
                         if (record.status === 'AI') aiLecciones += record.lessons || 0;
+                        if (record.status === 'T') aiLecciones += 0.5;
                     }
                 });
                 const attFinalNote = totalLecciones > 0 ? Math.max(0, (1 - aiLecciones / totalLecciones) * 100) : 100;

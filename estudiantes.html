@@ -125,6 +125,7 @@
                 <input type="text" id="new-id" placeholder="ID Estudiante" class="w-33">
                 <input type="text" id="new-name" placeholder="Nombre Completo" class="w-64">
                 <input type="text" id="new-guardian" placeholder="Encargado Legal (Opcional)" class="w-64">
+                <input type="date" id="new-join-date" class="w-40" title="Fecha de Ingreso">
                 <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
                     <span class="text-[9px] font-black text-slate-400 uppercase mr-1">TALLERES:</span>
                     <label class="flex items-center gap-1 cursor-pointer">
@@ -251,6 +252,7 @@
                 }
             }
 
+            document.getElementById('new-join-date').value = '2026-02-23';
             toggleFilterType(); // Esto maneja la visibilidad y llama a updateView/renderStudents
         }
 
@@ -376,6 +378,7 @@
             document.getElementById('new-id').value = student.id;
             document.getElementById('new-name').value = student.name;
             document.getElementById('new-guardian').value = student.encargado || '';
+            document.getElementById('new-join-date').value = student.joinDate || '2026-01-01';
 
             // Cargar talleres
             const workshops = student.workshops || (student.workshop ? [student.workshop] : []);
@@ -396,6 +399,7 @@
             document.getElementById('new-id').value = '';
             document.getElementById('new-name').value = '';
             document.getElementById('new-guardian').value = '';
+            document.getElementById('new-join-date').value = '2026-02-23';
             for (let i = 1; i <= 3; i++) document.getElementById(`ws-${i}`).checked = false;
 
             document.getElementById('submit-text').innerText = "Agregar";
@@ -408,6 +412,7 @@
             const id = document.getElementById('new-id').value.trim();
             const name = document.getElementById('new-name').value.trim();
             const guardian = document.getElementById('new-guardian').value.trim();
+            const joinDate = document.getElementById('new-join-date').value || '2026-02-23';
 
             const workshops = [];
             for (let i = 1; i <= 3; i++) {
@@ -425,7 +430,7 @@
                 Object.keys(state.students).forEach(l => {
                     const index = state.students[l].findIndex(s => s.id === editingStudentId);
                     if (index !== -1) {
-                        state.students[l][index] = { ...state.students[l][index], id, name, encargado: guardian, workshops: workshops };
+                        state.students[l][index] = { ...state.students[l][index], id, name, encargado: guardian, workshops: workshops, joinDate: joinDate };
                         delete state.students[l][index].workshop; // Limpiar propiedad antigua
                     }
                 });
@@ -438,10 +443,11 @@
                 });
                 if (exists) return alert("Ya existe un estudiante con esta identificación.");
 
-                state.students[lvl].push({ id, name, section: sec, encargado: guardian, workshops: workshops });
+                state.students[lvl].push({ id, name, section: sec, encargado: guardian, workshops: workshops, joinDate: joinDate });
                 document.getElementById('new-id').value = '';
                 document.getElementById('new-name').value = '';
                 document.getElementById('new-guardian').value = '';
+                document.getElementById('new-join-date').value = '2026-02-23';
                 for (let i = 1; i <= 3; i++) document.getElementById(`ws-${i}`).checked = false;
             }
 

@@ -416,15 +416,44 @@
     }
 
     // MOTOR DE CÁLCULO DE ASISTENCIA (TABLA MEP)
+    function checkAbsence(sId, date) {
+        // En reportes individuales, asumimos que student y joinDate ya están en el contexto o los buscamos
+        const studentLvl = window.currentStudentLvl;
+        const student = (state.students?.[studentLvl] || []).find(s => s.id === sId);
+        const joinDate = (student && student.joinDate) ? student.joinDate : '2026-01-01';
+        if (date < joinDate) return true;
+
+        const period = state.settings?.currentPeriod || '1';
+        const attData = state.attendance?.[period] || {};
+        const dailyData = attData[date] || {};
+
+        // groupKey debe ser global o pasado
+        const todayId = `${groupKey}_${sId}`;
+        const att = dailyData[todayId];
+
+        if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return false;
+
+        let dailyMax = 0;
+        if (dailyData[groupKey] && dailyData[groupKey].dayLessons) {
+            dailyMax = dailyData[groupKey].dayLessons;
+        } else {
+            const records = Object.values(dailyData);
+            dailyMax = records.length > 0 ? Math.max(...records.map(r => r.lessons || 0), 0) : 0;
+        }
+        return att.lessons >= dailyMax;
+    }
+
     function calculateAttendanceNota(studentId) {
         const attData = state.attendance?.[period] || {};
         const studentLvl = window.currentStudentLvl;
         const student = (state.students?.[studentLvl] || []).find(s => s.id === studentId);
         if (!student) return { nota: 0, porc: 0, total: 0, ai: 0, aj: 0, t: 0, html: "" };
 
-        // Filtramos solo fechas que tienen lecciones para ESTE grupo
+        const joinDate = student.joinDate || '2026-01-01';
+
+        // Filtramos solo fechas que tienen lecciones para ESTE grupo y son posteriores al ingreso del estudiante
         const validDates = Object.keys(attData).filter(date => {
-            return Object.keys(attData[date]).some(id => id.startsWith(groupKey + '_'));
+            return date >= joinDate && Object.keys(attData[date]).some(id => id.startsWith(groupKey + '_'));
         }).sort().reverse();
 
         let totalLeccionesImpartidas = 0;
@@ -549,20 +578,23 @@
         document.getElementById('at-history').innerHTML = resAtt.html || "Sin registros.";
 
         // B. COTIDIANO
+        const joinDate = student.joinDate || '2026-01-01';
+
         const cotActs = Object.values(state.activities || {}).filter(a => {
             if (mode === 'materia') {
                 return a.level === studentLvl && a.section === student.section && a.period === period;
             } else {
                 return a.workshopId === workshopId && a.period === period;
             }
-        });
-        let sumCot = 0; let cotHtml = "";
+        }).filter(a => a.dates.some(d => !checkAbsence(student.id, d)));
+        let sumCot = 0; let cotCount = 0; let cotHtml = "";
         cotActs.forEach(a => {
             const r = calculateActivityMetrics(student.id, a, 'cot');
             sumCot += r.nota;
+            cotCount++;
             cotHtml += renderCard(a, r, 'cot');
         });
-        const pCot = cotActs.length > 0 ? (sumCot / cotActs.length * valCot / 100) : 0;
+        const pCot = cotCount > 0 ? (sumCot / cotCount * valCot / 100) : 0;
         document.getElementById('cot-pct-label').innerText = `Componente: ${valCot}%`;
         document.getElementById('cot-nota-final').innerText = pCot.toFixed(2) + "%";
         document.getElementById('cot-history').innerHTML = cotHtml || "<p class='text-slate-300 italic text-center p-8'>Sin actividades registradas.</p>";
@@ -574,7 +606,7 @@
             } else {
                 return a.workshopId === workshopId && a.period === period;
             }
-        });
+        }).filter(a => a.dates.some(d => d >= joinDate));
         let pObtT = 0; let pMaxT = 0; let taskHtml = "";
         taskActs.forEach(a => {
             const r = calculateActivityMetrics(student.id, a, 'task');
@@ -586,7 +618,8 @@
         document.getElementById('task-history').innerHTML = taskHtml || "<p class='text-slate-300 italic text-center p-8'>Sin tareas registradas.</p>";
 
         // D. PRUEBAS
-        const tests = Object.values(state.tests || {}).filter(t => t.level === studentLvl && t.section === student.section && t.period === period);
+        const tests = Object.values(state.tests || {}).filter(t => t.level === studentLvl && t.section === student.section && t.period === period)
+            .filter(t => t.date >= joinDate);
         let pTest = 0; let testHtml = "";
         tests.forEach(t => {
             const ev = state.test_evals?.[t.id]?.[student.id] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };

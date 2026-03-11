@@ -268,7 +268,17 @@
             const tbody = document.getElementById('grading-body');
 
             tbody.innerHTML = students.map(s => {
-                const ev = state.test_evals[activeTestId]?.[s.id] || { pts: 0, date: t.date, sig: false, sigPts: t.points, sigPerc: t.percent, signed: "" };
+                const joinDate = s.joinDate || '2026-01-01';
+                const isLocked = t.date < joinDate;
+                const ev = state.test_evals[activeTestId]?.[s.id] || {
+                    pts: 0,
+                    date: t.date,
+                    sig: false,
+                    sigPts: t.points,
+                    sigPerc: t.percent,
+                    signed: "",
+                    isReturned: false
+                };
 
                 const maxPts = ev.sig ? ev.sigPts : t.points;
                 const maxPerc = ev.sig ? ev.sigPerc : t.percent;
@@ -276,15 +286,18 @@
                 const porcGanado = (nota * maxPerc / 100).toFixed(2);
 
                 return `
-                <tr class="border-t border-slate-50">
-                    <td class="p-4 font-bold text-slate-700">${s.name}</td>
-                    <td class="p-2"><input type="date" value="${ev.date}" onchange="updateEval('${s.id}', 'date', this.value)" class="input-soft text-[10px] w-full"></td>
+                <tr class="border-t border-slate-50 ${isLocked ? 'opacity-30 grayscale pointer-events-none' : ''}">
+                    <td class="p-4 font-bold text-slate-700">
+                        ${s.name}
+                        ${isLocked ? '<br><span class="text-[7px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase font-black">Pre-Ingreso</span>' : ''}
+                    </td>
+                    <td class="p-2"><input type="date" value="${ev.date}" onchange="updateEval('${s.id}', 'date', this.value)" class="input-soft text-[10px] w-full" ${isLocked ? 'disabled' : ''}></td>
                     <td class="p-2 text-center">
-                        <button onclick="toggleSig('${s.id}')" class="p-2 rounded-lg ${ev.sig ? 'bg-amber-100 text-amber-600' : 'bg-slate-50 text-slate-300'}"><i data-lucide="accessibility" class="w-4 h-4"></i></button>
+                        <button onclick="toggleSig('${s.id}')" ${isLocked ? 'disabled' : ''} class="p-2 rounded-lg ${ev.sig ? 'bg-amber-100 text-amber-600' : 'bg-slate-50 text-slate-300'}"><i data-lucide="accessibility" class="w-4 h-4"></i></button>
                     </td>
                     <td class="p-2">
                         <div class="flex flex-col gap-1">
-                            <input type="number" value="${ev.pts}" onchange="updateEval('${s.id}', 'pts', this.value)" class="input-soft text-center font-bold w-full" placeholder="Obt">
+                            <input type="number" value="${ev.pts}" onchange="updateEval('${s.id}', 'pts', this.value)" ${isLocked ? 'disabled' : ''} class="input-soft text-center font-bold w-full" placeholder="Obt">
                             ${ev.sig ? `<input type="number" value="${ev.sigPts}" onchange="updateEval('${s.id}', 'sigPts', this.value)" class="input-soft text-[9px] text-amber-600 border-amber-100 text-center w-full" title="Puntos Adecuación">` : ''}
                         </div>
                     </td>
@@ -296,15 +309,15 @@
                     
 <td class="p-2">
     <div class="flex items-center justify-center gap-2">
-        <button onclick="toggleReturned('${s.id}')" 
+        <button onclick="toggleReturned('${s.id}')" ${isLocked ? 'disabled' : ''} 
             class="p-2 rounded-lg transition-all ${ev.isReturned ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-300'}">
             <i data-lucide="check-square" class="w-4 h-4"></i>
         </button>
         <input type="date" 
             value="${ev.signed}" 
             onchange="updateEval('${s.id}', 'signed', this.value)" 
-            class="input-soft text-[10px] w-full ${!ev.isReturned ? 'signed-gray pointer-events-none' : ''}"
-            ${!ev.isReturned ? 'disabled' : ''}>
+            class="input-soft text-[10px] w-full ${(!ev.isReturned || isLocked) ? 'signed-gray pointer-events-none' : ''}"
+            ${(!ev.isReturned || isLocked) ? 'disabled' : ''}>
     </div>
 </td>
                 </tr>`;

@@ -229,6 +229,7 @@
         const sec = localStorage.getItem('temp_current_section') || '1';
         const workshopId = localStorage.getItem('temp_current_workshop') || '1';
         const period = state.settings?.currentPeriod || '1';
+        const groupKey = mode === 'materia' ? `_group_${lvl}_${sec}` : `_workshop_${workshopId}`;
         let currentActivityDates = [];
         let activeActivityId = null;
 
@@ -421,14 +422,17 @@
             }
             students.sort((a, b) => a.name.localeCompare(b.name));
             document.getElementById('grading-body').innerHTML = students.map(s => {
+                const status = checkAbsence(s.id, date);
+                const isLocked = status.isPre;
+                const isAbsent = status.isAbs;
                 const best = calculateBestScores(s.id, a);
                 const obs = getObs(s.id, a.id, date);
                 const isNP = obs === "No presentó la tarea";
 
-                return `<tr>
+                return `<tr class="${isLocked ? 'opacity-30 pointer-events-none grayscale' : ''}">
                     <td class="p-4 font-bold text-slate-700">
                         <div class="flex items-center justify-between gap-4">
-                            <span class="${isNP ? 'opacity-40' : ''}">${s.name}</span>
+                            <span class="${isNP ? 'opacity-40' : ''}">${s.name} ${isLocked ? '<span class="text-[8px] bg-slate-100 px-2 py-0.5 rounded ml-2">Pre-Ingreso</span>' : (isAbsent ? '<span class="text-[8px] bg-red-50 text-red-500 px-2 py-0.5 rounded ml-2">Ausente</span>' : '')}</span>
                             <div onclick="toggleSubmission('${s.id}','${a.id}')" 
                                  class="relative inline-flex items-center cursor-pointer group shrink-0"
                                  title="${isNP ? 'Marcar como Entregado' : 'Marcar como No Presentó'}">
@@ -479,10 +483,41 @@
         }
 
         function renderIndicatorButtons(sId, a, date) {
-            let html = ''; a.skills.forEach((sk, sIdx) => sk.indicators.forEach((ind, iIdx) => {
-                const cur = getScore(sId, a.id, date, sIdx, iIdx);
-                html += `<td class="p-4 border-l"><div class="flex gap-1">${[1, 2, 3].map(v => `<button onclick="setScore('${sId}','${a.id}','${date}',${sIdx},${iIdx},${v})" class="w-6 h-6 rounded text-[8px] font-bold ${cur == v ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}">${v}</button>`).join('')}</div></td>`;
+            const status = checkAbsence(sId, date);
+            const isLocked = status.isPre;
+
+            let html = ''; a.skills.forEach((sk, skIdx) => sk.indicators.forEach((ind, iIdx) => {
+                const cur = getScore(sId, a.id, date, skIdx, iIdx);
+                html += `<td class="p-4 border-l"><div class="flex gap-1">${[1, 2, 3].map(v => `<button onclick="setScore('${sId}','${a.id}','${date}',${skIdx},${iIdx},${v})" ${isLocked ? 'disabled' : ''} class="w-6 h-6 rounded text-[8px] font-bold ${cur == v ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}">${v}</button>`).join('')}</div></td>`;
             })); return html;
+        }
+
+        function checkAbsence(sId, date) {
+            // Buscamos al estudiante para ver su joinDate
+            let student = null;
+            Object.keys(state.students || {}).forEach(l => {
+                if (student) return;
+                student = (state.students[l] || []).find(s => s.id === sId);
+            });
+            const joinDate = (student && student.joinDate) ? student.joinDate : '2026-01-01';
+            if (date < joinDate) return { isPre: true, isAbs: false };
+
+            const periodData = state.attendance?.[period] || {};
+            const dailyData = periodData[date] || {};
+            const todayId = `${groupKey}_${sId}`;
+            const att = dailyData[todayId];
+
+            if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return { isPre: false, isAbs: false };
+
+            let dailyMax = 0;
+            if (dailyData[groupKey] && dailyData[groupKey].dayLessons) {
+                dailyMax = dailyData[groupKey].dayLessons;
+            } else {
+                const records = Object.values(dailyData);
+                dailyMax = records.length > 0 ? Math.max(...records.map(r => r.lessons || 0), 0) : 0;
+            }
+
+            return { isPre: false, isAbs: att.lessons >= dailyMax };
         }
 
         function calculateBestScores(sId, a) {
@@ -554,7 +589,11 @@
                     const best = calculateBestScores(s.id, a);
                     let maxTaskPossible = 0; a.skills.forEach(sk => maxTaskPossible += sk.indicators.length * 3);
                     sumaObtenida += best.pts; sumaTotalPosible += maxTaskPossible;
-                    return `<td class="p-4 border-l text-center">${Math.round(best.nota)}</td>`;
+
+                    if (best.pts === 0 && a.dates.some(d => checkAbsence(s.id, d).isAbs)) {
+                        return `<td class="p-4 border-l text-center text-red-300 italic">Ausente</td>`;
+                    }
+                    return `<td class="p-4 border-l text-center font-bold text-slate-600">${Math.round(best.nota)}</td>`;
                 }).join('');
 
                 const nota100 = sumaTotalPosible > 0 ? (sumaObtenida * 100) / sumaTotalPosible : 0;
@@ -795,7 +834,10 @@
                     a.skills.forEach(sk => max += sk.indicators.length * 3);
                     sumaO += b.pts;
                     sumaP += max;
-                    // Mostramos la nota del indicador en escala 0-3 (entero)
+
+                    if (b.pts === 0 && a.dates.some(d => checkAbsence(s.id, d).isAbs)) {
+                        return `<td style="color:#fca5a5; font-style:italic;">Ausente</td>`;
+                    }
                     return `<td>${Math.round(b.nota)}</td>`;
                 }).join('');
 

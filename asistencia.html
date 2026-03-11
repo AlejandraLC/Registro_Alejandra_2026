@@ -300,20 +300,25 @@
 
             tbody.innerHTML = students.map(s => {
                 // Obtenemos el registro de hoy o creamos uno por defecto (Presente)
-                const todayId = `${groupKey}_${s.id}`;
-                const todayRecord = getRecord(s.id, date) || { status: 'P', lessons: dayLec };
-                const stats = calculateStats(s.id);
-                const grade = calculateGrade(stats.ai, stats.t, totalLecPeriodo);
+                const joinDate = s.joinDate || '2026-01-01';
+                const isPreJoin = date < joinDate;
+                const todayRecord = getRecord(s.id, date) || { status: isPreJoin ? '-' : 'P', lessons: isPreJoin ? 0 : dayLec };
+                const stats = calculateStats(s.id, joinDate);
+                const studentTotalAtJoin = calculateTotalLessons(joinDate);
+                const grade = calculateGrade(stats.ai, stats.t, studentTotalAtJoin);
 
                 return `
-        <tr class="border-t border-slate-50 group hover:bg-slate-50/30 transition-all">
-            <td class="p-5 font-bold text-slate-700 text-sm">${s.name}</td>
+        <tr class="border-t border-slate-50 group hover:bg-slate-50/30 transition-all ${isPreJoin ? 'opacity-30' : ''}">
+            <td class="p-5 font-bold text-slate-700 text-sm">
+                ${s.name}
+                ${isPreJoin ? '<br><span class="text-[7px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase font-black">Pre-Ingreso</span>' : ''}
+            </td>
             <td class="p-5">
                 <div class="flex justify-center gap-1">
-                    <button onclick="setStatus('${s.id}', 'P')" class="btn-status ${todayRecord.status === 'P' ? 'active-p' : 'inactive'}">P</button>
-                    <button onclick="setStatus('${s.id}', 'AI')" class="btn-status ${todayRecord.status === 'AI' ? 'active-ai' : 'inactive'}">AI</button>
-                    <button onclick="setStatus('${s.id}', 'AJ')" class="btn-status ${todayRecord.status === 'AJ' ? 'active-aj' : 'inactive'}">AJ</button>
-                    <button onclick="setStatus('${s.id}', 'T')" class="btn-status ${todayRecord.status === 'T' ? 'active-t' : 'inactive'}">T</button>
+                    <button onclick="setStatus('${s.id}', 'P')" ${isPreJoin ? 'disabled' : ''} class="btn-status ${todayRecord.status === 'P' ? 'active-p' : 'inactive'}">P</button>
+                    <button onclick="setStatus('${s.id}', 'AI')" ${isPreJoin ? 'disabled' : ''} class="btn-status ${todayRecord.status === 'AI' ? 'active-ai' : 'inactive'}">AI</button>
+                    <button onclick="setStatus('${s.id}', 'AJ')" ${isPreJoin ? 'disabled' : ''} class="btn-status ${todayRecord.status === 'AJ' ? 'active-aj' : 'inactive'}">AJ</button>
+                    <button onclick="setStatus('${s.id}', 'T')" ${isPreJoin ? 'disabled' : ''} class="btn-status ${todayRecord.status === 'T' ? 'active-t' : 'inactive'}">T</button>
                 </div>
             </td>
             <td class="p-5 text-center">
@@ -376,11 +381,12 @@
         }
 
         // Cálculo de sumatorias AI, AJ, T del periodo
-        function calculateStats(studentId) {
+        function calculateStats(studentId, sinceDate) {
             let ai = 0, aj = 0, t = 0;
             const periodData = state.attendance?.[period] || {};
 
             for (const date in periodData) {
+                if (sinceDate && date < sinceDate) continue;
                 const record = periodData[date][`${groupKey}_${studentId}`];
                 if (record) {
                     if (record.status === 'AI') ai += record.lessons;
@@ -392,7 +398,7 @@
         }
 
         // Sumatoria de lecciones dadas (Total del Periodo) - INTELIGENTE
-        function calculateTotalLessons() {
+        function calculateTotalLessons(sinceDate) {
             let total = 0;
             if (!state.attendance || !state.attendance[period]) return 0;
 
@@ -410,6 +416,7 @@
             const studentIds = new Set(students.map(s => s.id));
 
             for (const date in state.attendance[period]) {
+                if (sinceDate && date < sinceDate) continue;
                 const dayData = state.attendance[period][date];
                 if (!dayData) continue;
 
@@ -599,18 +606,27 @@
 
             // Construir filas de estudiantes
             let bodyHtml = `<tbody>${students.map(s => {
-                const stats = calculateStats(s.id);
-                const grade = calculateGrade(stats.ai, stats.t, totalLecPeriodo);
+                const joinDate = s.joinDate || '2026-01-01';
+                const stats = calculateStats(s.id, joinDate);
+                const studentTotalAtJoin = calculateTotalLessons(joinDate);
+                const grade = calculateGrade(stats.ai, stats.t, studentTotalAtJoin);
 
                 return `
             <tr class="border-t border-slate-50 text-[11px]">
                 <td class="p-4 font-bold text-slate-700 sticky-col bg-white whitespace-nowrap">${s.name}</td>
                 ${dates.map(d => {
-                    const rec = periodData[d][`${groupKey}_${s.id}`] || { status: 'P', lessons: 0 };
+                    const isPreJoinDate = d < joinDate;
+                    const rec = periodData[d][`${groupKey}_${s.id}`];
+
+                    if (!rec) {
+                        return `<td class="p-4 text-center border-l border-slate-50 text-slate-200">${isPreJoinDate ? '-' : 'P'}</td>`;
+                    }
+
                     let color = 'text-slate-300';
                     if (rec.status === 'AI') color = 'text-red-500 font-bold';
                     if (rec.status === 'AJ') color = 'text-blue-400 font-bold';
                     if (rec.status === 'T') color = 'text-amber-500 font-bold';
+                    if (rec.status === 'P') color = 'text-slate-400';
 
                     return `<td class="p-4 text-center border-l border-slate-50 ${color}">${rec.status}${rec.status !== 'P' ? '(' + rec.lessons + ')' : ''}</td>`;
                 }).join('')}
@@ -713,7 +729,14 @@
                         <tr>
                             <td class="name-cell">${s.name}</td>
                             ${dates.map(d => {
-                    const rec = (state.attendance?.[period]?.[d]?.[`${groupKey}_${s.id}`]) || { status: 'P' };
+                    const joinD = s.joinDate || '2026-01-01';
+                    const isPreD = d < joinD;
+                    const rec = (state.attendance?.[period]?.[d]?.[`${groupKey}_${s.id}`]);
+
+                    if (!rec) {
+                        return `<td style="color:#e2e8f0; font-weight:bold;">${isPreD ? '-' : 'P'}</td>`;
+                    }
+
                     let color = '#64748b';
                     if (rec.status === 'AI') color = '#ef4444';
                     if (rec.status === 'AJ') color = '#0ea5e9';
