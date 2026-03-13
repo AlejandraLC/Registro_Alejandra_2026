@@ -518,7 +518,6 @@
             if (confirm(`¿Borrar TODOS los estudiantes del grupo ${lvl}-${sec}?`)) {
                 if (state.students[lvl]) {
                     state.students[lvl] = state.students[lvl].filter(s => s.section !== sec);
-                    save();
                 }
             }
         }
@@ -527,19 +526,211 @@
             localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
             renderStudents();
         }
+
+        function checkAbsence(sId, date, level, section, workshopId, type) {
+            const student = (state.students[level] || []).find(s => s.id === sId);
+            const joinDate = (student && student.joinDate) ? student.joinDate : '2026-01-01';
+            if (date < joinDate) return true;
+
+            const period = state.settings?.currentPeriod || '1';
+            const attData = (state.attendance?.[period] || {})[date] || {};
+            const todayGroupKey = type === 'taller' ? `_workshop_${workshopId}` : `_group_${level}_${section}`;
+            const att = attData[`${todayGroupKey}_${sId}`];
+
+            if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return false;
+
+            let dailyMax = 0;
+            if (attData[todayGroupKey] && attData[todayGroupKey].dayLessons) {
+                dailyMax = attData[todayGroupKey].dayLessons;
+            } else {
+                const recs = Object.values(attData);
+                dailyMax = recs.length > 0 ? Math.max(...recs.map(r => r.lessons || 0), 0) : 0;
+            }
+            return att.lessons >= dailyMax;
+        }
+
+        function calculateStudentGrades(s, period, type) {
+            const level = type === 'taller' ? Object.keys(state.students).find(l => state.students[l].some(st => st.id === s.id)) : document.getElementById('level-filter').value;
+            const section = s.section;
+            const workshopId = document.getElementById('workshop-filter').value;
+            const todayGroupKey = type === 'taller' ? `_workshop_${workshopId}` : `_group_${level}_${section}`;
+            const joinDate = s.joinDate || '2026-01-01';
+
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const wP = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
+            
+            let valCot, valTest, valTask, valAtt;
+            if (type === 'taller') {
+                valCot = wP.coti; valTest = wP.proj; valTask = wP.task; valAtt = wP.att;
+            } else {
+                const cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
+                valCot = cycle.coti; valTest = cycle.test; valTask = cycle.task; valAtt = cycle.att;
+            }
+
+            // 1. Cotidiano
+            const acts = Object.values(state.activities || {}).filter(a => {
+                if (type === 'taller') return a.workshopId === workshopId && a.period === period;
+                return a.level === level && a.section === section && a.period === period;
+            }).filter(a => a.dates.some(d => !checkAbsence(s.id, d, level, section, workshopId, type)));
+
+            let totalCotiGrade = 0, cotiCount = 0;
+            acts.forEach(a => {
+                let pts = 0, max = 0;
+                a.skills.forEach((sk, skI) => sk.indicators.forEach((ind, inI) => {
+                    max += 3;
+                    let best = 0;
+                    a.dates.forEach(d => {
+                        const score = state.evaluations?.[a.id]?.[d]?.[s.id]?.scores?.[`${skI}-${inI}`] || 0;
+                        if (score > best) best = score;
+                    });
+                    pts += best;
+                }));
+                if (max > 0) { totalCotiGrade += (pts * 100 / max); cotiCount++; }
+            });
+            const gradeCoti = cotiCount > 0 ? (totalCotiGrade / cotiCount) : 0;
+
+            // 2. Tareas
+            const tasks = Object.values(state.tasks || {}).filter(a => {
+                if (type === 'taller') return a.workshopId === workshopId && a.period === period;
+                return a.level === level && a.section === section && a.period === period;
+            }).filter(a => a.dates.some(d => d >= joinDate));
+
+            let taskSumPts = 0, taskMaxPossible = 0;
+            tasks.forEach(a => {
+                a.skills.forEach((sk, skI) => sk.indicators.forEach((ind, inI) => {
+                    taskMaxPossible += 3;
+                    let best = 0;
+                    a.dates.forEach(d => {
+                        const score = state.task_evaluations?.[a.id]?.[d]?.[s.id]?.scores?.[`${skI}-${inI}`] || 0;
+                        if (score > best) best = score;
+                    });
+                    taskSumPts += best;
+                }));
+            });
+            const gradeTask = taskMaxPossible > 0 ? (taskSumPts * 100 / taskMaxPossible) : 0;
+
+            // 3. Pruebas / Proyecto
+            let gradeTest = 0;
+            if (type === 'taller') {
+                const projs = Object.values(state.projects || {}).filter(p => p.workshopId === workshopId && p.period === period)
+                    .filter(p => p.dates.some(d => d >= joinDate));
+                let totalProjGrade = 0, projCount = 0;
+                projs.forEach(p => {
+                    let pts = 0, max = 0;
+                    p.skills.forEach((sk, skI) => sk.indicators.forEach((ind, inI) => {
+                        max += 3;
+                        let best = 0;
+                        p.dates.forEach(d => {
+                            const score = state.projectEvaluations?.[p.id]?.[d]?.[s.id]?.scores?.[`${skI}-${inI}`] || 0;
+                            if (score > best) best = score;
+                        });
+                        pts += best;
+                    }));
+                    if (max > 0) { totalProjGrade += (pts * 100 / max); projCount++; }
+                });
+                gradeTest = projCount > 0 ? (totalProjGrade / projCount) : 0;
+            } else {
+                const tests = Object.values(state.tests || {}).filter(t => t.level === level && t.section === section && t.period === period)
+                    .filter(t => t.date >= joinDate);
+                let testContribSum = 0, testPercTotal = 0;
+                tests.forEach(t => {
+                    const ev = state.test_evals?.[t.id]?.[s.id] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
+                    const mPts = ev.sig ? ev.sigPts : t.points;
+                    const mPerc = ev.sig ? ev.sigPerc : t.percent;
+                    const g = mPts > 0 ? (ev.pts * 100 / mPts) : 0;
+                    testContribSum += (g * mPerc / 100);
+                    testPercTotal += mPerc;
+                });
+                // Normalizamos a 100 para aplicar luego el valTest
+                gradeTest = testPercTotal > 0 ? (testContribSum * 100 / testPercTotal) : 0;
+            }
+
+            // 4. Asistencia
+            const attData = state.attendance?.[period] || {};
+            let totalLec = 0, aiLec = 0;
+            Object.entries(attData).forEach(([date, dayData]) => {
+                if (date < joinDate) return;
+                const record = dayData[`${todayGroupKey}_${s.id}`];
+                const hasGroupRecords = Object.keys(dayData).some(id => id.startsWith(todayGroupKey + '_'));
+                if (!hasGroupRecords) return;
+
+                let dayLec = 0;
+                if (dayData[todayGroupKey] && dayData[todayGroupKey].dayLessons > 0) {
+                    dayLec = parseInt(dayData[todayGroupKey].dayLessons);
+                } else {
+                    let maxLfound = 0;
+                    for (const id in dayData) {
+                        if (id.startsWith(todayGroupKey + '_')) maxLfound = Math.max(maxLfound, parseInt(dayData[id].lessons) || 0);
+                    }
+                    dayLec = maxLfound;
+                }
+                totalLec += dayLec;
+                if (record) {
+                    if (record.status === 'AI') aiLec += record.lessons || 0;
+                    if (record.status === 'T') aiLec += 0.5;
+                }
+            });
+
+            const percInj = totalLec > 0 ? (aiLec / totalLec) * 100 : 0;
+            let notaAttSimple = 0;
+            if (percInj < 10) notaAttSimple = 5;
+            else if (percInj < 20) notaAttSimple = 4;
+            else if (percInj < 30) notaAttSimple = 3;
+            else if (percInj < 40) notaAttSimple = 2;
+            else if (percInj < 50) notaAttSimple = 1;
+
+            // La notaAttSimple está sobre 5, la convertimos a base 100 para promediar después
+            const gradeAtt = (notaAttSimple * 100) / 5;
+
+            // Retornamos puntos ponderados redondeados (sin decimales)
+            return {
+                coti: Math.round(gradeCoti * valCot / 100),
+                task: Math.round(gradeTask * valTask / 100),
+                test: Math.round(gradeTest * valTest / 100),
+                att: Math.round(gradeAtt * valAtt / 100)
+            };
+        }
+
         function exportStudents() {
-            const lvl = document.getElementById('level-filter').value;
-            const sec = document.getElementById('section-filter').value;
-            const list = (state.students[lvl] || []).filter(s => s.section === sec).sort((a, b) => a.name.localeCompare(b.name));
+            const type = document.getElementById('type-filter').value;
+            const period = state.settings?.currentPeriod || '1';
+            let list = [];
+            let fileName = "";
+
+            if (type === 'materia') {
+                const lvl = document.getElementById('level-filter').value;
+                const sec = document.getElementById('section-filter').value;
+                list = (state.students[lvl] || []).filter(s => s.section === sec);
+                fileName = `Lista_Estudiantes_${lvl}-${sec}.csv`;
+            } else {
+                const workshop = document.getElementById('workshop-filter').value;
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                Object.keys(state.students).forEach(lvl => {
+                    if (Array.isArray(state.students[lvl])) {
+                        const filtered = state.students[lvl].filter(s => {
+                            if (Array.isArray(s.workshops)) return s.workshops.includes(workshop);
+                            return s.workshop === workshop;
+                        });
+                        list = list.concat(filtered);
+                    }
+                });
+                fileName = `Lista_Estudiantes_${wNames[workshop - 1]}.csv`;
+            }
+
+            list.sort((a, b) => a.name.localeCompare(b.name));
 
             if (list.length === 0) return alert("No hay estudiantes en este grupo para exportar.");
 
-            let csvContent = "id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia\n";
+            let csvContent = "id;Nombre;Trabajo cotidiano;tareas;pruebas;asistencia;Encargado\n";
             list.forEach(s => {
-                csvContent += `${s.id};${s.name};;;;\n`;
+                const g = calculateStudentGrades(s, period, type);
+                csvContent += `${s.id};${s.name};${g.coti};${g.task};${g.test};${g.att};${s.encargado || ''}\n`;
             });
 
-            safeDownloadCSV(csvContent, `Lista_Estudiantes_${lvl}-${sec}.csv`);
+            safeDownloadCSV(csvContent, fileName);
         }
         function showHistory(id, name) {
             document.getElementById('history-student-name').innerText = name;
