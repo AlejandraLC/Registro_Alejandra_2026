@@ -638,9 +638,10 @@
                 if (todo) {
                     todo.done = !todo.done;
 
+                    const date = document.getElementById('view-date').value;
+
                     // Si se marca como hecho y tiene grupo, agregar a la bitácora
                     if (todo.done && todo.groupId !== 'general' && !todo.sentToDiary) {
-                        const date = document.getElementById('view-date').value;
                         const currentNote = state.diaryNotes?.[date]?.[todo.groupId] || '';
 
                         // Formatear nota con bullet point
@@ -652,6 +653,19 @@
 
                         // Refrescar bitácora para mostrar el cambio
                         renderDiary();
+                    }
+                    // TAREA GENERAL -> NOTA ESPECIAL
+                    else if (todo.done && todo.groupId === 'general' && !todo.sentToDiary) {
+                        if (!state.specialNotes) state.specialNotes = {};
+                        if (!state.specialNotes[date]) state.specialNotes[date] = [];
+
+                        state.specialNotes[date].push({
+                            id: Date.now(),
+                            title: 'Tarea General Completada',
+                            detail: todo.text
+                        });
+
+                        todo.sentToDiary = true;
                     }
 
                     saveDiaryData();
