@@ -447,6 +447,82 @@
         </div>
     </main>
 
+    <!-- Historial de Comunicados -->
+    <section class="card-premium mx-10 mb-10 mt-2 no-print">
+        <h2 class="card-title mb-4">
+            <div class="icon-vibrant">
+                <i data-lucide="history"></i>
+            </div>
+            Historial de Comunicados (Sección Actual)
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                        <th class="p-3 rounded-tl-xl font-bold">Fecha</th>
+                        <th class="p-3 font-bold">Estudiante</th>
+                        <th class="p-3 font-bold">Tipo</th>
+                        <th class="p-3 font-bold">Consecutivo</th>
+                        <th class="p-3 font-bold">Detalles</th>
+                        <th class="p-3 rounded-tr-xl font-bold text-center w-24">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body" class="text-sm divide-y divide-slate-100">
+                    <!-- Dynamic history -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Modal para Editar Comunicado -->
+    <div id="edit-comm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center font-sans no-print">
+        <div class="bg-white rounded-3xl p-6 w-[90%] max-w-lg shadow-2xl relative">
+            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i data-lucide="edit" class="text-indigo-500 w-5 h-5"></i>
+                Editar Comunicado
+            </h3>
+            
+            <input type="hidden" id="edit-student-id">
+            <input type="hidden" id="edit-comm-index">
+            <input type="hidden" id="edit-comm-type">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500">Fecha</label>
+                    <input type="date" id="edit-comm-date" class="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500">Consecutivo</label>
+                    <input type="text" id="edit-comm-consecutive" class="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500">Detalles</label>
+                    <input type="text" id="edit-comm-details" class="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div id="edit-comm-other-container">
+                    <label class="text-xs font-bold text-slate-500">Otros / Detalles Adicionales</label>
+                    <textarea id="edit-comm-other" class="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 h-20"></textarea>
+                </div>
+                <div id="edit-comm-facts-container">
+                    <label class="text-xs font-bold text-slate-500">Hechos (Rojo)</label>
+                    <textarea id="edit-comm-facts" class="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 h-20"></textarea>
+                </div>
+                <div id="edit-comm-action-container">
+                    <label class="text-xs font-bold text-slate-500">Acción (Rojo)</label>
+                    <input type="text" id="edit-comm-action" class="w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-end mt-6">
+                <button onclick="closeEditModal()" class="px-5 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all">Cancelar</button>
+                <button onclick="saveEditComm()" class="px-5 py-2 rounded-xl text-sm font-bold bg-indigo-500 text-white hover:bg-indigo-600 hover:shadow-lg transition-all">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Área de Impresión (Invisible en pantalla, visible en Print) -->
     <div id="print-area" class="print-layout">
         <!-- El contenido se genera dinámicamente -->
@@ -549,6 +625,7 @@
             `).join('');
 
             updatePrintPreview();
+            renderHistory();
         }
 
         function setSelectionMode(mode) {
@@ -860,6 +937,143 @@
             printArea.innerHTML = content;
         }
 
+        function renderHistory() {
+            const tableBody = document.getElementById('history-body');
+            if (!tableBody) return;
+            
+            const lvl = document.getElementById('level-filter').value;
+            const sec = document.getElementById('section-filter').value;
+            
+            let allComms = [];
+            const students = (state.students[lvl] || []).filter(s => s.section === sec);
+            
+            students.forEach(student => {
+                if (state.commHistory && state.commHistory[student.id]) {
+                    state.commHistory[student.id].forEach((comm, index) => {
+                        allComms.push({
+                            student: student,
+                            comm: comm,
+                            index: index
+                        });
+                    });
+                }
+            });
+            
+            // Sort by date descending
+            allComms.sort((a, b) => new Date(b.comm.date) - new Date(a.comm.date));
+            
+            if (allComms.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-500 italic">No hay comunicados registrados en esta sección.</td></tr>`;
+                return;
+            }
+            
+            tableBody.innerHTML = allComms.map(item => {
+                let badgeClass = 'bg-slate-100 text-slate-600';
+                if (item.comm.type === 'Amarillo') badgeClass = 'bg-amber-100 text-amber-700';
+                if (item.comm.type === 'Rojo') badgeClass = 'bg-red-100 text-red-700';
+                if (item.comm.type === 'Verde') badgeClass = 'bg-green-100 text-green-700';
+                
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors group">
+                        <td class="p-3 font-medium text-slate-700">
+                            ${new Date(item.comm.date + 'T00:00:00').toLocaleDateString('es-CR')}
+                        </td>
+                        <td class="p-3 text-slate-600 font-medium">
+                            ${item.student.name}
+                        </td>
+                        <td class="p-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-bold ${badgeClass}">
+                                ${item.comm.type}
+                            </span>
+                        </td>
+                        <td class="p-3 text-slate-500">
+                            ${item.comm.consecutive || '-'}
+                        </td>
+                        <td class="p-3 text-slate-500 max-w-sm truncate" title="${item.comm.details}">
+                            ${item.comm.details}
+                        </td>
+                        <td class="p-3 text-center">
+                            <div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="openEditModal('${item.student.id}', ${item.index})" class="text-indigo-500 hover:text-indigo-700 bg-indigo-50 p-1.5 rounded-lg transition-colors">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteComm('${item.student.id}', ${item.index})" class="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded-lg transition-colors">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        function openEditModal(studentId, index) {
+            const comm = state.commHistory[studentId][index];
+            document.getElementById('edit-student-id').value = studentId;
+            document.getElementById('edit-comm-index').value = index;
+            document.getElementById('edit-comm-type').value = comm.type;
+            
+            document.getElementById('edit-comm-date').value = comm.date || '';
+            document.getElementById('edit-comm-consecutive').value = comm.consecutive || '';
+            document.getElementById('edit-comm-details').value = comm.details || '';
+            
+            const isYellow = comm.type === 'Amarillo';
+            const isRed = comm.type === 'Rojo';
+            
+            document.getElementById('edit-comm-other-container').style.display = isYellow ? 'block' : 'none';
+            if (isYellow) {
+                document.getElementById('edit-comm-other').value = comm.other || '';
+            }
+            
+            document.getElementById('edit-comm-facts-container').style.display = isRed ? 'block' : 'none';
+            document.getElementById('edit-comm-action-container').style.display = isRed ? 'block' : 'none';
+            if (isRed) {
+                document.getElementById('edit-comm-facts').value = comm.facts || '';
+                document.getElementById('edit-comm-action').value = comm.action || '';
+            }
+            
+            document.getElementById('edit-comm-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-comm-modal').classList.add('hidden');
+        }
+
+        function saveEditComm() {
+            const studentId = document.getElementById('edit-student-id').value;
+            const index = parseInt(document.getElementById('edit-comm-index').value);
+            const type = document.getElementById('edit-comm-type').value;
+            
+            if (state.commHistory && state.commHistory[studentId] && state.commHistory[studentId][index]) {
+                const comm = state.commHistory[studentId][index];
+                
+                comm.date = document.getElementById('edit-comm-date').value;
+                comm.consecutive = document.getElementById('edit-comm-consecutive').value;
+                comm.details = document.getElementById('edit-comm-details').value;
+                
+                if (type === 'Amarillo') {
+                    comm.other = document.getElementById('edit-comm-other').value;
+                } else if (type === 'Rojo') {
+                    comm.facts = document.getElementById('edit-comm-facts').value;
+                    comm.action = document.getElementById('edit-comm-action').value;
+                }
+                
+                localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+                closeEditModal();
+                renderHistory();
+            }
+        }
+
+        function deleteComm(studentId, index) {
+            if (confirm('¿Está seguro de eliminar este comunicado del historial?')) {
+                state.commHistory[studentId].splice(index, 1);
+                localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+                renderHistory();
+            }
+        }
+
         function registerAndPrint() {
             const today = document.getElementById('comm-date').value;
             const lvl = document.getElementById('level-filter').value;
@@ -922,6 +1136,10 @@
             }
 
             localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+            
+            // Re-render history if we added new ones
+            renderHistory();
+            
             window.print();
         }
 

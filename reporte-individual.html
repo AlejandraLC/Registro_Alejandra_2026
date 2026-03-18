@@ -338,6 +338,36 @@
             </div>
         </div>
 
+        <!-- COMUNICADOS AL HOGAR -->
+        <div class="card-premium" style="--primary-light: var(--amber-light); --primary-vibrant: var(--amber-vibrant);">
+            <div class="flex justify-between items-start mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="icon-vibrant"><i data-lucide="message-square" class="w-5 h-5 icon-vibrant"></i></div>
+                    <div>
+                        <h2 class="section-title">Comunicados al Hogar</h2>
+                        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">Historial de Notificaciones</p>
+                    </div>
+                </div>
+                <div class="text-right bg-amber-50/50 px-6 py-3 rounded-3xl border border-amber-100 shadow-sm">
+                    <p class="text-xl font-black text-amber-600" id="comm-total">0</p>
+                    <p class="text-[9px] font-bold text-amber-300 uppercase tracking-widest">Comunicados</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto rounded-3xl border border-slate-100 border-amber-100/30">
+                <table class="w-full text-center">
+                    <thead class="text-[9px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-50">
+                        <tr>
+                            <th class="p-4 text-left">Fecha</th>
+                            <th>Tipo</th>
+                            <th>Consecutivo</th>
+                            <th class="text-left w-1/3">Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comm-body" class="text-[11px] font-bold text-slate-600"></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- RESUMEN ANUAL -->
         <div class="card-premium" id="annual-summary-container">
             <h2 class="text-xl font-extrabold text-slate-800 mb-8 uppercase tracking-tight">
@@ -634,7 +664,26 @@
         document.getElementById('test-nota-final').innerText = pTest.toFixed(2) + "%";
         document.getElementById('test-body').innerHTML = testHtml || "<tr><td colspan='5' class='p-10 italic text-slate-300'>Sin registros.</td></tr>";
 
-        // E. DESGLOSE
+        // E. COMUNICADOS
+        const evComms = state.commHistory?.[student.id] || [];
+        let commHtml = "";
+        evComms.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(c => {
+            let badgeClass = 'bg-slate-100 text-slate-600';
+            if (c.type === 'Amarillo') badgeClass = 'bg-amber-100 text-amber-700';
+            if (c.type === 'Rojo') badgeClass = 'bg-red-100 text-red-700';
+            if (c.type === 'Verde') badgeClass = 'bg-green-100 text-green-700';
+            
+            commHtml += `<tr class="border-t border-slate-50">
+                <td class="p-4 text-left font-bold text-slate-700">${c.date.split('-').reverse().join('/')}</td>
+                <td><span class="px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${badgeClass}">${c.type}</span></td>
+                <td>${c.consecutive || '-'}</td>
+                <td class="text-left max-w-[200px] truncate" title="${c.details || ''}">${c.details || '-'}</td>
+            </tr>`;
+        });
+        document.getElementById('comm-total').innerText = evComms.length;
+        document.getElementById('comm-body').innerHTML = commHtml || "<tr><td colspan='4' class='p-10 italic text-slate-300'>No hay comunicados registrados.</td></tr>";
+
+        // F. DESGLOSE
         const total = pCot + pTask + pTest + resAtt.nota;
         const comps = [
             { n: 'Trabajo Cotidiano', v: pCot.toFixed(2) + '%', p: (pCot / valCot) * 100, c: 'bg-blue-500' },
