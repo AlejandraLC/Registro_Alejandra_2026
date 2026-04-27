@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte General - Registro 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    <meta name="theme-color" content="#6366f1">
+    <style>
+        .page-reporte .nav-active {
+            background: var(--primary-light);
+            color: var(--primary-vibrant);
+            box-shadow: var(--nm-shadow-in);
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 2rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: var(--nm-shadow-out);
+            overflow: hidden;
+        }
+
+        .report-table th {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            padding: 1rem;
+            background: #f8fafc;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .report-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 12px;
+        }
+
+        .report-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .header-print {
+            display: none;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: white !important;
+                font-family: 'Outfit', sans-serif !important;
+                color: #334155 !important;
+                font-size: 10px !important;
+            }
+
+            .flex-1 {
+                padding: 0 !important;
+            }
+
+            .table-container {
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+            }
+
+            .report-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-top: 20px !important;
+                table-layout: fixed !important;
+            }
+
+            .report-table th, .report-table td {
+                border: 1px solid #cbd5e1 !important;
+                padding: 6px !important;
+                text-align: center !important;
+                word-wrap: break-word !important;
+                font-size: 9px !important;
+                color: #334155 !important;
+            }
+
+            .report-table th {
+                background: #f8fafc !important;
+                font-size: 9px !important;
+                font-weight: 800 !important;
+                text-transform: uppercase !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .report-table td:first-child {
+                text-align: left !important;
+                width: 20% !important;
+            }
+            
+            .report-table td:first-child .rounded-full {
+                display: none !important;
+            }
+
+            .report-table td:first-child span {
+                font-size: 9px !important;
+                font-weight: normal !important;
+            }
+            
+            .report-table td:last-child {
+                background: #eff6ff !important;
+                font-weight: 800 !important;
+                color: #1d4ed8 !important;
+                font-size: 10px !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .header-print {
+                display: flex !important;
+                justify-content: space-between !important;
+                border-bottom: 2px solid #f1f5f9 !important;
+                padding-bottom: 20px !important;
+                margin-bottom: 30px !important;
+                text-transform: uppercase !important;
+            }
+
+            .header-print h1 {
+                font-size: 18px !important;
+                margin: 0 !important;
+                color: #1e293b !important;
+                font-weight: 800 !important;
+                border: none !important;
+            }
+
+            .prof-data p {
+                margin: 2px 0 !important;
+                font-size: 9px !important;
+                color: #64748b !important;
+            }
+
+            .prof-data b {
+                color: #334155 !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen page-reporte">
+    <button class="sidebar-toggle no-print" onclick="toggleSidebar()">
+        <i data-lucide="menu"></i>
+    </button>
+
+    <aside
+        class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-50 overflow-hidden group no-print flex-shrink-0">
+        <div class="flex flex-col gap-3 p-4 mt-6">
+            <a href="config.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="settings"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Configuración</span>
+            </a>
+            <a href="index.html" class="flex items-center gap-4 p-3 rounded-2xl nav-active">
+                <i data-lucide="layout-dashboard"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Inicio</span>
+            </a>
+            <a href="estudiantes.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="users"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
+            </a>
+            <a href="asistencia.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar-check"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Asistencia</span>
+            </a>
+            <a href="cotidiano.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="clipboard-list"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Cotidiano</span>
+            </a>
+            <a href="tareas.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Tareas</span>
+            </a>
+            <a href="pruebas.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="file-text"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Pruebas</span>
+            </a>
+            <a href="analisis.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="bar-chart-3"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Análisis</span>
+            </a>
+            <a href="comunicados.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="message-square"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Comunicados</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-10 min-w-0 overflow-x-hidden">
+        <!-- ENCABEZADO PDF (Solo Impresión) -->
+        <div class="header-print">
+            <div>
+                <h1>Reporte General</h1>
+                <p style="margin:5px 0 0 0; color:#3b82f6; font-weight:800; font-size: 11px;" id="pdf-group-name">---</p>
+            </div>
+            <div class="prof-data">
+                <p>Institución: <b id="pdf-inst">---</b></p>
+                <p>Materia: <b id="pdf-subject">---</b></p>
+                <p>Docente: <b id="pdf-teacher">---</b></p>
+                <p>Instrumento: <b>Reporte General</b></p>
+            </div>
+        </div>
+
+        <header class="page-title mb-8 flex items-center justify-between border-b border-slate-100 pb-6 uppercase no-print">
+            <div>
+                <h1><i data-lucide="table" class="title-icon"></i> Reporte General</h1>
+                <div class="flex gap-4 mt-1">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="home" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-inst">---</span>
+                    </p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <i data-lucide="bookmark" class="w-3 h-3" style="color: var(--primary-vibrant);"></i> <span
+                            id="info-subject">---</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-4 items-center">
+                <button onclick="window.print()" class="btn-nm">
+                    <i data-lucide="printer" class="w-4 h-4 icon-vibrant"></i> Imprimir Reporte
+                </button>
+            </div>
+        </header>
+
+        <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm mb-8 no-print w-max">
+            <div class="flex items-center gap-2" id="group-selector-container">
+                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
+                <select id="level-select" onchange="updateSectionSelector()"
+                    class="text-xs font-bold text-slate-600 outline-none">
+                    <option value="7">7°</option>
+                    <option value="8">8°</option>
+                    <option value="9">9°</option>
+                    <option value="10">10°</option>
+                    <option value="11">11°</option>
+                </select>
+                <span class="text-slate-200">|</span>
+                <select id="section-select" onchange="loadReport()"
+                    class="text-xs font-bold text-slate-600 outline-none"></select>
+            </div>
+            <div class="flex items-center gap-2 hidden" id="workshop-selector-container">
+                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Taller</span>
+                <select id="workshop-select" onchange="loadReport()"
+                    class="text-xs font-bold text-slate-600 outline-none">
+                    <option value="1">Taller 1</option>
+                    <option value="2">Taller 2</option>
+                    <option value="3">Taller 3</option>
+                </select>
+            </div>
+            <span class="w-px h-4 bg-slate-100 mx-1"></span>
+            <div class="flex items-center gap-2">
+                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Periodo</span>
+                <select id="period-select" onchange="loadReport()"
+                    class="text-xs font-bold text-blue-500 outline-none bg-transparent">
+                    <option value="1">I Periodo</option>
+                    <option value="2">II Periodo</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-container overflow-x-auto">
+            <table class="w-full text-center report-table">
+                <thead>
+                    <tr>
+                        <th class="text-left" style="width: 25%">Estudiante</th>
+                        <th id="th-coti">T. Cotidiano</th>
+                        <th id="th-task">Tareas</th>
+                        <th id="th-test">Pruebas</th>
+                        <th id="th-att">Asistencia</th>
+                        <th class="bg-indigo-50/50 text-indigo-700">Nota Final</th>
+                    </tr>
+                </thead>
+                <tbody id="report-body" class="font-bold text-slate-600">
+                    <!-- Filas de estudiantes -->
+                </tbody>
+            </table>
+            <div id="no-data" class="hidden text-center py-20 bg-slate-50 border-t border-slate-100">
+                <i data-lucide="inbox" class="w-16 h-16 text-slate-300 mx-auto mb-4"></i>
+                <h3 class="text-slate-500 font-bold">No hay estudiantes</h3>
+                <p class="text-slate-400 text-xs mt-2">Seleccione otro grupo o periodo.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
+        const mode = localStorage.getItem('temp_current_mode') || 'materia';
+
+        function init() {
+            document.getElementById('info-inst').innerText = state.admin?.institution || 'MEP';
+            document.getElementById('info-subject').innerText = state.admin?.subject || 'Materia';
+            document.getElementById('pdf-inst').innerText = state.admin?.institution || 'MEP';
+            document.getElementById('pdf-teacher').innerText = state.admin?.name || 'Docente';
+
+            initSelectors();
+            loadReport();
+        }
+
+        function initSelectors() {
+            const periodSelect = document.getElementById('period-select');
+            if (state.settings?.currentPeriod) {
+                periodSelect.value = state.settings.currentPeriod;
+            }
+
+            if (mode === 'taller') {
+                document.getElementById('group-selector-container').classList.add('hidden');
+                document.getElementById('workshop-selector-container').classList.remove('hidden');
+
+                const wSelect = document.getElementById('workshop-select');
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                wSelect.innerHTML = wNames.map((name, i) => `<option value="${i + 1}">${name || `Taller ${i + 1}`}</option>`).join('');
+
+                const savedWorkshop = localStorage.getItem('temp_current_workshop');
+                if (savedWorkshop) wSelect.value = savedWorkshop;
+            } else {
+                const savedLevel = localStorage.getItem('temp_current_level');
+                const savedSection = localStorage.getItem('temp_current_section');
+                if (savedLevel) document.getElementById('level-select').value = savedLevel;
+                updateSectionSelector(savedSection);
+            }
+        }
+
+        function updateSectionSelector(sectionToSelect) {
+            const level = document.getElementById('level-select').value;
+            const sectionSelect = document.getElementById('section-select');
+            const definedGroups = state.groups || [];
+            const filtered = definedGroups.filter(g => g.startsWith(level + '-')).map(g => g.split('-')[1]);
+
+            if (filtered.length > 0) {
+                sectionSelect.innerHTML = filtered.map(sec => `<option value="${sec}">${level}-${sec}</option>`).join('');
+                if (sectionToSelect && filtered.includes(sectionToSelect)) {
+                    sectionSelect.value = sectionToSelect;
+                }
+            } else {
+                sectionSelect.innerHTML = `<option value="1">${level}-1</option>`;
+            }
+            loadReport();
+        }
+
+        function loadReport() {
+            const period = document.getElementById('period-select').value;
+
+            let students = [];
+            let level = "";
+            let section = "";
+            let workshopId = "";
+
+            if (mode === 'taller') {
+                workshopId = document.getElementById('workshop-select').value;
+                localStorage.setItem('temp_current_workshop', workshopId);
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                document.getElementById('info-subject').innerText = wNames[workshopId - 1] || 'Taller';
+                document.getElementById('pdf-subject').innerText = wNames[workshopId - 1] || 'Taller';
+                document.getElementById('pdf-group-name').innerText = (wNames[workshopId - 1] || 'Taller') + ` | Periodo: ${period}`;
+
+                Object.keys(state.students || {}).forEach(l => {
+                    const filtered = (state.students[l] || []).filter(s => {
+                        if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
+                        return s.workshop === workshopId;
+                    });
+                    students = [...students, ...filtered];
+                });
+            } else {
+                level = document.getElementById('level-select').value;
+                section = document.getElementById('section-select').value;
+                localStorage.setItem('temp_current_level', level);
+                localStorage.setItem('temp_current_section', section);
+                students = (state.students?.[level] || []).filter(s => s.section === section);
+                
+                document.getElementById('info-subject').innerText = state.admin?.subject || 'Materia';
+                document.getElementById('pdf-subject').innerText = state.admin?.subject || 'Materia';
+                document.getElementById('pdf-group-name').innerText = `Grupo ${level}-${section} | Periodo: ${period}`;
+            }
+
+            const tbody = document.getElementById('report-body');
+            const noData = document.getElementById('no-data');
+
+            if (students.length === 0) {
+                tbody.innerHTML = '';
+                noData.classList.remove('hidden');
+                return;
+            }
+
+            noData.classList.add('hidden');
+            processAndRender(students, period, level, section, workshopId);
+            lucide.createIcons();
+        }
+
+        function processAndRender(students, period, level, section, workshopId) {
+            const tbody = document.getElementById('report-body');
+            
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const wP = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
+            
+            let cycle;
+            if (mode === 'taller') {
+                cycle = { ...wP, test: 0 };
+                document.getElementById('th-test').innerText = `Proyecto (${cycle.proj}%)`;
+            } else {
+                cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
+                document.getElementById('th-test').innerText = `Pruebas (${cycle.test}%)`;
+            }
+            
+            document.getElementById('th-coti').innerText = `Cotidiano (${cycle.coti}%)`;
+            document.getElementById('th-task').innerText = `Tareas (${cycle.task}%)`;
+            document.getElementById('th-att').innerText = `Asistencia (${cycle.att}%)`;
+
+            // Sort students alphabetically
+            students.sort((a, b) => a.name.localeCompare(b.name));
+
+            let html = '';
+
+            students.forEach(student => {
+                const sId = student.id;
+                const joinDate = student.joinDate || '2026-01-01';
+                const todayGroupKey = mode === 'taller' ? `_workshop_${workshopId}` : `_group_${level}_${section}`;
+
+                const isPre = (date) => (date < joinDate);
+                const isAbs = (date) => {
+                    const dailyData = (state.attendance?.[period] || {})[date] || {};
+                    const att = dailyData[`${todayGroupKey}_${sId}`];
+                    if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return false;
+                    let dailyMax = 0;
+                    if (dailyData[todayGroupKey] && dailyData[todayGroupKey].dayLessons) {
+                        dailyMax = dailyData[todayGroupKey].dayLessons;
+                    } else {
+                        const recs = Object.values(dailyData);
+                        dailyMax = recs.length > 0 ? Math.max(...recs.map(r => r.lessons || 0), 0) : 0;
+                    }
+                    return att.lessons >= dailyMax;
+                };
+                const checkAbsence = (date) => isPre(date) || isAbs(date);
+
+                let earnedPoints = 0;
+
+                // 1. Cotidiano
+                const acts = Object.values(state.activities || {}).filter(a => {
+                    if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
+                    return a.level === level && a.section === section && a.period === period;
+                }).filter(a => a.dates.some(d => !checkAbsence(d)));
+                
+                let cotiScore = 0;
+                let cotiTotalMax = 0;
+                acts.forEach(a => {
+                    let totalPts = 0;
+                    let maxInds = 0;
+                    a.skills.forEach((skill, skIdx) => {
+                        skill.indicators.forEach((ind, inIdx) => {
+                            maxInds += 3;
+                            let best = 0;
+                            a.dates.forEach(d => {
+                                const s = state.evaluations?.[a.id]?.[d]?.[sId]?.scores?.[`${skIdx}-${inIdx}`] || 0;
+                                if (s > best) best = s;
+                            });
+                            totalPts += best;
+                        });
+                    });
+                    if (maxInds > 0) {
+                        cotiScore += (totalPts * 100) / maxInds;
+                        cotiTotalMax += 100;
+                    }
+                });
+                const cotiFinalNote = cotiTotalMax > 0 ? (cotiScore / cotiTotalMax) * cycle.coti : 0;
+                earnedPoints += cotiFinalNote;
+
+                // 2. Pruebas / Proyecto
+                let testProjFinalNote = 0;
+                if (mode === 'materia') {
+                    const tests = Object.values(state.tests || {}).filter(t => t.level === level && t.section === section && t.period === period)
+                        .filter(t => t.date >= joinDate);
+                    tests.forEach(t => {
+                        const ev = state.test_evals?.[t.id]?.[sId] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
+                        const maxPts = ev.sig ? ev.sigPts : t.points;
+                        const maxP = ev.sig ? ev.sigPerc : t.percent;
+                        const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
+                        testProjFinalNote += (nota * maxP / 100);
+                    });
+                    earnedPoints += testProjFinalNote;
+                } else {
+                    const projects = Object.values(state.projects || {}).filter(p => p.workshopId === workshopId && p.period === period)
+                        .filter(p => p.dates.some(d => !isPre(d)));
+                    let sumProj = 0;
+                    projects.forEach(p => {
+                        let pPts = 0; let pMax = 0;
+                        p.skills.forEach((sk, skI) => sk.indicators.forEach((ind, inI) => {
+                            pMax += 3;
+                            let best = 0;
+                            p.dates.forEach(d => {
+                                const s = state.projectEvaluations?.[p.id]?.[d]?.[sId]?.scores?.[`${skI}-${inI}`] || 0;
+                                if (s > best) best = s;
+                            });
+                            pPts += best;
+                        }));
+                        if (pMax > 0) sumProj += (pPts * 100 / pMax);
+                    });
+                    const projNota100 = projects.length > 0 ? (sumProj / projects.length) : 0;
+                    testProjFinalNote = projNota100 * cycle.proj / 100;
+                    earnedPoints += testProjFinalNote;
+                }
+
+                // 3. Tareas
+                const tasks = Object.values(state.tasks || {}).filter(a => {
+                    if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
+                    return a.level === level && a.section === section && a.period === period;
+                }).filter(a => a.dates.some(d => !isPre(d)));
+                let taskSumPts = 0;
+                let taskMaxPossible = 0;
+                tasks.forEach(a => {
+                    a.skills.forEach((sk, skIdx) => sk.indicators.forEach((ind, iIdx) => {
+                        taskMaxPossible += 3;
+                        let best = 0;
+                        a.dates.forEach(d => {
+                            const s = state.task_evaluations?.[a.id]?.[d]?.[sId]?.scores?.[`${skIdx}-${iIdx}`] || 0;
+                            if (s > best) best = s;
+                        });
+                        taskSumPts += best;
+                    }));
+                });
+                const taskNota100 = taskMaxPossible > 0 ? (taskSumPts * 100) / taskMaxPossible : 0;
+                const taskFinalNote = taskNota100 * cycle.task / 100;
+                earnedPoints += taskFinalNote;
+
+                // 4. Asistencia
+                const attData = state.attendance?.[period] || {};
+                let totalLecciones = 0;
+                let aiLecciones = 0;
+                let tardias = 0;
+                Object.entries(attData).forEach(([date, dayData]) => {
+                    if (isPre(date)) return;
+                    const record = dayData[`${todayGroupKey}_${sId}`];
+
+                    let dayLec = 0;
+                    const hasGroupRecords = Object.keys(dayData).some(id => id.startsWith(todayGroupKey + '_'));
+                    if (!hasGroupRecords) return;
+
+                    if (dayData[todayGroupKey] && dayData[todayGroupKey].dayLessons > 0) {
+                        dayLec = parseInt(dayData[todayGroupKey].dayLessons);
+                    } else {
+                        let maxLecFound = 0;
+                        for (const id in dayData) {
+                            if (id.startsWith(todayGroupKey + '_')) {
+                                maxLecFound = Math.max(maxLecFound, parseInt(dayData[id].lessons) || 0);
+                            }
+                        }
+                        dayLec = maxLecFound;
+                    }
+                    totalLecciones += dayLec;
+
+                    if (record && record.status !== 'P') {
+                        if (record.status === 'AI') aiLecciones += record.lessons || 0;
+                        if (record.status === 'T') tardias += 1;
+                    }
+                });
+                
+                const ausenciasEquivalentes = aiLecciones + (tardias * 0.5);
+                const porcentajeInjustificado = totalLecciones > 0 ? (ausenciasEquivalentes / totalLecciones) * 100 : 0;
+                
+                let attPts = 0;
+                if (porcentajeInjustificado < 10) attPts = 5;
+                else if (porcentajeInjustificado < 20) attPts = 4;
+                else if (porcentajeInjustificado < 30) attPts = 3;
+                else if (porcentajeInjustificado < 40) attPts = 2;
+                else if (porcentajeInjustificado < 50) attPts = 1;
+                else attPts = 0;
+                
+                const attFinalNote = attPts * (cycle.att / 5);
+                earnedPoints += attFinalNote;
+
+                // Rendimiento / Alerta Visual
+                const threshold = (parseInt(level) >= 10) ? 70 : 65;
+                const notaFinal = earnedPoints.toFixed(2);
+                let notaClass = 'text-slate-800 bg-indigo-50/30';
+                
+                if (earnedPoints < threshold) {
+                    notaClass = 'text-rose-600 bg-rose-50';
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="text-left">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-black text-slate-500">
+                                    ${student.name.substring(0,2).toUpperCase()}
+                                </div>
+                                <span class="font-black text-slate-800 text-sm">${student.name}</span>
+                            </div>
+                        </td>
+                        <td class="text-blue-600">${cotiFinalNote.toFixed(2)}</td>
+                        <td class="text-purple-600">${taskFinalNote.toFixed(2)}</td>
+                        <td class="${mode === 'materia' ? 'text-rose-600' : 'text-amber-600'}">${testProjFinalNote.toFixed(2)}</td>
+                        <td class="text-emerald-600">${attFinalNote.toFixed(2)}</td>
+                        <td class="font-black text-lg ${notaClass}">${notaFinal}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-expanded');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
