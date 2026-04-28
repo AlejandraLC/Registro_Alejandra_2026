@@ -450,7 +450,7 @@
                 const displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
 
                 html += `
-                    <div class="card-premium">
+                    <div class="card-premium cursor-pointer hover:border-emerald-300 transition-all" onclick="window.location.href='bitacora.html?fecha=${date}'">
                         <div class="flex items-center justify-between mb-4 history-item-header">
                             <div class="flex items-center gap-2">
                                 <div class="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">

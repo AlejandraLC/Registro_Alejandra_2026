@@ -181,6 +181,18 @@
         <script>
             let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
 
+            function formatAMPM(timeString) {
+                if (!timeString || timeString === '--:--') return timeString;
+                const parts = timeString.split(':');
+                if (parts.length !== 2) return timeString;
+                let hour = parseInt(parts[0], 10);
+                const minute = parts[1];
+                const ampm = hour >= 12 ? 'pm' : 'am';
+                hour = hour % 12;
+                hour = hour ? hour : 12;
+                return `${hour}:${minute} ${ampm}`;
+            }
+
             function init() {
                 state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
 
@@ -190,7 +202,14 @@
                 document.getElementById('info-teacher').innerText = state.admin?.name || 'Docente';
 
                 const dateInput = document.getElementById('view-date');
-                if (dateInput) dateInput.valueAsDate = new Date();
+                const urlParams = new URLSearchParams(window.location.search);
+                const fechaParam = urlParams.get('fecha');
+
+                if (fechaParam && dateInput) {
+                    dateInput.value = fechaParam;
+                } else if (dateInput) {
+                    dateInput.valueAsDate = new Date();
+                }
 
                 populateGroupSelector();
                 renderDiary();
@@ -367,12 +386,30 @@
                         ? `localStorage.setItem('temp_current_mode','materia'); localStorage.setItem('temp_current_level','${g.lvl}'); localStorage.setItem('temp_current_section','${g.sec}');`
                         : `localStorage.setItem('temp_current_mode','taller'); localStorage.setItem('temp_current_workshop','${g.workshopId}');`;
 
+                    const startTime = state.lessonTimes?.[date]?.[g.id]?.start || '';
+                    const endTime = state.lessonTimes?.[date]?.[g.id]?.end || '';
+
                     html += `
                         <div class="mb-10 text-left border border-slate-100 p-8 rounded-[2.5rem] bg-white shadow-sm ring-1 ring-slate-50 relative group/section" data-section-id="${g.id}">
                             <div class="flex items-center justify-between mb-6">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-100"></div>
-                                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">${g.label}</h3>
+                                <div class="flex items-center gap-4 flex-wrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-100"></div>
+                                        <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">${g.label}</h3>
+                                    </div>
+                                    <div class="flex items-center gap-2 no-print bg-slate-50/50 px-3 py-1.5 rounded-xl border border-slate-100">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                        <input type="time" class="text-xs font-bold text-slate-600 bg-transparent outline-none cursor-pointer w-[90px]" 
+                                            value="${startTime}" 
+                                            onchange="saveLessonTime('${g.id}', '${date}', 'start', this.value, this)">
+                                        <span class="text-xs font-bold text-slate-300">-</span>
+                                        <input type="time" class="text-xs font-bold text-slate-600 bg-transparent outline-none cursor-pointer w-[90px]" 
+                                            value="${endTime}" 
+                                            onchange="saveLessonTime('${g.id}', '${date}', 'end', this.value, this)">
+                                    </div>
+                                    <div class="hidden print:block print-time-text text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg">
+                                        ⏱️ ${formatAMPM(startTime) || '--:--'} a ${formatAMPM(endTime) || '--:--'}
+                                    </div>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover/section:opacity-100 transition-all no-print">
                                     <button onclick="moveSectionUp('${g.id}')" class="text-slate-300 hover:text-emerald-500 transition-all p-1" title="Subir">
@@ -469,6 +506,8 @@
                 editNoteId = null; // Reset para nueva nota
                 document.getElementById('note-title').value = "";
                 document.getElementById('note-detail').value = "";
+                document.getElementById('note-time-start').value = "";
+                document.getElementById('note-time-end').value = "";
                 document.getElementById('modal-apunte').classList.remove('hidden');
                 document.getElementById('note-title').focus();
             }
@@ -482,6 +521,8 @@
                     editNoteId = id;
                     document.getElementById('note-title').value = note.title;
                     document.getElementById('note-detail').value = note.detail;
+                    document.getElementById('note-time-start').value = note.startTime || "";
+                    document.getElementById('note-time-end').value = note.endTime || "";
                     document.getElementById('modal-apunte').classList.remove('hidden');
                 }
             }
@@ -490,10 +531,14 @@
             function saveSpecialNote() {
                 const titleInput = document.getElementById('note-title');
                 const detailInput = document.getElementById('note-detail');
+                const startTimeInput = document.getElementById('note-time-start');
+                const endTimeInput = document.getElementById('note-time-end');
                 const date = document.getElementById('view-date').value;
 
                 const title = titleInput.value.trim();
                 const detail = detailInput.value.trim();
+                const startTime = startTimeInput.value;
+                const endTime = endTimeInput.value;
 
                 if (!title) return alert("Por favor, dale un título a tu apunte.");
                 if (!date) return alert("Selecciona una fecha primero.");
@@ -506,12 +551,16 @@
                     if (index !== -1) {
                         state.specialNotes[date][index].title = title;
                         state.specialNotes[date][index].detail = detail;
+                        state.specialNotes[date][index].startTime = startTime;
+                        state.specialNotes[date][index].endTime = endTime;
                     }
                 } else {
                     state.specialNotes[date].push({
                         id: Date.now(),
                         title: title,
-                        detail: detail
+                        detail: detail,
+                        startTime: startTime,
+                        endTime: endTime
                     });
                 }
 
@@ -539,7 +588,10 @@
             <div class="flex gap-4">
                 <span class="text-lg">📝</span>
                 <div>
-                    <p class="text-xs font-black text-slate-800 uppercase tracking-tight mb-1">${n.title}</p>
+                    <div class="flex items-center gap-2 mb-1">
+                        <p class="text-xs font-black text-slate-800 uppercase tracking-tight">${n.title}</p>
+                        ${n.startTime || n.endTime ? `<span class="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${formatAMPM(n.startTime) || '--:--'} a ${formatAMPM(n.endTime) || '--:--'}</span>` : ''}
+                    </div>
                     <p class="text-[11px] text-slate-500 font-medium leading-relaxed whitespace-pre-wrap">${n.detail || ''}</p>
                 </div>
             </div>
@@ -607,6 +659,8 @@
                 // Limpiamos los campos para la próxima vez
                 document.getElementById('note-title').value = "";
                 document.getElementById('note-detail').value = "";
+                document.getElementById('note-time-start').value = "";
+                document.getElementById('note-time-end').value = "";
                 editNoteId = null;
             }
             function addTodo() {
@@ -739,6 +793,26 @@
                 }
             }
 
+            function saveLessonTime(groupId, date, type, value, inputEl) {
+                if (!state.lessonTimes) state.lessonTimes = {};
+                if (!state.lessonTimes[date]) state.lessonTimes[date] = {};
+                if (!state.lessonTimes[date][groupId]) state.lessonTimes[date][groupId] = {};
+                
+                state.lessonTimes[date][groupId][type] = value;
+                inputEl.setAttribute('value', value);
+                localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
+
+                const container = inputEl.closest('.flex-wrap');
+                if (container) {
+                    const printDiv = container.querySelector('.print-time-text');
+                    if (printDiv) {
+                        const start = state.lessonTimes[date][groupId].start || '';
+                        const end = state.lessonTimes[date][groupId].end || '';
+                        printDiv.innerText = `⏱️ ${formatAMPM(start) || '--:--'} a ${formatAMPM(end) || '--:--'}`;
+                    }
+                }
+            }
+
             // Función de guardado específica para evitar conflictos
             function saveDiaryData() {
                 // Guardamos todo en la base de datos
@@ -840,6 +914,8 @@
             <div class="sections-container">
                 ${Array.from(activitiesClone.children).map(node => {
                     const sectionTitle = node.querySelector('h3').innerText;
+                    const timeElement = node.querySelector('.print-time-text');
+                    const timeText = timeElement ? timeElement.innerText : "";
                     const hasAttendance = node.innerHTML.includes('Asistencia Registrada');
                     const activities = Array.from(node.querySelectorAll('.space-y-4 > div')).filter(div => !div.innerHTML.includes('Asistencia Registrada'));
                     const noteTextElement = node.querySelector('div.bitacora-text');
@@ -847,9 +923,12 @@
 
                     return `
                         <div class="section-card">
-                            <div class="section-header">
-                                <div style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></div>
-                                <h3>${sectionTitle}</h3>
+                            <div class="section-header" style="justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></div>
+                                    <h3>${sectionTitle}</h3>
+                                </div>
+                                ${timeText ? `<span style="font-size: 9px; font-weight: 700; color: #64748b;">${timeText}</span>` : ''}
                             </div>
                             <div class="activities-mini-grid">
                                 ${hasAttendance ? `
@@ -886,7 +965,10 @@
                 <div class="notes-grid">
                     ${notes.map(n => `
                         <div class="note-card">
-                            <b>${n.title}</b>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <b>${n.title}</b>
+                                ${n.startTime || n.endTime ? `<span style="font-size: 8px; font-weight: 700; color: #64748b; background: #f8fafc; padding: 2px 4px; border-radius: 4px;">⏱️ ${formatAMPM(n.startTime) || '--:--'} a ${formatAMPM(n.endTime) || '--:--'}</span>` : ''}
+                            </div>
                             <div style="font-size: 10px; line-height: 1.4; white-space: pre-wrap;">${n.detail}</div>
                         </div>
                     `).join('')}
@@ -920,6 +1002,13 @@
                 <div class="space-y-4">
                     <input type="text" id="note-title" placeholder="Reunión"
                         class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500">
+
+                    <div class="flex items-center gap-4 w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-slate-700">
+                        <i data-lucide="clock" class="w-5 h-5 text-slate-400"></i>
+                        <input type="time" id="note-time-start" class="bg-transparent outline-none flex-1 text-slate-600">
+                        <span class="text-slate-300">a</span>
+                        <input type="time" id="note-time-end" class="bg-transparent outline-none flex-1 text-slate-600">
+                    </div>
 
                     <textarea id="note-detail" placeholder="Definición de comités"
                         class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 h-32 resize-none"></textarea>

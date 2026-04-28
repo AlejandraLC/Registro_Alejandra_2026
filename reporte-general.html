@@ -7,7 +7,7 @@
     <title>Reporte General - Registro 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-512.png">
@@ -79,7 +79,8 @@
                 table-layout: fixed !important;
             }
 
-            .report-table th, .report-table td {
+            .report-table th,
+            .report-table td {
                 border: 1px solid #cbd5e1 !important;
                 padding: 6px !important;
                 text-align: center !important;
@@ -101,7 +102,7 @@
                 text-align: left !important;
                 width: 20% !important;
             }
-            
+
             .report-table td:first-child .rounded-full {
                 display: none !important;
             }
@@ -110,7 +111,7 @@
                 font-size: 9px !important;
                 font-weight: normal !important;
             }
-            
+
             .report-table td:last-child {
                 background: #eff6ff !important;
                 font-weight: 800 !important;
@@ -213,7 +214,8 @@
         <div class="header-print">
             <div>
                 <h1>Reporte General</h1>
-                <p style="margin:5px 0 0 0; color:#3b82f6; font-weight:800; font-size: 11px;" id="pdf-group-name">---</p>
+                <p style="margin:5px 0 0 0; color:#3b82f6; font-weight:800; font-size: 11px;" id="pdf-group-name">---
+                </p>
             </div>
             <div class="prof-data">
                 <p>Institución: <b id="pdf-inst">---</b></p>
@@ -223,7 +225,8 @@
             </div>
         </div>
 
-        <header class="page-title mb-8 flex items-center justify-between border-b border-slate-100 pb-6 uppercase no-print">
+        <header
+            class="page-title mb-8 flex items-center justify-between border-b border-slate-100 pb-6 uppercase no-print">
             <div>
                 <h1><i data-lucide="table" class="title-icon"></i> Reporte General</h1>
                 <div class="flex gap-4 mt-1">
@@ -244,7 +247,8 @@
             </div>
         </header>
 
-        <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm mb-8 no-print w-max">
+        <div
+            class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm mb-8 no-print w-max">
             <div class="flex items-center gap-2" id="group-selector-container">
                 <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
                 <select id="level-select" onchange="updateSectionSelector()"
@@ -387,7 +391,7 @@
                 localStorage.setItem('temp_current_level', level);
                 localStorage.setItem('temp_current_section', section);
                 students = (state.students?.[level] || []).filter(s => s.section === section);
-                
+
                 document.getElementById('info-subject').innerText = state.admin?.subject || 'Materia';
                 document.getElementById('pdf-subject').innerText = state.admin?.subject || 'Materia';
                 document.getElementById('pdf-group-name').innerText = `Grupo ${level}-${section} | Periodo: ${period}`;
@@ -409,13 +413,13 @@
 
         function processAndRender(students, period, level, section, workshopId) {
             const tbody = document.getElementById('report-body');
-            
+
             const p = state.settings?.percentages || {
                 iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
                 diversificado: { coti: 35, test: 50, task: 10, att: 5 }
             };
             const wP = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
-            
+
             let cycle;
             if (mode === 'taller') {
                 cycle = { ...wP, test: 0 };
@@ -424,7 +428,7 @@
                 cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
                 document.getElementById('th-test').innerText = `Pruebas (${cycle.test}%)`;
             }
-            
+
             document.getElementById('th-coti').innerText = `Cotidiano (${cycle.coti}%)`;
             document.getElementById('th-task').innerText = `Tareas (${cycle.task}%)`;
             document.getElementById('th-att').innerText = `Asistencia (${cycle.att}%)`;
@@ -462,7 +466,7 @@
                     if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
                     return a.level === level && a.section === section && a.period === period;
                 }).filter(a => a.dates.some(d => !checkAbsence(d)));
-                
+
                 let cotiScore = 0;
                 let cotiTotalMax = 0;
                 acts.forEach(a => {
@@ -575,10 +579,10 @@
                         if (record.status === 'T') tardias += 1;
                     }
                 });
-                
+
                 const ausenciasEquivalentes = aiLecciones + (tardias * 0.5);
                 const porcentajeInjustificado = totalLecciones > 0 ? (ausenciasEquivalentes / totalLecciones) * 100 : 0;
-                
+
                 let attPts = 0;
                 if (porcentajeInjustificado < 10) attPts = 5;
                 else if (porcentajeInjustificado < 20) attPts = 4;
@@ -586,7 +590,7 @@
                 else if (porcentajeInjustificado < 40) attPts = 2;
                 else if (porcentajeInjustificado < 50) attPts = 1;
                 else attPts = 0;
-                
+
                 const attFinalNote = attPts * (cycle.att / 5);
                 earnedPoints += attFinalNote;
 
@@ -594,7 +598,7 @@
                 const threshold = (parseInt(level) >= 10) ? 70 : 65;
                 const notaFinal = earnedPoints.toFixed(2);
                 let notaClass = 'text-slate-800 bg-indigo-50/30';
-                
+
                 if (earnedPoints < threshold) {
                     notaClass = 'text-rose-600 bg-rose-50';
                 }
@@ -604,7 +608,7 @@
                         <td class="text-left">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-black text-slate-500">
-                                    ${student.name.substring(0,2).toUpperCase()}
+                                    ${student.name.substring(0, 2).toUpperCase()}
                                 </div>
                                 <span class="font-black text-slate-800 text-sm">${student.name}</span>
                             </div>
@@ -628,4 +632,5 @@
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
+
 </html>

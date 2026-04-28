@@ -80,9 +80,15 @@
 }
 
 .page-analisis {
-    --primary-color: #6366f1;
-    --primary-light: #e0e7ff;
-    --primary-vibrant: #4338ca;
+    --primary-color: #f472b6;
+    --primary-light: #fce7f3;
+    --primary-vibrant: #db2777;
+}
+
+.page-reporte {
+    --primary-color: #22d3ee;
+    --primary-light: #cffafe;
+    --primary-vibrant: #0891b2;
 }
 
 * {
