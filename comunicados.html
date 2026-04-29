@@ -606,6 +606,15 @@
             document.addEventListener('change', updatePrintPreview);
 
             lucide.createIcons();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const reprintId = urlParams.get('reprint');
+            const reprintIndex = urlParams.get('index');
+            if (reprintId && reprintIndex !== null) {
+                setTimeout(() => {
+                    reprintComm(reprintId, parseInt(reprintIndex));
+                }, 500);
+            }
         }
 
         function updateSections(sectionToSelect) {
@@ -1021,6 +1030,9 @@
                         </td>
                         <td class="p-4 text-center">
                             <div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="reprintComm('${item.student.id}', ${item.index})" class="w-8 h-8 flex items-center justify-center text-green-500 hover:text-white hover:bg-green-500 bg-green-50 rounded-xl transition-all shadow-sm" title="Reimprimir">
+                                    <i data-lucide="printer" class="w-4 h-4"></i>
+                                </button>
                                 <button onclick="openEditModal('${item.student.id}', ${item.index})" class="w-8 h-8 flex items-center justify-center text-indigo-500 hover:text-white hover:bg-indigo-500 bg-indigo-50 rounded-xl transition-all shadow-sm">
                                     <i data-lucide="edit-2" class="w-4 h-4"></i>
                                 </button>
@@ -1108,6 +1120,179 @@
                 localStorage.setItem('academicApp_2026_data', JSON.stringify(state));
                 renderHistory();
             }
+        }
+
+        function reprintComm(studentId, index) {
+            if (!state.commHistory || !state.commHistory[studentId] || !state.commHistory[studentId][index]) return;
+            const comm = state.commHistory[studentId][index];
+            
+            // Buscar en qué nivel está el estudiante
+            let foundLevel = null;
+            let student = null;
+            for (const lvl in state.students) {
+                const s = state.students[lvl].find(x => x.id === studentId);
+                if (s) {
+                    foundLevel = lvl;
+                    student = s;
+                    break;
+                }
+            }
+            
+            if (!student) {
+                alert("No se encontró el estudiante.");
+                return;
+            }
+
+            const studentName = student.name;
+            const guardian = student.encargado || '____________________';
+            const fullSection = student.section ? `${foundLevel}-${student.section}` : '___-___';
+            const admin = state.admin || {};
+            
+            const formatDate = (val) => {
+                if (!val) return new Date().toLocaleDateString('es-CR');
+                const parts = val.split('-');
+                return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : val;
+            };
+            const dateStr = formatDate(comm.date);
+
+            const headerHtml = `
+                <div style="font-size: 9px; line-height: 1.2; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-top: 4px;font-weight: 800; font-size: 11px;"><span>MINISTERIO DE EDUCACIÓN PÚBLICA</span>
+                    <span>Curso Lectivo: ${admin.year || '2026'}</span></div> 
+                    <div style="display: flex; justify-content: space-between;font-weight: 700;"><span>Dirección Regional de Educación: ${admin.dre || 'Puriscal'}</span><span>Materia: ${admin.subject || '__________'}</span></div>
+                    <div style="display: flex; justify-content: space-between;font-weight: 700;"><span>Supervisión Educativa Circuito: ${admin.circuit || '___'}</span><span>Fecha Emisión: ${dateStr}</span></div>
+                    <div style="font-weight: 700;">Institución: ${admin.institution || '____________________'}           
+                    </div>
+                     <div style="font-weight: 700;">Docente: ${admin.name || '____________________'}</div>
+                </div>
+            `;
+
+            let content = '';
+
+            if (comm.type === 'Amarillo') {
+                const getYellowCard = (label) => `
+                    <div class="print-card-yellow" style="font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2px;">
+                            <div style="font-weight: 900; color: #eab308; font-size: 11px;">N° ${comm.consecutive || '___'}</div>
+                            <div style="font-weight: 900; color: #eab308; font-size: 11px;">[ ${label} ]</div>
+                        </div>
+                        ${headerHtml}
+                        
+                        <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 4px 0; color: #a16207; border: 1px solid #eab308; padding: 2px; font-size: 13px !important;">SEGUIMIENTO ACADÉMICO/CONDUCTUAL</h3>
+
+                        <div style="font-size: 12px; line-height: 1.3; margin-bottom: 8px;">
+                            <p>Estimado(a) señor(a): <strong style="font-size: 13px;">${guardian}</strong></p>
+                            <p style="margin-top: 6px;">Se le comunica que el(la) estudiante <strong style="font-size: 13px;">${studentName}</strong>, de la sección: <strong>${fullSection}</strong>, el día <strong>${dateStr}</strong> ha presentado la(s) siguiente(s) situación(es):</p>
+                        </div>
+
+                        <div style="margin: 8px 0;">
+                            <div style="font-size: 11px;"><strong>Detalles:</strong> ${comm.details || ''}</div>
+                            ${comm.other ? `<div style="font-size: 11px; margin-top: 8px; border-top: 1px dotted #ccc; padding-top: 5px;"><strong>Otros:</strong> ${comm.other}</div>` : ''}
+                        </div>
+
+                        <div style="font-size: 11px; margin-top: 8px; font-weight: 700; color: #444;">
+                            Favor realizar las acciones pertinentes como encargado legal.
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: auto;">
+                            <div class="signature-line" style="margin-top: 20px; font-size: 11px;">Firma Docente</div>
+                            <div class="signature-line" style="margin-top: 20px; font-size: 11px;">Recibido Estudiante</div>
+                            <div class="signature-line" style="margin-top: 20px; font-size: 11px;">Firma Padre/Encargado</div>
+                        </div>
+                    </div>
+                `;
+                content = `
+                    <div class="print-grid-yellow" style="height: 100vh; page-break-after: always;">
+                        ${getYellowCard('ORIGINAL')}
+                        ${getYellowCard('COPIA')}
+                        <div></div><div></div>
+                    </div>
+                `;
+            } else if (comm.type === 'Rojo') {
+                let parts = (comm.details || '').split(' - ');
+                let faultType = parts[0] || 'Falta';
+                let article = parts.slice(1).join(' - ') || comm.details;
+                const points = faultType.includes('Muy Leve') ? '5' : '10';
+
+                const getCard = (label) => `
+                    <div style="border: 2px solid #ef4444; padding: 10px; flex-grow: 1; display: flex; flex-direction: column; font-family: inherit;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2px;">
+                            <div style="font-weight: 900; color: #ef4444; font-size: 9px;">N° ${comm.consecutive || '___'}</div>
+                            <div style="font-weight: 900; color: #ef4444; font-size: 9px;">[ ${label} ]</div>
+                        </div>
+                        ${headerHtml}
+                        
+                        <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 2px 0 5px 0; color: #b91c1c; border: 1px solid #ef4444; padding: 1px; font-size: 11px !important;">NOTIFICACIÓN DISCIPLINARIA</h3>
+
+                        <div style="font-size: 10px; line-height: 1.2; margin-bottom: 5px;">
+                            <p>Estimado(a) señor(a): <strong style="font-size: 11px;">${guardian}</strong></p>
+                            <p style="margin-top: 3px;">Se le comunica que el(la) estudiante <strong style="font-size: 11px;">${studentName}</strong>, de la sección: <strong>${fullSection}</strong>, el día <strong>${dateStr}</strong> se ha visto involucrado(a) en la siguiente situación disciplinaria:</p>
+                        </div>
+
+                        <div style="margin: 3px 0; font-size: 9px;">
+                            <div style="background: #fee2e2; padding: 4px; font-weight: 800; margin-bottom: 5px; text-align: center; border: 1px solid #ef4444;">FALTA ${faultType.toUpperCase()}</div>
+                            
+                            <div style="margin-bottom: 5px;">
+                                <strong style="text-decoration: underline;">Base Legal:</strong><br>
+                                <div style="margin-top: 2px;">${article}</div>
+                            </div>
+
+                            <div style="margin-bottom: 5px; min-height: 35px;">
+                                <strong style="text-decoration: underline;">Descripción de los Hechos:</strong><br>
+                                <div style="font-style: italic; margin-top: 2px; border: 1px dotted #ccc; padding: 4px;">
+                                    ${comm.facts || '____________________________________________________________________________________________________________________________________'}
+                                </div>
+                            </div>
+
+                            <div style="border: 1px solid #ef4444; padding: 6px; background: #f8fafc;">
+                                <div style="margin-left: 5px;">• Posible acción correctiva a aplicar: <strong>${comm.action || ''}</strong></div>
+                                <div style="margin-left: 5px;">• Posible rebajo de <strong>${points} puntos</strong> en la nota de conducta.</div>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 9px; margin-top: 5px; font-weight: 700; color: #444;">
+                            Favor realizar las acciones pertinentes como encargado legal del estudiante y dar seguimiento al debido proceso. Recuerde que cuenta con tres días hábiles a partir de la fecha de emisión de esta boleta para realizar el descargo y ofrecer pruebas que juzgue oportunas, según el Reglamento de Evaluación de los Aprendizajes, vigente
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: auto;">
+                            <div class="signature-line">Firma Docente</div>
+                            <div class="signature-line">Recibido Estudiante</div>
+                            <div class="signature-line">Firma Padre/Encargado</div>
+                        </div>
+                    </div>
+                `;
+
+                content = `
+                    <div class="print-full-red">
+                        <div class="print-half">${getCard('ORIGINAL')}</div>
+                        <div class="print-half">${getCard('COPIA')}</div>
+                    </div>
+                `;
+            } else if (comm.type === 'Verde') {
+                const getCard = () => `
+                    <div class="print-ready-card" style="border: 2px solid #000; height: 100%; display: flex; flex-direction: column;">
+                        ${headerHtml}
+                        
+                        <h3 style="text-align: center; text-transform: uppercase; font-weight: 900; margin: 5px 0 10px 0; color: #15803d; border: 1px solid #15803d; padding: 2px; font-size: 12px !important;">COMUNICADO INFORMATIVO</h3>
+
+                        <div style="margin-bottom: 5px; font-size: 10px;"><strong>Estudiante:</strong> ${studentName} | <strong>Sección:</strong> ${fullSection}</div>
+                        <div style="font-size: 11px; flex-grow: 1; min-height: 60px; margin-bottom: 10px; border: 1px dashed #ccc; padding: 8px;">
+                            ${(comm.details || '').replace(/\\n/g, '<br>') || '<em>Sin mensaje...</em>'}
+                        </div>
+                        <div style="display: flex; justify-content: center; margin-top: auto;">
+                            <div class="signature-line" style="width: 180px; margin-top: 15px;">Firma Padre/Encargado</div>
+                        </div>
+                    </div>
+                `;
+                content = `<div class="print-grid-green">${Array(4).fill(getCard()).join('')}</div>`;
+            }
+
+            document.getElementById('print-area').innerHTML = content;
+            window.print();
+            
+            setTimeout(() => {
+                updatePrintPreview();
+            }, 1000);
         }
 
         function registerAndPrint() {
