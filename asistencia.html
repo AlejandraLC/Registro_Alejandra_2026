@@ -458,8 +458,6 @@
 
         // Lógica de la tabla de porcentajes MEP
         function calculateGrade(ai, t, total) {
-            if (total === 0) return 100; // placeholder grade
-
             let valAtt = 5;
             if (mode === 'materia') {
                 const p = state.settings?.percentages || {
@@ -470,6 +468,8 @@
             } else {
                 valAtt = state.settings?.workshopPercentages?.att || 10;
             }
+
+            if (total === 0) return valAtt;
 
             const ausenciasEquivalentes = ai + (t * 0.5);
             const porcentajeInjustificado = (ausenciasEquivalentes / total) * 100;
