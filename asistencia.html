@@ -83,6 +83,64 @@
             border-color: var(--primary-color) !important;
             box-shadow: var(--nm-shadow-out) !important;
         }
+
+        /* Histórico Sticky Headers and Columns */
+        .table-container {
+            max-height: calc(90vh - 220px) !important;
+            overflow: auto !important;
+            position: relative !important;
+        }
+        #history-table {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+        #history-table thead tr:first-child th {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 30 !important;
+            height: 48px !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            background-color: #f8fafc !important; /* bg-slate-50 */
+        }
+        #history-table thead tr:first-child th:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            top: 0 !important;
+            z-index: 45 !important;
+            background-color: #f8fafc !important;
+        }
+        #history-table thead tr:nth-child(2) th {
+            position: sticky !important;
+            top: 48px !important;
+            z-index: 20 !important;
+            background-color: #f1f5f9 !important; /* bg-slate-100 */
+        }
+        #history-table thead tr:nth-child(2) th:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            top: 48px !important;
+            z-index: 40 !important;
+            background-color: #f1f5f9 !important;
+        }
+        #history-table thead tr:nth-child(2) th:last-child {
+            background-color: #d1fae5 !important; /* bg-emerald-100 */
+        }
+        #history-table tbody td:first-child {
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 15 !important;
+            background-color: #ffffff !important;
+        }
+
+        /* Perfect Row Hover and Border Synchronization */
+        #history-table tbody tr:hover td:first-child {
+            background-color: #f8fafc !important; /* Matches hover:bg-slate-50/50 exactly */
+        }
+        #history-table td:first-child,
+        #history-table th:first-child {
+            border-right: 2px solid #e2e8f0 !important;
+        }
     </style>
 </head>
 
@@ -655,18 +713,18 @@
             // Construir encabezado de la tabla histórica
             let headerHtml = `
         <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-            <tr>
-                <th class="p-4 sticky-col bg-slate-50 text-emerald-600 uppercase">Estudiante</th>
-                ${dates.map(d => `<th class="p-4 text-center border-l border-slate-100">${d.split('-').reverse().slice(0, 2).join('/')}</th>`).join('')}
-                <th class="p-4 text-center bg-emerald-200 text-emerald-800 border-l border-emerald-300 font-black uppercase tracking-tighter shadow-sm">Nota (5%)</th>
+            <tr class="h-12">
+                <th class="p-4 sticky left-0 top-0 bg-slate-50 text-emerald-600 uppercase z-30 shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-100">Estudiante</th>
+                ${dates.map(d => `<th class="p-4 text-center border-l border-slate-100 sticky top-0 bg-slate-50 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-slate-100">${d.split('-').reverse().slice(0, 2).join('/')}</th>`).join('')}
+                <th class="p-4 text-center bg-emerald-200 text-emerald-800 border-l border-emerald-300 font-black uppercase tracking-tighter sticky top-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-b border-emerald-300">Nota (5%)</th>
             </tr>
-            <tr class="bg-slate-100/50 text-slate-500">
-                <th class="p-2 sticky-col bg-slate-100/50 text-right pr-4 italic">Lecciones:</th>
+            <tr class="bg-slate-100 text-slate-500 h-10">
+                <th class="p-2 sticky left-0 top-12 bg-slate-100 text-right pr-4 italic z-30 border-b border-slate-200">Lecciones:</th>
                 ${dates.map(d => {
                     const dayLec = state.attendance?.[period]?.[d]?.[groupKey]?.dayLessons || 0;
-                    return `<th class="p-2 text-center border-l border-slate-200 font-bold">${dayLec}</th>`;
+                    return `<th class="p-2 text-center border-l border-slate-200 font-bold sticky top-12 bg-slate-100 z-20">${dayLec}</th>`;
                 }).join('')}
-                <th class="p-2 text-center border-l border-slate-200 bg-emerald-100 text-emerald-700">${totalLecPeriodo}</th>
+                <th class="p-2 text-center border-l border-slate-200 bg-emerald-100 text-emerald-700 sticky top-12 z-20">${totalLecPeriodo}</th>
             </tr>
         </thead>`;
 
@@ -678,8 +736,8 @@
                 const grade = calculateGrade(stats.ai, stats.t, studentTotalAtJoin);
 
                 return `
-            <tr class="border-t border-slate-50 text-[11px]">
-                <td class="p-4 font-bold text-slate-700 sticky-col bg-white whitespace-nowrap">${s.name}</td>
+            <tr class="border-t border-slate-50 text-[11px] hover:bg-slate-50/50 transition-colors">
+                <td class="p-4 font-bold text-slate-700 sticky left-0 bg-white z-10 whitespace-nowrap shadow-[1px_0_0_rgba(0,0,0,0.05)]">${s.name}</td>
                 ${dates.map(d => {
                     const isPreJoinDate = d < joinDate;
                     const rec = periodData[d][`${groupKey}_${s.id}`];
@@ -860,9 +918,9 @@
                         data-lucide="x"></i></button>
             </div>
 
-            <div class="flex-1 overflow-auto p-8">
-                <div class="table-container border border-slate-100 rounded-2xl overflow-x-auto">
-                    <table class="w-full text-left border-collapse" id="history-table">
+            <div class="flex-1 overflow-hidden p-8 flex flex-col min-h-0">
+                <div class="table-container border border-slate-100 rounded-2xl overflow-auto flex-1 min-h-0 relative">
+                    <table class="w-full min-w-max text-left border-separate border-spacing-0" id="history-table">
                     </table>
                 </div>
             </div>
