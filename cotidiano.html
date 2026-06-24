@@ -669,7 +669,7 @@
             if (!state.evaluations[aId][date]) state.evaluations[aId][date] = {};
             if (!state.evaluations[aId][date][sId]) state.evaluations[aId][date][sId] = { scores: {}, obs: "" };
 
-            state.evaluations[aId][date][sId].scores[`${skIdx}-${inIdx}`] = val;
+            state.evaluations[aId][date][sId].scores[`${skIdx}-${inIdx}`] = (getScore(sId, aId, date, skIdx, inIdx) == val) ? 0 : val;
             save();
             renderGradingList();
         }
