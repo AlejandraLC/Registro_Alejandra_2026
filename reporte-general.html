@@ -286,7 +286,7 @@
         <div class="table-container overflow-x-auto">
             <table class="w-full text-center report-table">
                 <thead>
-                    <tr>
+                    <tr id="report-header">
                         <th class="text-left" style="width: 25%">Estudiante</th>
                         <th id="th-coti">T. Cotidiano</th>
                         <th id="th-task">Tareas</th>
@@ -421,17 +421,37 @@
             const wP = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
 
             let cycle;
+            const groupTests = Object.values(state.tests || {})
+                .filter(t => t.level === level && t.section === section && t.period === period);
+            groupTests.sort((a, b) => a.date.localeCompare(b.date));
+
+            const test1 = groupTests[0] || null;
+            const test2 = groupTests[1] || null;
+
+            const headerRow = document.getElementById('report-header');
+
             if (mode === 'taller') {
                 cycle = { ...wP, test: 0 };
-                document.getElementById('th-test').innerText = `Proyecto (${cycle.proj}%)`;
+                headerRow.innerHTML = `
+                    <th class="text-left" style="width: 25%">Estudiante</th>
+                    <th>T. Cotidiano (${cycle.coti}%)</th>
+                    <th>Tareas (${cycle.task}%)</th>
+                    <th>Proyecto (${cycle.proj}%)</th>
+                    <th>Asistencia (${cycle.att}%)</th>
+                    <th class="bg-indigo-50/50 text-indigo-700">Nota Final</th>
+                `;
             } else {
                 cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
-                document.getElementById('th-test').innerText = `Pruebas (${cycle.test}%)`;
+                headerRow.innerHTML = `
+                    <th class="text-left" style="width: 25%">Estudiante</th>
+                    <th>T. Cotidiano (${cycle.coti}%)</th>
+                    <th>Tareas (${cycle.task}%)</th>
+                    <th>I Prueba (${test1 ? test1.percent + '%' : '-'})</th>
+                    <th>II Prueba (${test2 ? test2.percent + '%' : '-'})</th>
+                    <th>Asistencia (${cycle.att}%)</th>
+                    <th class="bg-indigo-50/50 text-indigo-700">Nota Final</th>
+                `;
             }
-
-            document.getElementById('th-coti').innerText = `Cotidiano (${cycle.coti}%)`;
-            document.getElementById('th-task').innerText = `Tareas (${cycle.task}%)`;
-            document.getElementById('th-att').innerText = `Asistencia (${cycle.att}%)`;
 
             // Sort students alphabetically
             students.sort((a, b) => a.name.localeCompare(b.name));
@@ -492,18 +512,32 @@
                 earnedPoints += cotiFinalNote;
 
                 // 2. Pruebas / Proyecto
+                let test1Note = 0;
+                let test2Note = 0;
                 let testProjFinalNote = 0;
+
                 if (mode === 'materia') {
-                    const tests = Object.values(state.tests || {}).filter(t => t.level === level && t.section === section && t.period === period)
-                        .filter(t => t.date >= joinDate);
-                    tests.forEach(t => {
-                        const ev = state.test_evals?.[t.id]?.[sId] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
-                        const maxPts = ev.sig ? ev.sigPts : t.points;
-                        const maxP = ev.sig ? ev.sigPerc : t.percent;
-                        const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
-                        testProjFinalNote += (nota * maxP / 100);
-                    });
-                    earnedPoints += testProjFinalNote;
+                    if (groupTests.length > 0) {
+                        const t1 = groupTests[0];
+                        if (t1.date >= joinDate) {
+                            const ev = state.test_evals?.[t1.id]?.[sId] || { pts: 0, sig: false, sigPts: t1.points, sigPerc: t1.percent };
+                            const maxPts = ev.sig ? ev.sigPts : t1.points;
+                            const maxP = ev.sig ? ev.sigPerc : t1.percent;
+                            const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
+                            test1Note = (nota * maxP / 100);
+                        }
+                    }
+                    for (let i = 1; i < groupTests.length; i++) {
+                        const t2 = groupTests[i];
+                        if (t2.date >= joinDate) {
+                            const ev = state.test_evals?.[t2.id]?.[sId] || { pts: 0, sig: false, sigPts: t2.points, sigPerc: t2.percent };
+                            const maxPts = ev.sig ? ev.sigPts : t2.points;
+                            const maxP = ev.sig ? ev.sigPerc : t2.percent;
+                            const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
+                            test2Note += (nota * maxP / 100);
+                        }
+                    }
+                    earnedPoints += test1Note + test2Note;
                 } else {
                     const projects = Object.values(state.projects || {}).filter(p => p.workshopId === workshopId && p.period === period)
                         .filter(p => p.dates.some(d => !isPre(d)));
@@ -615,7 +649,12 @@
                         </td>
                         <td class="text-blue-600">${cotiFinalNote.toFixed(2)}</td>
                         <td class="text-purple-600">${taskFinalNote.toFixed(2)}</td>
-                        <td class="${mode === 'materia' ? 'text-rose-600' : 'text-amber-600'}">${testProjFinalNote.toFixed(2)}</td>
+                        ${mode === 'materia' ? `
+                            <td class="text-rose-600">${test1Note.toFixed(2)}</td>
+                            <td class="text-rose-600">${test2Note.toFixed(2)}</td>
+                        ` : `
+                            <td class="text-amber-600">${testProjFinalNote.toFixed(2)}</td>
+                        `}
                         <td class="text-emerald-600">${attFinalNote.toFixed(2)}</td>
                         <td class="font-black text-lg ${notaClass}">${notaFinal}</td>
                     </tr>

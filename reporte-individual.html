@@ -746,19 +746,58 @@
         // Definir color base según el tipo
         const color = type === 'task' ? 'purple' : 'blue';
 
-        const firstDate = a.dates[0];
-        const record = evs?.[a.id]?.[firstDate]?.[sId];
-        const observation = record?.observations || "Sin observaciones registradas.";
+        // Determinar las fechas y resaltar aquellas en que fue evaluado el estudiante
+        const datesHtml = a.dates.map(d => {
+            const hasEval = Object.values(evs?.[a.id]?.[d]?.[sId]?.scores || {}).some(v => v > 0) || !!(evs?.[a.id]?.[d]?.[sId]?.obs);
+            const displayDate = d.split('-').reverse().join('/');
+            if (hasEval) {
+                return `
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-${color}-100 text-${color}-700 border border-${color}-200 shadow-sm" title="Evaluado(a) en esta fecha">
+                    <span class="w-1.5 h-1.5 rounded-full bg-${color}-500 animate-pulse"></span>
+                    ${displayDate}
+                </span>`;
+            } else {
+                return `
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider bg-slate-50 text-slate-400 border border-slate-100" title="No evaluado(a) en esta fecha">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                    ${displayDate}
+                </span>`;
+            }
+        }).join(' ');
+
+        // Obtener observaciones de todas las fechas que tengan comentarios
+        const obsList = [];
+        a.dates.forEach(d => {
+            const rec = evs?.[a.id]?.[d]?.[sId];
+            const obsText = rec?.obs || rec?.observations;
+            if (obsText && obsText.trim() !== "") {
+                obsList.push({ date: d.split('-').reverse().join('/'), text: obsText });
+            }
+        });
+
+        let observationHtml = '';
+        if (obsList.length === 0) {
+            observationHtml = `<p class="text-[11px] text-slate-400 italic leading-relaxed font-medium">Sin observaciones registradas.</p>`;
+        } else {
+            observationHtml = obsList.map(item => `
+                <div class="mb-1.5 last:mb-0">
+                    <span class="text-[9px] font-black text-${color}-600 uppercase tracking-wider mr-2">${item.date}:</span>
+                    <span class="text-[11px] text-slate-600 italic leading-relaxed font-medium">"${item.text}"</span>
+                </div>
+            `).join('');
+        }
 
         return `
     <div class="border-t border-slate-100 pt-8 first:border-0 first:pt-0">
         <div class="flex justify-between items-center mb-6">
             <div>
                 <p class="text-sm font-black text-slate-800 uppercase tracking-tight">${a.name}</p>
-                <div class="flex gap-3 mt-1">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Puntaje: ${res.pts}/${res.max}</p>
-                    <span class="text-slate-200">|</span>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Fecha: ${firstDate.split('-').reverse().join('/')}</p>
+                <div class="flex flex-col gap-2 mt-2">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-bold">Puntaje: ${res.pts}/${res.max}</p>
+                    <div class="flex flex-wrap gap-1.5 items-center">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mr-1">Fechas:</span>
+                        <div class="flex flex-wrap gap-1">${datesHtml}</div>
+                    </div>
                 </div>
             </div>
             <div class="bg-${color}-50 text-${color}-600 px-6 py-2 rounded-2xl font-black text-xs border border-${color}-100">
@@ -800,9 +839,9 @@
         
         <div class="bg-slate-50/30 p-6 rounded-[2rem] border border-slate-100 flex gap-4 items-start">
             <div class="p-2 bg-white rounded-xl shadow-sm"><i data-lucide="message-square" class="w-4 h-4 icon-vibrant"></i></div>
-            <div class="text-left">
+            <div class="text-left w-full">
                 <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Retroalimentación Docente</p>
-                <p class="text-[11px] text-slate-600 italic leading-relaxed font-medium">"${observation}"</p>
+                <div class="space-y-1">${observationHtml}</div>
             </div>
         </div>
     </div>`;
