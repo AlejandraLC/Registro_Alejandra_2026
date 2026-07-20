@@ -955,12 +955,12 @@
                 acts.forEach(a => {
                     const wasPresent = a.dates.some(d => !checkAbsence(s.id, d));
                     const best = calculateBestScores(s.id, a);
-                    const nota = Math.round(parseFloat(best.nota));
+                    const nota = parseFloat(best.nota);
 
                     if (wasPresent) {
                         sumaNotas += nota;
                         conteo++;
-                        celdasPracticas += `<td class="p-4 text-center border-l border-slate-50 font-bold text-slate-600">${nota}</td>`;
+                        celdasPracticas += `<td class="p-4 text-center border-l border-slate-50 font-bold text-slate-600">${nota.toFixed(2)}</td>`;
                     } else {
                         celdasPracticas += `<td class="p-4 text-center border-l border-slate-50 text-red-300 italic">Faltó</td>`;
                     }
@@ -1085,12 +1085,12 @@
                 const filasPracticas = acts.map(a => {
                     const wasPresent = a.dates.some(d => !checkAbsence(s.id, d));
                     const best = calculateBestScores(s.id, a);
-                    const nota = Math.round(parseFloat(best.nota));
+                    const nota = parseFloat(best.nota);
 
                     if (wasPresent) {
                         sumaNotas += nota;
                         conteo++;
-                        return `<td>${nota}</td>`;
+                        return `<td>${nota.toFixed(2)}</td>`;
                     }
                     return `<td style="color:#cbd5e1; font-style:italic;">Faltó</td>`;
                 }).join('');

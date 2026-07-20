@@ -281,6 +281,23 @@
                     <option value="2">II Periodo</option>
                 </select>
             </div>
+            <span class="w-px h-4 bg-slate-100 mx-1"></span>
+            <div class="flex items-center gap-2">
+                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Ordenar por</span>
+                <select id="sort-select" onchange="handleSortSelectChange(this.value)"
+                    class="text-xs font-bold text-indigo-600 outline-none bg-transparent cursor-pointer">
+                    <option value="name-asc">Nombre (A-Z)</option>
+                    <option value="name-desc">Nombre (Z-A)</option>
+                    <option value="final-desc">Nota Final (Mayor a Menor)</option>
+                    <option value="final-asc">Nota Final (Menor a Mayor)</option>
+                    <option value="coti-desc">Cotidiano (Mayor a Menor)</option>
+                    <option value="coti-asc">Cotidiano (Menor a Mayor)</option>
+                    <option value="task-desc">Tareas (Mayor a Menor)</option>
+                    <option value="task-asc">Tareas (Menor a Mayor)</option>
+                    <option value="att-desc">Asistencia (Mayor a Menor)</option>
+                    <option value="att-asc">Asistencia (Menor a Mayor)</option>
+                </select>
+            </div>
         </div>
 
         <div class="table-container overflow-x-auto">
@@ -310,6 +327,47 @@
     <script>
         let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
         const mode = localStorage.getItem('temp_current_mode') || 'materia';
+        let currentSortKey = 'name';
+        let currentSortDir = 'asc';
+
+        function sortTable(key) {
+            if (currentSortKey === key) {
+                currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortKey = key;
+                currentSortDir = (key === 'name') ? 'asc' : 'desc';
+            }
+            syncSortSelect();
+            loadReport();
+        }
+
+        function handleSortSelectChange(val) {
+            const parts = val.split('-');
+            currentSortKey = parts[0];
+            currentSortDir = parts[1];
+            loadReport();
+        }
+
+        function syncSortSelect() {
+            const select = document.getElementById('sort-select');
+            if (!select) return;
+            const val = `${currentSortKey}-${currentSortDir}`;
+            const opt = select.querySelector(`option[value="${val}"]`);
+            if (opt) {
+                select.value = val;
+            }
+        }
+
+        function getSortIcon(key) {
+            if (currentSortKey !== key) {
+                return `<i data-lucide="chevrons-up-down" class="w-3 h-3 text-slate-300 no-print inline-block ml-1"></i>`;
+            }
+            if (currentSortDir === 'asc') {
+                return `<i data-lucide="arrow-up" class="w-3 h-3 text-indigo-600 no-print inline-block ml-1"></i>`;
+            } else {
+                return `<i data-lucide="arrow-down" class="w-3 h-3 text-indigo-600 no-print inline-block ml-1"></i>`;
+            }
+        }
 
         function init() {
             document.getElementById('info-inst').innerText = state.admin?.institution || 'MEP';
@@ -433,32 +491,79 @@
             if (mode === 'taller') {
                 cycle = { ...wP, test: 0 };
                 headerRow.innerHTML = `
-                    <th class="text-left" style="width: 25%">Estudiante</th>
-                    <th>T. Cotidiano (${cycle.coti}%)</th>
-                    <th>Tareas (${cycle.task}%)</th>
-                    <th>Proyecto (${cycle.proj}%)</th>
-                    <th>Asistencia (${cycle.att}%)</th>
-                    <th class="bg-indigo-50/50 text-indigo-700">Nota Final</th>
+                    <th onclick="sortTable('name')" class="text-left cursor-pointer hover:bg-slate-100 transition-colors select-none" style="width: 25%">
+                        <div class="flex items-center gap-1">
+                            <span>Estudiante</span> ${getSortIcon('name')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('coti')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>T. Cotidiano (${cycle.coti}%)</span> ${getSortIcon('coti')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('task')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Tareas (${cycle.task}%)</span> ${getSortIcon('task')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('proj')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Proyecto (${cycle.proj}%)</span> ${getSortIcon('proj')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('att')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Asistencia (${cycle.att}%)</span> ${getSortIcon('att')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('final')" class="bg-indigo-50/50 text-indigo-700 cursor-pointer hover:bg-indigo-100/50 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Nota Final</span> ${getSortIcon('final')}
+                        </div>
+                    </th>
                 `;
             } else {
                 cycle = (parseInt(level) >= 10) ? p.diversificado : p.iiiCiclo;
                 headerRow.innerHTML = `
-                    <th class="text-left" style="width: 25%">Estudiante</th>
-                    <th>T. Cotidiano (${cycle.coti}%)</th>
-                    <th>Tareas (${cycle.task}%)</th>
-                    <th>I Prueba (${test1 ? test1.percent + '%' : '-'})</th>
-                    <th>II Prueba (${test2 ? test2.percent + '%' : '-'})</th>
-                    <th>Asistencia (${cycle.att}%)</th>
-                    <th class="bg-indigo-50/50 text-indigo-700">Nota Final</th>
+                    <th onclick="sortTable('name')" class="text-left cursor-pointer hover:bg-slate-100 transition-colors select-none" style="width: 25%">
+                        <div class="flex items-center gap-1">
+                            <span>Estudiante</span> ${getSortIcon('name')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('coti')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>T. Cotidiano (${cycle.coti}%)</span> ${getSortIcon('coti')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('task')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Tareas (${cycle.task}%)</span> ${getSortIcon('task')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('test1')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>I Prueba (${test1 ? test1.percent + '%' : '-'})</span> ${getSortIcon('test1')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('test2')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>II Prueba (${test2 ? test2.percent + '%' : '-'})</span> ${getSortIcon('test2')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('att')" class="cursor-pointer hover:bg-slate-100 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Asistencia (${cycle.att}%)</span> ${getSortIcon('att')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('final')" class="bg-indigo-50/50 text-indigo-700 cursor-pointer hover:bg-indigo-100/50 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Nota Final</span> ${getSortIcon('final')}
+                        </div>
+                    </th>
                 `;
             }
 
-            // Sort students alphabetically
-            students.sort((a, b) => a.name.localeCompare(b.name));
-
-            let html = '';
-
-            students.forEach(student => {
+            const calculatedData = students.map(student => {
                 const sId = student.id;
                 const joinDate = student.joinDate || '2026-01-01';
                 const todayGroupKey = mode === 'taller' ? `_workshop_${workshopId}` : `_group_${level}_${section}`;
@@ -628,7 +733,44 @@
                 const attFinalNote = attPts * (cycle.att / 5);
                 earnedPoints += attFinalNote;
 
-                // Rendimiento / Alerta Visual
+                return {
+                    student,
+                    name: student.name,
+                    coti: cotiFinalNote,
+                    task: taskFinalNote,
+                    test1: test1Note,
+                    test2: test2Note,
+                    proj: testProjFinalNote,
+                    att: attFinalNote,
+                    final: earnedPoints
+                };
+            });
+
+            // Sort calculatedData
+            calculatedData.sort((a, b) => {
+                let valA = a[currentSortKey] !== undefined ? a[currentSortKey] : 0;
+                let valB = b[currentSortKey] !== undefined ? b[currentSortKey] : 0;
+                if (typeof valA === 'string') {
+                    let cmp = valA.localeCompare(valB, 'es', { numeric: true, sensitivity: 'base' });
+                    return currentSortDir === 'asc' ? cmp : -cmp;
+                } else {
+                    let cmp = valA - valB;
+                    return currentSortDir === 'asc' ? cmp : -cmp;
+                }
+            });
+
+            let html = '';
+
+            calculatedData.forEach(item => {
+                const student = item.student;
+                const cotiFinalNote = item.coti;
+                const taskFinalNote = item.task;
+                const test1Note = item.test1;
+                const test2Note = item.test2;
+                const testProjFinalNote = item.proj;
+                const attFinalNote = item.att;
+                const earnedPoints = item.final;
+
                 const threshold = (parseInt(level) >= 10) ? 70 : 65;
                 const notaFinal = earnedPoints.toFixed(2);
                 let notaClass = 'text-slate-800 bg-indigo-50/30';
