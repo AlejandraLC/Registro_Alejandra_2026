@@ -309,6 +309,7 @@
                         <th class="p-5">Estudiante</th>
                         <th class="p-5 text-center">Estado</th>
                         <th class="p-5 text-center">Lecciones</th>
+                        <th class="p-5 text-left">Observación</th>
                         <th class="p-5 text-center bg-slate-100/30">AI</th>
                         <th class="p-5 text-center bg-slate-100/30">AJ</th>
                         <th class="p-5 text-center bg-slate-100/30">T</th>
@@ -476,6 +477,8 @@
                 const grade = calculateGrade(stats.ai, stats.t, studentTotalAtJoin);
 
                 const isSaved = !!record;
+                const obs = todayRecord.obs || '';
+                const showObs = todayRecord.status === 'AJ' || obs !== '';
 
                 return `
         <tr class="border-t border-slate-50 group hover:bg-slate-50/30 transition-all ${isPreJoin ? 'opacity-30' : ''}">
@@ -495,6 +498,12 @@
                 <input type="number" value="${todayRecord.lessons}" 
                        class="input-lesson-small" 
                        onchange="updateLec('${s.id}', this.value)">
+            </td>
+            <td class="p-5 text-left">
+                <input type="text" value="${obs}" 
+                       class="text-xs text-slate-600 bg-transparent border-b border-slate-200 outline-none focus:border-blue-400 transition-all w-32 ${showObs ? '' : 'opacity-0 pointer-events-none'}" 
+                       placeholder="Motivo de ausencia..."
+                       onchange="updateObs('${s.id}', this.value)">
             </td>
             <td class="p-5 text-center font-bold text-red-400 bg-slate-50/30">${stats.ai}</td>
             <td class="p-5 text-center font-bold text-blue-400 bg-slate-50/30">${stats.aj}</td>
@@ -528,8 +537,14 @@
                 lessons = dayLec;
             }
 
-            state.attendance[period][date][`${groupKey}_${studentId}`] = { status: newStatus, lessons: lessons };
+            let existingObs = '';
+            if (state.attendance[period][date][`${groupKey}_${studentId}`]) {
+                existingObs = state.attendance[period][date][`${groupKey}_${studentId}`].obs || '';
+            }
+
+            state.attendance[period][date][`${groupKey}_${studentId}`] = { status: newStatus, lessons: lessons, obs: existingObs };
             save();
+            renderAttendance(); // Re-render to show/hide observation input if needed
         }
 
         // Actualizar lecciones manuales
@@ -546,6 +561,15 @@
 
             if (state.attendance?.[period]?.[date]?.[`${groupKey}_${studentId}`]) {
                 state.attendance[period][date][`${groupKey}_${studentId}`].lessons = newValue;
+                save();
+            }
+        }
+
+        // Actualizar observación
+        function updateObs(studentId, value) {
+            const date = document.getElementById('att-date').value;
+            if (state.attendance?.[period]?.[date]?.[`${groupKey}_${studentId}`]) {
+                state.attendance[period][date][`${groupKey}_${studentId}`].obs = value;
                 save();
             }
         }
