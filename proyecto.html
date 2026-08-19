@@ -85,15 +85,52 @@
                 <span
                     class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Estudiantes</span>
             </a>
-            <a href="proyecto.html" class="flex items-center gap-4 p-3 rounded-2xl nav-active transition-all">
-                <i data-lucide="puzzle"></i>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Proyecto</span>
+            <a href="asistencia.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar-check"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Asistencia</span>
+            </a>
+            <a href="cotidiano.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="clipboard-list"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Cotidiano</span>
+            </a>
+            <a href="tareas.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Tareas</span>
+            </a>
+            <a href="pruebas.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="file-text"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Pruebas</span>
+            </a>
+            <a href="analisis.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="bar-chart-3"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Análisis</span>
+            </a>
+            <a href="comunicados.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="message-square"></i>
+                <span
+                    class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Comunicados</span>
+            </a>
+            <a href="bitacora.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="book-open"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora</span>
             </a>
             <a href="bitacora-grupal.html"
                 class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
                 <i data-lucide="library"></i>
                 <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Bitácora
                     Grupal</span>
+            </a>
+            <a href="calendario.html"
+                class="flex items-center gap-4 p-3 rounded-2xl text-slate-400 hover:bg-slate-50 transition-all">
+                <i data-lucide="calendar"></i>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Calendario</span>
             </a>
         </div>
     </aside>
@@ -216,6 +253,28 @@
             document.getElementById('display-period').innerText = `P-${period}`;
             document.getElementById('info-subject').innerText = wNames[workshopId - 1];
             document.getElementById('info-teacher').innerText = state.admin.name || '---';
+
+            // Adaptar sidebar según el modo
+            const pruebasLink = document.querySelector('aside a[href="pruebas.html"]') || document.querySelector('aside a[href="proyecto.html"]');
+            if (pruebasLink) {
+                if (mode === 'taller') {
+                    pruebasLink.href = 'proyecto.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="puzzle"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Proyecto</span>
+                    `;
+                    pruebasLink.classList.add('nav-active');
+                    pruebasLink.classList.remove('text-slate-400', 'hover:bg-slate-50');
+                } else {
+                    pruebasLink.href = 'pruebas.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="file-text"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Pruebas</span>
+                    `;
+                    pruebasLink.classList.remove('nav-active');
+                    pruebasLink.classList.add('text-slate-400', 'hover:bg-slate-50');
+                }
+            }
 
             renderSteps();
             lucide.createIcons();

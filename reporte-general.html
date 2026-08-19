@@ -375,6 +375,24 @@
             document.getElementById('pdf-inst').innerText = state.admin?.institution || 'MEP';
             document.getElementById('pdf-teacher').innerText = state.admin?.name || 'Docente';
 
+            // Adaptar sidebar según el modo
+            const pruebasLink = document.querySelector('aside a[href="pruebas.html"]') || document.querySelector('aside a[href="proyecto.html"]');
+            if (pruebasLink) {
+                if (mode === 'taller') {
+                    pruebasLink.href = 'proyecto.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="puzzle"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Proyecto</span>
+                    `;
+                } else {
+                    pruebasLink.href = 'pruebas.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="file-text"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Pruebas</span>
+                    `;
+                }
+            }
+
             initSelectors();
             loadReport();
         }

@@ -550,6 +550,7 @@
 
     <script>
         let state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || { students: {}, groups: [], admin: {} };
+        const mode = localStorage.getItem('temp_current_mode') || 'materia';
         let currentPriority = 'green';
         let selectionMode = 'single';
 
@@ -570,6 +571,24 @@
         ];
 
         function init() {
+            // Adaptar sidebar según el modo
+            const pruebasLink = document.querySelector('aside a[href="pruebas.html"]') || document.querySelector('aside a[href="proyecto.html"]');
+            if (pruebasLink) {
+                if (mode === 'taller') {
+                    pruebasLink.href = 'proyecto.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="puzzle"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Proyecto</span>
+                    `;
+                } else {
+                    pruebasLink.href = 'pruebas.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="file-text"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Pruebas</span>
+                    `;
+                }
+            }
+
             const savedLevel = localStorage.getItem('temp_current_level');
             const savedSection = localStorage.getItem('temp_current_section');
             const savedRedConsecutive = localStorage.getItem('temp_red_consecutive');

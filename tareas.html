@@ -115,10 +115,40 @@
     <main class="flex-1 p-8">
         <header class="page-title mb-8 flex items-center justify-between border-b border-slate-100 pb-6 uppercase">
             <h1><i data-lucide="book" class="title-icon icon-vibrant"></i> Tareas</h1>
-            <div
-                class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm text-xs font-bold text-slate-600">
-                <span id="display-group">---</span> <span class="text-slate-200">|</span> <span id="display-period"
-                    class="text-blue-500">P-I</span>
+            <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                <div class="flex items-center gap-2" id="group-selector-container">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
+                    <select id="level-select" onchange="updateSectionSelector()"
+                        class="text-xs font-bold text-slate-600 outline-none bg-transparent">
+                        <option value="7">7°</option>
+                        <option value="8">8°</option>
+                        <option value="9">9°</option>
+                        <option value="10">10°</option>
+                        <option value="11">11°</option>
+                    </select>
+                    <span class="text-slate-200">|</span>
+                    <select id="section-select" onchange="handleSelectorChange()"
+                        class="text-xs font-bold text-slate-600 outline-none bg-transparent"></select>
+                </div>
+                <div class="flex items-center gap-2 hidden" id="workshop-selector-container">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Taller</span>
+                    <select id="workshop-select" onchange="handleSelectorChange()"
+                        class="text-xs font-bold text-slate-600 outline-none bg-transparent">
+                        <option value="1">Taller 1</option>
+                        <option value="2">Taller 2</option>
+                        <option value="3">Taller 3</option>
+                    </select>
+                </div>
+                <span class="w-px h-4 bg-slate-100 mx-1"></span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Periodo</span>
+                    <select id="period-select" onchange="handleSelectorChange()"
+                        class="text-xs font-bold text-blue-500 outline-none bg-transparent">
+                        <option value="1">I Periodo</option>
+                        <option value="2">II Periodo</option>
+                        <option value="3">III Periodo</option>
+                    </select>
+                </div>
             </div>
             <div class="flex items-center gap-6 text-[10px] font-medium text-slate-400">
                 <p>Materia: <span class="text-slate-600 font-bold" id="info-subject">---</span></p>
@@ -246,27 +276,102 @@
         if (!state.admin) state.admin = {};
 
         const mode = localStorage.getItem('temp_current_mode') || 'materia';
-        const lvl = localStorage.getItem('temp_current_level') || '7';
-        const sec = localStorage.getItem('temp_current_section') || '1';
-        const workshopId = localStorage.getItem('temp_current_workshop') || '1';
-        const period = state.settings?.currentPeriod || '1';
-        const groupKey = mode === 'materia' ? `_group_${lvl}_${sec}` : `_workshop_${workshopId}`;
+        let lvl = localStorage.getItem('temp_current_level') || '7';
+        let sec = localStorage.getItem('temp_current_section') || '1';
+        let workshopId = localStorage.getItem('temp_current_workshop') || '1';
+        let period = sessionStorage.getItem('temp_view_period') || state.settings?.currentPeriod || '1';
+        let groupKey = mode === 'materia' ? `_group_${lvl}_${sec}` : `_workshop_${workshopId}`;
         let currentActivityDates = [];
         let activeActivityId = null;
 
         function init() {
+            initSelectors();
             if (mode === 'materia') {
-                document.getElementById('display-group').innerText = `${lvl}-${sec}`;
-                document.getElementById('info-subject').innerText = state.admin.subject || 'Matemáticas';
+                document.getElementById('info-subject').innerText = state.admin?.subject || 'Matemáticas';
             } else {
-                const wNames = state.admin.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
-                document.getElementById('display-group').innerText = wNames[workshopId - 1];
-                document.getElementById('info-subject').innerText = wNames[workshopId - 1];
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                document.getElementById('info-subject').innerText = wNames[workshopId - 1] || `Taller ${workshopId}`;
             }
-            document.getElementById('display-period').innerText = `P-${period}`;
-            document.getElementById('info-teacher').innerText = state.admin.name || '---';
+            document.getElementById('info-teacher').innerText = state.admin?.name || '---';
+
+            // Adaptar sidebar según el modo
+            const pruebasLink = document.querySelector('aside a[href="pruebas.html"]') || document.querySelector('aside a[href="proyecto.html"]');
+            if (pruebasLink) {
+                if (mode === 'taller') {
+                    pruebasLink.href = 'proyecto.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="puzzle"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Proyecto</span>
+                    `;
+                } else {
+                    pruebasLink.href = 'pruebas.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="file-text"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Pruebas</span>
+                    `;
+                }
+            }
+
             renderActivities();
             lucide.createIcons();
+        }
+
+        function initSelectors() {
+            const periodSelect = document.getElementById('period-select');
+            if (periodSelect) periodSelect.value = period;
+
+            if (mode === 'taller') {
+                document.getElementById('group-selector-container').classList.add('hidden');
+                document.getElementById('workshop-selector-container').classList.remove('hidden');
+
+                const wSelect = document.getElementById('workshop-select');
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                wSelect.innerHTML = wNames.map((name, i) => `<option value="${i + 1}">${name || `Taller ${i + 1}`}</option>`).join('');
+
+                const savedWorkshop = localStorage.getItem('temp_current_workshop');
+                if (savedWorkshop) wSelect.value = savedWorkshop;
+            } else {
+                const savedLevel = localStorage.getItem('temp_current_level');
+                const savedSection = localStorage.getItem('temp_current_section');
+                if (savedLevel) document.getElementById('level-select').value = savedLevel;
+                updateSectionSelector(savedSection);
+            }
+        }
+
+        function updateSectionSelector(sectionToSelect) {
+            const level = document.getElementById('level-select').value;
+            const sectionSelect = document.getElementById('section-select');
+            const definedGroups = state.groups || [];
+            const filtered = definedGroups.filter(g => g.startsWith(level + '-')).map(g => g.split('-')[1]);
+
+            if (filtered.length > 0) {
+                sectionSelect.innerHTML = filtered.map(s => `<option value="${s}">${level}-${s}</option>`).join('');
+                if (sectionToSelect && filtered.includes(sectionToSelect)) {
+                    sectionSelect.value = sectionToSelect;
+                }
+            } else {
+                sectionSelect.innerHTML = `<option value="1">${level}-1</option>`;
+            }
+            handleSelectorChange();
+        }
+
+        function handleSelectorChange() {
+            if (mode === 'taller') {
+                workshopId = document.getElementById('workshop-select').value;
+                localStorage.setItem('temp_current_workshop', workshopId);
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                document.getElementById('info-subject').innerText = wNames[workshopId - 1] || `Taller ${workshopId}`;
+            } else {
+                lvl = document.getElementById('level-select').value;
+                sec = document.getElementById('section-select').value;
+                localStorage.setItem('temp_current_level', lvl);
+                localStorage.setItem('temp_current_section', sec);
+            }
+            period = document.getElementById('period-select').value;
+            sessionStorage.setItem('temp_view_period', period);
+            groupKey = mode === 'materia' ? `_group_${lvl}_${sec}` : `_workshop_${workshopId}`;
+            
+            renderActivities();
         }
 
         function openActivityModal() {

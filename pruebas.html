@@ -97,10 +97,40 @@
     <main class="flex-1 p-8">
         <header class="page-title mb-8 flex items-center justify-between border-b border-slate-100 pb-6 uppercase">
             <h1><i data-lucide="file-text" class="title-icon icon-vibrant"></i> Pruebas</h1>
-            <div
-                class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm text-xs font-bold text-slate-600">
-                <span id="display-group">---</span> <span class="text-slate-200">|</span> <span id="display-period"
-                    class="text-blue-500">P-I</span>
+            <div class="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                <div class="flex items-center gap-2" id="group-selector-container">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Grupo</span>
+                    <select id="level-select" onchange="updateSectionSelector()"
+                        class="text-xs font-bold text-slate-600 outline-none bg-transparent">
+                        <option value="7">7°</option>
+                        <option value="8">8°</option>
+                        <option value="9">9°</option>
+                        <option value="10">10°</option>
+                        <option value="11">11°</option>
+                    </select>
+                    <span class="text-slate-200">|</span>
+                    <select id="section-select" onchange="handleSelectorChange()"
+                        class="text-xs font-bold text-slate-600 outline-none bg-transparent"></select>
+                </div>
+                <div class="flex items-center gap-2 hidden" id="workshop-selector-container">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Taller</span>
+                    <select id="workshop-select" onchange="handleSelectorChange()"
+                        class="text-xs font-bold text-slate-600 outline-none bg-transparent">
+                        <option value="1">Taller 1</option>
+                        <option value="2">Taller 2</option>
+                        <option value="3">Taller 3</option>
+                    </select>
+                </div>
+                <span class="w-px h-4 bg-slate-100 mx-1"></span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Periodo</span>
+                    <select id="period-select" onchange="handleSelectorChange()"
+                        class="text-xs font-bold text-blue-500 outline-none bg-transparent">
+                        <option value="1">I Periodo</option>
+                        <option value="2">II Periodo</option>
+                        <option value="3">III Periodo</option>
+                    </select>
+                </div>
             </div>
         </header>
 
@@ -190,25 +220,106 @@
         if (!state.tests) state.tests = {};
         if (!state.test_evals) state.test_evals = {};
 
-        const lvl = localStorage.getItem('temp_current_level') || '7';
-        const sec = localStorage.getItem('temp_current_section') || '1';
-        const period = state.settings?.currentPeriod || '1';
+        const mode = localStorage.getItem('temp_current_mode') || 'materia';
+        let lvl = localStorage.getItem('temp_current_level') || '7';
+        let sec = localStorage.getItem('temp_current_section') || '1';
+        let period = sessionStorage.getItem('temp_view_period') || state.settings?.currentPeriod || '1';
 
         // El tope del componente según el nivel (dinámico)
         const p = state.settings?.percentages || {
             iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
             diversificado: { coti: 35, test: 50, task: 10, att: 5 }
         };
-        const COMPONENT_LIMIT = (parseInt(lvl) >= 10) ? p.diversificado.test : p.iiiCiclo.test;
+        let COMPONENT_LIMIT = (parseInt(lvl) >= 10) ? p.diversificado.test : p.iiiCiclo.test;
         let activeTestId = null;
         let editingTestId = null;
 
         function init() {
-            document.getElementById('display-group').innerText = `${lvl}-${sec}`;
-            document.getElementById('display-period').innerText = `P-${period}`;
+            initSelectors();
             document.getElementById('limit-info').innerText = `* El valor total de pruebas para este nivel es de ${COMPONENT_LIMIT}%`;
+
+            // Adaptar sidebar según el modo
+            const pruebasLink = document.querySelector('aside a[href="pruebas.html"]') || document.querySelector('aside a[href="proyecto.html"]');
+            if (pruebasLink) {
+                if (mode === 'taller') {
+                    pruebasLink.href = 'proyecto.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="puzzle"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Proyecto</span>
+                    `;
+                    pruebasLink.classList.remove('nav-active');
+                    pruebasLink.classList.add('text-slate-400', 'hover:bg-slate-50');
+                } else {
+                    pruebasLink.href = 'pruebas.html';
+                    pruebasLink.innerHTML = `
+                        <i data-lucide="file-text"></i>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity font-medium text-sm">Pruebas</span>
+                    `;
+                    pruebasLink.classList.add('nav-active');
+                    pruebasLink.classList.remove('text-slate-400', 'hover:bg-slate-50');
+                }
+            }
+
             renderTests();
             lucide.createIcons();
+        }
+
+        function initSelectors() {
+            const periodSelect = document.getElementById('period-select');
+            if (periodSelect) periodSelect.value = period;
+
+            if (mode === 'taller') {
+                document.getElementById('group-selector-container').classList.add('hidden');
+                document.getElementById('workshop-selector-container').classList.remove('hidden');
+
+                const wSelect = document.getElementById('workshop-select');
+                const wNames = state.admin?.workshops || ['Taller 1', 'Taller 2', 'Taller 3'];
+                wSelect.innerHTML = wNames.map((name, i) => `<option value="${i + 1}">${name || `Taller ${i + 1}`}</option>`).join('');
+
+                const savedWorkshop = localStorage.getItem('temp_current_workshop');
+                if (savedWorkshop) wSelect.value = savedWorkshop;
+            } else {
+                const savedLevel = localStorage.getItem('temp_current_level');
+                const savedSection = localStorage.getItem('temp_current_section');
+                if (savedLevel) document.getElementById('level-select').value = savedLevel;
+                updateSectionSelector(savedSection);
+            }
+        }
+
+        function updateSectionSelector(sectionToSelect) {
+            const level = document.getElementById('level-select').value;
+            const sectionSelect = document.getElementById('section-select');
+            const definedGroups = state.groups || [];
+            const filtered = definedGroups.filter(g => g.startsWith(level + '-')).map(g => g.split('-')[1]);
+
+            if (filtered.length > 0) {
+                sectionSelect.innerHTML = filtered.map(s => `<option value="${s}">${level}-${s}</option>`).join('');
+                if (sectionToSelect && filtered.includes(sectionToSelect)) {
+                    sectionSelect.value = sectionToSelect;
+                }
+            } else {
+                sectionSelect.innerHTML = `<option value="1">${level}-1</option>`;
+            }
+            handleSelectorChange();
+        }
+
+        function handleSelectorChange() {
+            if (mode === 'taller') {
+                const workshopId = document.getElementById('workshop-select').value;
+                localStorage.setItem('temp_current_workshop', workshopId);
+            } else {
+                lvl = document.getElementById('level-select').value;
+                sec = document.getElementById('section-select').value;
+                localStorage.setItem('temp_current_level', lvl);
+                localStorage.setItem('temp_current_section', sec);
+            }
+            period = document.getElementById('period-select').value;
+            sessionStorage.setItem('temp_view_period', period);
+            
+            COMPONENT_LIMIT = (parseInt(lvl) >= 10) ? p.diversificado.test : p.iiiCiclo.test;
+            document.getElementById('limit-info').innerText = `* El valor total de pruebas para este nivel es de ${COMPONENT_LIMIT}%`;
+            
+            renderTests();
         }
 
         function openTestModal(testId = null) {

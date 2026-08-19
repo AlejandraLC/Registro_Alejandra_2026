@@ -1,4 +1,4 @@
-const CACHE_NAME = 'registro-academico-v4';
+const CACHE_NAME = 'registro-academico-v5';
 const ASSETS = [
     './index.html',
     './styles.css',
@@ -8,11 +8,14 @@ const ASSETS = [
     './cotidiano.html',
     './tareas.html',
     './pruebas.html',
+    './proyecto.html',
     './analisis.html',
     './estudiantes.html',
     './diagnostico.html',
     './comunicados.html',
     './bitacora.html',
+    './bitacora-grupal.html',
+    './reporte-general.html',
     './calendario.html',
     './config.html'
 ];
