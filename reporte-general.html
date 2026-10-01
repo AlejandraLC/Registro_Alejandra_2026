@@ -112,6 +112,15 @@
                 font-weight: normal !important;
             }
 
+            .report-table td:nth-last-child(2) {
+                background: #f8fafc !important;
+                font-weight: 800 !important;
+                color: #4338ca !important;
+                font-size: 10px !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
             .report-table td:last-child {
                 background: #eff6ff !important;
                 font-weight: 800 !important;
@@ -290,6 +299,8 @@
                     <option value="name-desc">Nombre (Z-A)</option>
                     <option value="final-desc">Nota Final (Mayor a Menor)</option>
                     <option value="final-asc">Nota Final (Menor a Mayor)</option>
+                    <option value="anual-desc">Nota Anual (Mayor a Menor)</option>
+                    <option value="anual-asc">Nota Anual (Menor a Mayor)</option>
                     <option value="coti-desc">Cotidiano (Mayor a Menor)</option>
                     <option value="coti-asc">Cotidiano (Menor a Mayor)</option>
                     <option value="task-desc">Tareas (Mayor a Menor)</option>
@@ -310,6 +321,7 @@
                         <th id="th-test">Pruebas</th>
                         <th id="th-att">Asistencia</th>
                         <th class="bg-indigo-50/50 text-indigo-700">Nota Final</th>
+                        <th class="bg-blue-50/50 text-blue-700">Nota Anual</th>
                     </tr>
                 </thead>
                 <tbody id="report-body" class="font-bold text-slate-600">
@@ -458,7 +470,7 @@
                     const filtered = (state.students[l] || []).filter(s => {
                         if (Array.isArray(s.workshops)) return s.workshops.includes(workshopId);
                         return s.workshop === workshopId;
-                    });
+                    }).map(s => ({ ...s, _level: l }));
                     students = [...students, ...filtered];
                 });
             } else {
@@ -466,7 +478,7 @@
                 section = document.getElementById('section-select').value;
                 localStorage.setItem('temp_current_level', level);
                 localStorage.setItem('temp_current_section', section);
-                students = (state.students?.[level] || []).filter(s => s.section === section);
+                students = (state.students?.[level] || []).filter(s => s.section === section).map(s => ({ ...s, _level: level }));
 
                 document.getElementById('info-subject').innerText = state.admin?.subject || 'Materia';
                 document.getElementById('pdf-subject').innerText = state.admin?.subject || 'Materia';
@@ -487,6 +499,208 @@
             lucide.createIcons();
         }
 
+        function calculateStudentPeriodData(student, targetPeriod, defaultLevel, defaultSection, workshopId) {
+            const sId = student.id;
+            const joinDate = student.joinDate || '2026-01-01';
+            const studentLvl = student._level || student.level || defaultLevel || '7';
+            const stuSection = student.section || defaultSection;
+            const todayGroupKey = mode === 'taller' ? `_workshop_${workshopId}` : `_group_${studentLvl}_${stuSection}`;
+
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const wP = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
+
+            let cycle;
+            if (mode === 'taller') {
+                cycle = { ...wP, test: 0 };
+            } else {
+                cycle = (parseInt(studentLvl) >= 10) ? p.diversificado : p.iiiCiclo;
+            }
+
+            const isPre = (date) => (date < joinDate);
+            const isAbs = (date) => {
+                const dailyData = (state.attendance?.[targetPeriod] || {})[date] || {};
+                const att = dailyData[`${todayGroupKey}_${sId}`];
+                if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return false;
+                let dailyMax = 0;
+                if (dailyData[todayGroupKey] && dailyData[todayGroupKey].dayLessons) {
+                    dailyMax = dailyData[todayGroupKey].dayLessons;
+                } else {
+                    const recs = Object.values(dailyData);
+                    dailyMax = recs.length > 0 ? Math.max(...recs.map(r => r.lessons || 0), 0) : 0;
+                }
+                return att.lessons >= dailyMax;
+            };
+            const checkAbsence = (date) => isPre(date) || isAbs(date);
+
+            let earnedPoints = 0;
+
+            // 1. Cotidiano
+            const acts = Object.values(state.activities || {}).filter(a => {
+                if (mode === 'taller') return String(a.workshopId) === String(workshopId) && String(a.period) === String(targetPeriod);
+                return String(a.level) === String(studentLvl) && String(a.section) === String(stuSection) && String(a.period) === String(targetPeriod);
+            }).filter(a => (a.dates || []).some(d => !checkAbsence(d)));
+
+            let cotiScore = 0;
+            let cotiTotalMax = 0;
+            acts.forEach(a => {
+                let totalPts = 0;
+                let maxInds = 0;
+                (a.skills || []).forEach((skill, skIdx) => {
+                    (skill.indicators || []).forEach((ind, inIdx) => {
+                        maxInds += 3;
+                        let best = 0;
+                        (a.dates || []).forEach(d => {
+                            const s = state.evaluations?.[a.id]?.[d]?.[sId]?.scores?.[`${skIdx}-${inIdx}`] || 0;
+                            if (s > best) best = s;
+                        });
+                        totalPts += best;
+                    });
+                });
+                if (maxInds > 0) {
+                    cotiScore += (totalPts * 100) / maxInds;
+                    cotiTotalMax += 100;
+                }
+            });
+            const cotiFinalNote = cotiTotalMax > 0 ? (cotiScore / cotiTotalMax) * cycle.coti : 0;
+            earnedPoints += cotiFinalNote;
+
+            // 2. Pruebas / Proyecto
+            let test1Note = 0;
+            let test2Note = 0;
+            let testProjFinalNote = 0;
+
+            if (mode === 'materia') {
+                const groupTests = Object.values(state.tests || {})
+                    .filter(t => String(t.level) === String(studentLvl) && String(t.section) === String(stuSection) && String(t.period) === String(targetPeriod));
+                groupTests.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+                if (groupTests.length > 0) {
+                    const t1 = groupTests[0];
+                    if (t1.date >= joinDate) {
+                        const ev = state.test_evals?.[t1.id]?.[sId] || { pts: 0, sig: false, sigPts: t1.points, sigPerc: t1.percent };
+                        const maxPts = ev.sig ? ev.sigPts : t1.points;
+                        const maxP = ev.sig ? ev.sigPerc : t1.percent;
+                        const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
+                        test1Note = (nota * maxP / 100);
+                    }
+                }
+                for (let i = 1; i < groupTests.length; i++) {
+                    const t2 = groupTests[i];
+                    if (t2.date >= joinDate) {
+                        const ev = state.test_evals?.[t2.id]?.[sId] || { pts: 0, sig: false, sigPts: t2.points, sigPerc: t2.percent };
+                        const maxPts = ev.sig ? ev.sigPts : t2.points;
+                        const maxP = ev.sig ? ev.sigPerc : t2.percent;
+                        const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
+                        test2Note += (nota * maxP / 100);
+                    }
+                }
+                earnedPoints += test1Note + test2Note;
+            } else {
+                const projects = Object.values(state.projects || {}).filter(p => String(p.workshopId) === String(workshopId) && String(p.period) === String(targetPeriod))
+                    .filter(p => (p.dates || []).some(d => !isPre(d)));
+                let sumProj = 0;
+                projects.forEach(p => {
+                    let pPts = 0; let pMax = 0;
+                    (p.skills || []).forEach((sk, skI) => (sk.indicators || []).forEach((ind, inI) => {
+                        pMax += 3;
+                        let best = 0;
+                        (p.dates || []).forEach(d => {
+                            const s = state.projectEvaluations?.[p.id]?.[d]?.[sId]?.scores?.[`${skI}-${inI}`] || 0;
+                            if (s > best) best = s;
+                        });
+                        pPts += best;
+                    }));
+                    if (pMax > 0) sumProj += (pPts * 100 / pMax);
+                });
+                const projNota100 = projects.length > 0 ? (sumProj / projects.length) : 0;
+                testProjFinalNote = projNota100 * cycle.proj / 100;
+                earnedPoints += testProjFinalNote;
+            }
+
+            // 3. Tareas
+            const tasks = Object.values(state.tasks || {}).filter(a => {
+                if (mode === 'taller') return String(a.workshopId) === String(workshopId) && String(a.period) === String(targetPeriod);
+                return String(a.level) === String(studentLvl) && String(a.section) === String(stuSection) && String(a.period) === String(targetPeriod);
+            }).filter(a => (a.dates || []).some(d => !isPre(d)));
+            let taskSumPts = 0;
+            let taskMaxPossible = 0;
+            tasks.forEach(a => {
+                (a.skills || []).forEach((sk, skIdx) => (sk.indicators || []).forEach((ind, iIdx) => {
+                    taskMaxPossible += 3;
+                    let best = 0;
+                    (a.dates || []).forEach(d => {
+                        const s = state.task_evaluations?.[a.id]?.[d]?.[sId]?.scores?.[`${skIdx}-${iIdx}`] || 0;
+                        if (s > best) best = s;
+                    });
+                    taskSumPts += best;
+                }));
+            });
+            const taskNota100 = taskMaxPossible > 0 ? (taskSumPts * 100) / taskMaxPossible : 0;
+            const taskFinalNote = taskNota100 * cycle.task / 100;
+            earnedPoints += taskFinalNote;
+
+            // 4. Asistencia
+            const attData = state.attendance?.[targetPeriod] || {};
+            let totalLecciones = 0;
+            let aiLecciones = 0;
+            let tardias = 0;
+            Object.entries(attData).forEach(([date, dayData]) => {
+                if (isPre(date)) return;
+                const record = dayData[`${todayGroupKey}_${sId}`];
+
+                let dayLec = 0;
+                const hasGroupRecords = Object.keys(dayData).some(id => id.startsWith(todayGroupKey + '_'));
+                if (!hasGroupRecords) return;
+
+                if (dayData[todayGroupKey] && dayData[todayGroupKey].dayLessons > 0) {
+                    dayLec = parseInt(dayData[todayGroupKey].dayLessons);
+                } else {
+                    let maxLecFound = 0;
+                    for (const id in dayData) {
+                        if (id.startsWith(todayGroupKey + '_')) {
+                            maxLecFound = Math.max(maxLecFound, parseInt(dayData[id].lessons) || 0);
+                        }
+                    }
+                    dayLec = maxLecFound;
+                }
+                totalLecciones += dayLec;
+
+                if (record && record.status !== 'P') {
+                    if (record.status === 'AI') aiLecciones += record.lessons || 0;
+                    if (record.status === 'T') tardias += 1;
+                }
+            });
+
+            const ausenciasEquivalentes = aiLecciones + (tardias * 0.5);
+            const porcentajeInjustificado = totalLecciones > 0 ? (ausenciasEquivalentes / totalLecciones) * 100 : 0;
+
+            let attPts = 0;
+            if (totalLecciones === 0) {
+                attPts = 0;
+            } else if (porcentajeInjustificado < 10) attPts = 5;
+            else if (porcentajeInjustificado < 20) attPts = 4;
+            else if (porcentajeInjustificado < 30) attPts = 3;
+            else if (porcentajeInjustificado < 40) attPts = 2;
+            else if (porcentajeInjustificado < 50) attPts = 1;
+            else attPts = 0;
+
+            const attFinalNote = attPts * (cycle.att / 5);
+            earnedPoints += attFinalNote;
+
+            return {
+                coti: cotiFinalNote,
+                task: taskFinalNote,
+                test1: test1Note,
+                test2: test2Note,
+                proj: testProjFinalNote,
+                att: attFinalNote,
+                final: earnedPoints
+            };
+        }
+
         function processAndRender(students, period, level, section, workshopId) {
             const tbody = document.getElementById('report-body');
 
@@ -498,8 +712,8 @@
 
             let cycle;
             const groupTests = Object.values(state.tests || {})
-                .filter(t => t.level === level && t.section === section && t.period === period);
-            groupTests.sort((a, b) => a.date.localeCompare(b.date));
+                .filter(t => String(t.level) === String(level) && String(t.section) === String(section) && String(t.period) === String(period));
+            groupTests.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
             const test1 = groupTests[0] || null;
             const test2 = groupTests[1] || null;
@@ -537,6 +751,11 @@
                     <th onclick="sortTable('final')" class="bg-indigo-50/50 text-indigo-700 cursor-pointer hover:bg-indigo-100/50 transition-colors select-none">
                         <div class="flex items-center justify-center gap-1">
                             <span>Nota Final</span> ${getSortIcon('final')}
+                        </div>
+                    </th>
+                    <th onclick="sortTable('anual')" class="bg-blue-50/60 text-blue-700 cursor-pointer hover:bg-blue-100/50 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Nota Anual</span> ${getSortIcon('anual')}
                         </div>
                     </th>
                 `;
@@ -578,189 +797,39 @@
                             <span>Nota Final</span> ${getSortIcon('final')}
                         </div>
                     </th>
+                    <th onclick="sortTable('anual')" class="bg-blue-50/60 text-blue-700 cursor-pointer hover:bg-blue-100/50 transition-colors select-none">
+                        <div class="flex items-center justify-center gap-1">
+                            <span>Nota Anual</span> ${getSortIcon('anual')}
+                        </div>
+                    </th>
                 `;
             }
 
             const calculatedData = students.map(student => {
-                const sId = student.id;
-                const joinDate = student.joinDate || '2026-01-01';
-                const todayGroupKey = mode === 'taller' ? `_workshop_${workshopId}` : `_group_${level}_${section}`;
+                const currentData = calculateStudentPeriodData(student, period, level, section, workshopId);
 
-                const isPre = (date) => (date < joinDate);
-                const isAbs = (date) => {
-                    const dailyData = (state.attendance?.[period] || {})[date] || {};
-                    const att = dailyData[`${todayGroupKey}_${sId}`];
-                    if (!att || (att.status !== 'AI' && att.status !== 'AJ')) return false;
-                    let dailyMax = 0;
-                    if (dailyData[todayGroupKey] && dailyData[todayGroupKey].dayLessons) {
-                        dailyMax = dailyData[todayGroupKey].dayLessons;
-                    } else {
-                        const recs = Object.values(dailyData);
-                        dailyMax = recs.length > 0 ? Math.max(...recs.map(r => r.lessons || 0), 0) : 0;
-                    }
-                    return att.lessons >= dailyMax;
-                };
-                const checkAbsence = (date) => isPre(date) || isAbs(date);
-
-                let earnedPoints = 0;
-
-                // 1. Cotidiano
-                const acts = Object.values(state.activities || {}).filter(a => {
-                    if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
-                    return a.level === level && a.section === section && a.period === period;
-                }).filter(a => a.dates.some(d => !checkAbsence(d)));
-
-                let cotiScore = 0;
-                let cotiTotalMax = 0;
-                acts.forEach(a => {
-                    let totalPts = 0;
-                    let maxInds = 0;
-                    a.skills.forEach((skill, skIdx) => {
-                        skill.indicators.forEach((ind, inIdx) => {
-                            maxInds += 3;
-                            let best = 0;
-                            a.dates.forEach(d => {
-                                const s = state.evaluations?.[a.id]?.[d]?.[sId]?.scores?.[`${skIdx}-${inIdx}`] || 0;
-                                if (s > best) best = s;
-                            });
-                            totalPts += best;
-                        });
-                    });
-                    if (maxInds > 0) {
-                        cotiScore += (totalPts * 100) / maxInds;
-                        cotiTotalMax += 100;
-                    }
-                });
-                const cotiFinalNote = cotiTotalMax > 0 ? (cotiScore / cotiTotalMax) * cycle.coti : 0;
-                earnedPoints += cotiFinalNote;
-
-                // 2. Pruebas / Proyecto
-                let test1Note = 0;
-                let test2Note = 0;
-                let testProjFinalNote = 0;
-
-                if (mode === 'materia') {
-                    if (groupTests.length > 0) {
-                        const t1 = groupTests[0];
-                        if (t1.date >= joinDate) {
-                            const ev = state.test_evals?.[t1.id]?.[sId] || { pts: 0, sig: false, sigPts: t1.points, sigPerc: t1.percent };
-                            const maxPts = ev.sig ? ev.sigPts : t1.points;
-                            const maxP = ev.sig ? ev.sigPerc : t1.percent;
-                            const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
-                            test1Note = (nota * maxP / 100);
-                        }
-                    }
-                    for (let i = 1; i < groupTests.length; i++) {
-                        const t2 = groupTests[i];
-                        if (t2.date >= joinDate) {
-                            const ev = state.test_evals?.[t2.id]?.[sId] || { pts: 0, sig: false, sigPts: t2.points, sigPerc: t2.percent };
-                            const maxPts = ev.sig ? ev.sigPts : t2.points;
-                            const maxP = ev.sig ? ev.sigPerc : t2.percent;
-                            const nota = maxPts > 0 ? (ev.pts * 100 / maxPts) : 0;
-                            test2Note += (nota * maxP / 100);
-                        }
-                    }
-                    earnedPoints += test1Note + test2Note;
-                } else {
-                    const projects = Object.values(state.projects || {}).filter(p => p.workshopId === workshopId && p.period === period)
-                        .filter(p => p.dates.some(d => !isPre(d)));
-                    let sumProj = 0;
-                    projects.forEach(p => {
-                        let pPts = 0; let pMax = 0;
-                        p.skills.forEach((sk, skI) => sk.indicators.forEach((ind, inI) => {
-                            pMax += 3;
-                            let best = 0;
-                            p.dates.forEach(d => {
-                                const s = state.projectEvaluations?.[p.id]?.[d]?.[sId]?.scores?.[`${skI}-${inI}`] || 0;
-                                if (s > best) best = s;
-                            });
-                            pPts += best;
-                        }));
-                        if (pMax > 0) sumProj += (pPts * 100 / pMax);
-                    });
-                    const projNota100 = projects.length > 0 ? (sumProj / projects.length) : 0;
-                    testProjFinalNote = projNota100 * cycle.proj / 100;
-                    earnedPoints += testProjFinalNote;
-                }
-
-                // 3. Tareas
-                const tasks = Object.values(state.tasks || {}).filter(a => {
-                    if (mode === 'taller') return a.workshopId === workshopId && a.period === period;
-                    return a.level === level && a.section === section && a.period === period;
-                }).filter(a => a.dates.some(d => !isPre(d)));
-                let taskSumPts = 0;
-                let taskMaxPossible = 0;
-                tasks.forEach(a => {
-                    a.skills.forEach((sk, skIdx) => sk.indicators.forEach((ind, iIdx) => {
-                        taskMaxPossible += 3;
-                        let best = 0;
-                        a.dates.forEach(d => {
-                            const s = state.task_evaluations?.[a.id]?.[d]?.[sId]?.scores?.[`${skIdx}-${iIdx}`] || 0;
-                            if (s > best) best = s;
-                        });
-                        taskSumPts += best;
-                    }));
-                });
-                const taskNota100 = taskMaxPossible > 0 ? (taskSumPts * 100) / taskMaxPossible : 0;
-                const taskFinalNote = taskNota100 * cycle.task / 100;
-                earnedPoints += taskFinalNote;
-
-                // 4. Asistencia
-                const attData = state.attendance?.[period] || {};
-                let totalLecciones = 0;
-                let aiLecciones = 0;
-                let tardias = 0;
-                Object.entries(attData).forEach(([date, dayData]) => {
-                    if (isPre(date)) return;
-                    const record = dayData[`${todayGroupKey}_${sId}`];
-
-                    let dayLec = 0;
-                    const hasGroupRecords = Object.keys(dayData).some(id => id.startsWith(todayGroupKey + '_'));
-                    if (!hasGroupRecords) return;
-
-                    if (dayData[todayGroupKey] && dayData[todayGroupKey].dayLessons > 0) {
-                        dayLec = parseInt(dayData[todayGroupKey].dayLessons);
-                    } else {
-                        let maxLecFound = 0;
-                        for (const id in dayData) {
-                            if (id.startsWith(todayGroupKey + '_')) {
-                                maxLecFound = Math.max(maxLecFound, parseInt(dayData[id].lessons) || 0);
-                            }
-                        }
-                        dayLec = maxLecFound;
-                    }
-                    totalLecciones += dayLec;
-
-                    if (record && record.status !== 'P') {
-                        if (record.status === 'AI') aiLecciones += record.lessons || 0;
-                        if (record.status === 'T') tardias += 1;
-                    }
-                });
-
-                const ausenciasEquivalentes = aiLecciones + (tardias * 0.5);
-                const porcentajeInjustificado = totalLecciones > 0 ? (ausenciasEquivalentes / totalLecciones) * 100 : 0;
-
-                let attPts = 0;
-                if (porcentajeInjustificado < 10) attPts = 5;
-                else if (porcentajeInjustificado < 20) attPts = 4;
-                else if (porcentajeInjustificado < 30) attPts = 3;
-                else if (porcentajeInjustificado < 40) attPts = 2;
-                else if (porcentajeInjustificado < 50) attPts = 1;
-                else attPts = 0;
-
-                const attFinalNote = attPts * (cycle.att / 5);
-                earnedPoints += attFinalNote;
+                // Cálculo para Nota Anual (P1: 50% / P2: 50%)
+                const p1 = (String(period) === '1') ? currentData.final : calculateStudentPeriodData(student, '1', level, section, workshopId).final;
+                const p2 = (String(period) === '2') ? currentData.final : calculateStudentPeriodData(student, '2', level, section, workshopId).final;
+                const p1Contrib = p1 * 0.5;
+                const p2Contrib = p2 * 0.5;
+                const notaAnual = p1Contrib + p2Contrib;
 
                 return {
                     student,
                     name: student.name,
-                    coti: cotiFinalNote,
-                    task: taskFinalNote,
-                    test1: test1Note,
-                    test2: test2Note,
-                    proj: testProjFinalNote,
-                    att: attFinalNote,
-                    final: earnedPoints
+                    coti: currentData.coti,
+                    task: currentData.task,
+                    test1: currentData.test1,
+                    test2: currentData.test2,
+                    proj: currentData.proj,
+                    att: currentData.att,
+                    final: currentData.final,
+                    p1: p1,
+                    p2: p2,
+                    p1Contrib: p1Contrib,
+                    p2Contrib: p2Contrib,
+                    anual: notaAnual
                 };
             });
 
@@ -789,12 +858,20 @@
                 const attFinalNote = item.att;
                 const earnedPoints = item.final;
 
-                const threshold = (parseInt(level) >= 10) ? 70 : 65;
+                const stuLvl = student._level || student.level || level || '7';
+                const threshold = (parseInt(stuLvl) >= 10) ? 70 : 65;
                 const notaFinal = earnedPoints.toFixed(2);
                 let notaClass = 'text-slate-800 bg-indigo-50/30';
 
                 if (earnedPoints < threshold) {
                     notaClass = 'text-rose-600 bg-rose-50';
+                }
+
+                const notaAnualVal = item.anual;
+                const notaAnual = notaAnualVal.toFixed(2);
+                let anualClass = 'text-slate-800 bg-blue-50/30';
+                if (notaAnualVal < threshold) {
+                    anualClass = 'text-rose-600 bg-rose-50';
                 }
 
                 html += `
@@ -817,6 +894,12 @@
                         `}
                         <td class="text-emerald-600">${attFinalNote.toFixed(2)}</td>
                         <td class="font-black text-lg ${notaClass}">${notaFinal}</td>
+                        <td class="font-black text-lg ${anualClass}">
+                            <div>${notaAnual}</div>
+                            <div class="text-[9px] font-semibold text-slate-400 no-print" title="P1: ${item.p1.toFixed(1)} (50%) | P2: ${item.p2.toFixed(1)} (50%)">
+                                P1: ${item.p1.toFixed(1)} | P2: ${item.p2.toFixed(1)}
+                            </div>
+                        </td>
                     </tr>
                 `;
             });
