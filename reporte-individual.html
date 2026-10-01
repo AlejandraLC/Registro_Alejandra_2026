@@ -405,7 +405,7 @@
     const state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
     const sId = localStorage.getItem('temp_report_student_id');
     const lvl = localStorage.getItem('temp_report_level');
-    const period = state.settings?.currentPeriod || '1';
+    let period = sessionStorage.getItem('temp_view_period') || state.settings?.currentPeriod || '1';
     const mode = localStorage.getItem('temp_current_mode') || 'materia';
     const workshopId = localStorage.getItem('temp_current_workshop') || '1';
     let groupKey = "";
@@ -453,7 +453,6 @@
         const joinDate = (student && student.joinDate) ? student.joinDate : '2026-01-01';
         if (date < joinDate) return true;
 
-        const period = state.settings?.currentPeriod || '1';
         const attData = state.attendance?.[period] || {};
         const dailyData = attData[date] || {};
 
@@ -704,13 +703,55 @@
         // Calculamos la nota del periodo actual que tenemos en pantalla
         const currentPeriodGrade = parseFloat(document.getElementById('final-period-grade').innerText) || 0;
 
-        // Lógica para obtener P1 y P2 del estado global
+        // Función auxiliar para calcular la nota de un periodo específico dinámicamente
+        function getPeriodGrade(targetPeriod) {
+            const originalPeriod = period;
+            period = targetPeriod;
+
+            const p = state.settings?.percentages || { iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 }, diversificado: { coti: 35, test: 50, task: 10, att: 5 } };
+            let vCot = 0, vTest = 0, vTask = 0, vAtt = 0;
+            if (mode === 'materia') {
+                const cycle = (parseInt(studentLvl) >= 10) ? p.diversificado : p.iiiCiclo;
+                vCot = cycle.coti; vTest = cycle.test; vTask = cycle.task; vAtt = cycle.att;
+            } else {
+                const wP = state.settings?.workshopPercentages || {};
+                vCot = wP.coti || 30; vTest = 0; vTask = wP.task || 20; vAtt = wP.att || 10;
+            }
+
+            const resAttRaw = calculateAttendanceNota(student.id);
+            const notaAtt = resAttRaw.nota * (vAtt / 5);
+
+            const cotActs = Object.values(state.activities || {}).filter(a => (mode === 'materia' ? (a.level === studentLvl && a.section === student.section) : (a.workshopId === workshopId)) && a.period === targetPeriod).filter(a => a.dates.some(d => !checkAbsence(student.id, d)));
+            let sumCot = 0; let cotCount = 0;
+            cotActs.forEach(a => { const r = calculateActivityMetrics(student.id, a, 'cot'); sumCot += r.nota; cotCount++; });
+            const notaCot = cotCount > 0 ? (sumCot / cotCount * vCot / 100) : 0;
+
+            const taskActs = Object.values(state.tasks || {}).filter(a => (mode === 'materia' ? (a.level === studentLvl && a.section === student.section) : (a.workshopId === workshopId)) && a.period === targetPeriod).filter(a => a.dates.some(d => d >= joinDate));
+            let pObtT = 0; let pMaxT = 0;
+            taskActs.forEach(a => { const r = calculateActivityMetrics(student.id, a, 'task'); pObtT += r.pts; pMaxT += r.max; });
+            const notaTask = pMaxT > 0 ? (pObtT * vTask / pMaxT) : 0;
+
+            const tests = Object.values(state.tests || {}).filter(t => t.level === studentLvl && t.section === student.section && t.period === targetPeriod).filter(t => t.date >= joinDate);
+            let notaTest = 0;
+            tests.forEach(t => {
+                const ev = state.test_evals?.[t.id]?.[student.id] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
+                const mPts = ev.sig ? ev.sigPts : t.points;
+                const mPerc = ev.sig ? ev.sigPerc : t.percent;
+                const n100 = mPts > 0 ? (ev.pts * 100 / mPts) : 0;
+                notaTest += (n100 * mPerc / 100);
+            });
+
+            period = originalPeriod;
+            return notaCot + notaTask + notaTest + notaAtt;
+        }
+
+        // Lógica para obtener P1 y P2 calculándolos dinámicamente si no existen
         let p1 = 0; let p2 = 0;
         if (period === '1') {
             p1 = currentPeriodGrade;
-            p2 = state.grades?.[studentLvl]?.[student.id]?.p2 || 0;
+            p2 = state.grades?.[studentLvl]?.[student.id]?.p2 || getPeriodGrade('2');
         } else {
-            p1 = state.grades?.[studentLvl]?.[student.id]?.p1 || 0;
+            p1 = state.grades?.[studentLvl]?.[student.id]?.p1 || getPeriodGrade('1');
             p2 = currentPeriodGrade;
         }
 
