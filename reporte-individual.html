@@ -400,7 +400,7 @@
         </div>
     </div>
 </div>
-</div> ```
+
 <script>
     const state = JSON.parse(localStorage.getItem('academicApp_2026_data')) || {};
     const sId = localStorage.getItem('temp_report_student_id');
@@ -446,14 +446,15 @@
     }
 
     // MOTOR DE CÁLCULO DE ASISTENCIA (TABLA MEP)
-    function checkAbsence(sId, date) {
+    function checkAbsence(sId, date, targetPeriod) {
         // En reportes individuales, asumimos que student y joinDate ya están en el contexto o los buscamos
         const studentLvl = window.currentStudentLvl;
         const student = (state.students?.[studentLvl] || []).find(s => s.id === sId);
         const joinDate = (student && student.joinDate) ? student.joinDate : '2026-01-01';
         if (date < joinDate) return true;
 
-        const attData = state.attendance?.[period] || {};
+        const pToUse = targetPeriod || period;
+        const attData = state.attendance?.[pToUse] || {};
         const dailyData = attData[date] || {};
 
         // groupKey debe ser global o pasado
@@ -469,11 +470,12 @@
             const records = Object.values(dailyData);
             dailyMax = records.length > 0 ? Math.max(...records.map(r => r.lessons || 0), 0) : 0;
         }
-        return att.lessons >= dailyMax;
+        return (att.lessons || 0) >= dailyMax;
     }
 
-    function calculateAttendanceNota(studentId) {
-        const attData = state.attendance?.[period] || {};
+    function calculateAttendanceNota(studentId, targetPeriod) {
+        const pToUse = targetPeriod || period;
+        const attData = state.attendance?.[pToUse] || {};
         const studentLvl = window.currentStudentLvl;
         const student = (state.students?.[studentLvl] || []).find(s => s.id === studentId);
         if (!student) return { nota: 0, porc: 0, total: 0, ai: 0, aj: 0, t: 0, html: "" };
@@ -526,13 +528,23 @@
             }
         });
 
+        if (totalLeccionesImpartidas === 0) {
+            return {
+                nota: 0,
+                porc: 0,
+                total: 0,
+                ai: 0,
+                aj: 0,
+                t: 0,
+                html: historyHtml
+            };
+        }
+
         // REGLA MEP: Cada tardía equivale a 0.5 ausencias injustificadas
         const ausenciasEquivalentes = aiLecciones + (tardiasCount * 0.5);
 
         // Cálculo del porcentaje sobre el total de lecciones
-        const porcentajeInjustificado = totalLeccionesImpartidas > 0
-            ? (ausenciasEquivalentes / totalLeccionesImpartidas) * 100
-            : 0;
+        const porcentajeInjustificado = (ausenciasEquivalentes / totalLeccionesImpartidas) * 100;
 
         // Tabla de asignación de puntos (0% - 5%)
         let notaAsistencia = 0;
@@ -555,13 +567,13 @@
     }
 
     function calculateActivityMetrics(studentId, activity, type) {
-        const evals = type === 'task' ? state.task_evaluations : state.evaluations;
+        const evals = type === 'task' ? state.task_evaluations : (type === 'proj' ? state.projectEvaluations : state.evaluations);
         let pts = 0; let max = 0;
-        activity.skills.forEach((sk, skI) => {
-            sk.indicators.forEach((ind, inI) => {
+        (activity.skills || []).forEach((sk, skI) => {
+            (sk.indicators || []).forEach((ind, inI) => {
                 max += 3;
                 let best = 0;
-                activity.dates.forEach(d => {
+                (activity.dates || []).forEach(d => {
                     const s = evals?.[activity.id]?.[d]?.[studentId]?.scores?.[`${skI}-${inI}`] || 0;
                     if (s > best) best = s;
                 });
@@ -700,68 +712,123 @@
         // --- F. CÁLCULO ANUAL (I P-50% / II P-50%) ---
         const notaMinima = (parseInt(studentLvl) >= 10) ? 70 : 65;
 
-        // Calculamos la nota del periodo actual que tenemos en pantalla
-        const currentPeriodGrade = parseFloat(document.getElementById('final-period-grade').innerText) || 0;
-
         // Función auxiliar para calcular la nota de un periodo específico dinámicamente
-        function getPeriodGrade(targetPeriod) {
-            const originalPeriod = period;
-            period = targetPeriod;
+        function computePeriodGrade(targetPeriod) {
+            const p = state.settings?.percentages || {
+                iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 },
+                diversificado: { coti: 35, test: 50, task: 10, att: 5 }
+            };
+            const wP = state.settings?.workshopPercentages || { coti: 30, proj: 40, task: 20, att: 10 };
 
-            const p = state.settings?.percentages || { iiiCiclo: { coti: 45, test: 40, task: 10, att: 5 }, diversificado: { coti: 35, test: 50, task: 10, att: 5 } };
-            let vCot = 0, vTest = 0, vTask = 0, vAtt = 0;
+            let vCot = 0, vTest = 0, vTask = 0, vAtt = 0, vProj = 0;
             if (mode === 'materia') {
                 const cycle = (parseInt(studentLvl) >= 10) ? p.diversificado : p.iiiCiclo;
-                vCot = cycle.coti; vTest = cycle.test; vTask = cycle.task; vAtt = cycle.att;
+                vCot = cycle.coti || 0;
+                vTest = cycle.test || 0;
+                vTask = cycle.task || 0;
+                vAtt = cycle.att || 0;
             } else {
-                const wP = state.settings?.workshopPercentages || {};
-                vCot = wP.coti || 30; vTest = 0; vTask = wP.task || 20; vAtt = wP.att || 10;
+                vCot = wP.coti || 30;
+                vTest = 0;
+                vTask = wP.task || 20;
+                vProj = wP.proj || 40;
+                vAtt = wP.att || 10;
             }
 
-            const resAttRaw = calculateAttendanceNota(student.id);
+            // Asistencia
+            const resAttRaw = calculateAttendanceNota(student.id, String(targetPeriod));
             const notaAtt = resAttRaw.nota * (vAtt / 5);
 
-            const cotActs = Object.values(state.activities || {}).filter(a => (mode === 'materia' ? (a.level === studentLvl && a.section === student.section) : (a.workshopId === workshopId)) && a.period === targetPeriod).filter(a => a.dates.some(d => !checkAbsence(student.id, d)));
+            // Cotidiano
+            const cotActs = Object.values(state.activities || {}).filter(a => {
+                if (mode === 'materia') {
+                    return String(a.level) === String(studentLvl) && String(a.section) === String(student.section) && String(a.period) === String(targetPeriod);
+                } else {
+                    return String(a.workshopId) === String(workshopId) && String(a.period) === String(targetPeriod);
+                }
+            }).filter(a => (a.dates || []).some(d => !checkAbsence(student.id, d, String(targetPeriod))));
+
             let sumCot = 0; let cotCount = 0;
-            cotActs.forEach(a => { const r = calculateActivityMetrics(student.id, a, 'cot'); sumCot += r.nota; cotCount++; });
+            cotActs.forEach(a => {
+                const r = calculateActivityMetrics(student.id, a, 'cot');
+                sumCot += r.nota;
+                cotCount++;
+            });
             const notaCot = cotCount > 0 ? (sumCot / cotCount * vCot / 100) : 0;
 
-            const taskActs = Object.values(state.tasks || {}).filter(a => (mode === 'materia' ? (a.level === studentLvl && a.section === student.section) : (a.workshopId === workshopId)) && a.period === targetPeriod).filter(a => a.dates.some(d => d >= joinDate));
+            // Tareas
+            const taskActs = Object.values(state.tasks || {}).filter(a => {
+                if (mode === 'materia') {
+                    return String(a.level) === String(studentLvl) && String(a.section) === String(student.section) && String(a.period) === String(targetPeriod);
+                } else {
+                    return String(a.workshopId) === String(workshopId) && String(a.period) === String(targetPeriod);
+                }
+            }).filter(a => (a.dates || []).some(d => d >= joinDate));
+
             let pObtT = 0; let pMaxT = 0;
-            taskActs.forEach(a => { const r = calculateActivityMetrics(student.id, a, 'task'); pObtT += r.pts; pMaxT += r.max; });
+            taskActs.forEach(a => {
+                const r = calculateActivityMetrics(student.id, a, 'task');
+                pObtT += r.pts;
+                pMaxT += r.max;
+            });
             const notaTask = pMaxT > 0 ? (pObtT * vTask / pMaxT) : 0;
 
-            const tests = Object.values(state.tests || {}).filter(t => t.level === studentLvl && t.section === student.section && t.period === targetPeriod).filter(t => t.date >= joinDate);
+            // Pruebas (Materia)
             let notaTest = 0;
-            tests.forEach(t => {
-                const ev = state.test_evals?.[t.id]?.[student.id] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
-                const mPts = ev.sig ? ev.sigPts : t.points;
-                const mPerc = ev.sig ? ev.sigPerc : t.percent;
-                const n100 = mPts > 0 ? (ev.pts * 100 / mPts) : 0;
-                notaTest += (n100 * mPerc / 100);
-            });
+            if (mode === 'materia') {
+                const tests = Object.values(state.tests || {}).filter(t => 
+                    String(t.level) === String(studentLvl) && 
+                    String(t.section) === String(student.section) && 
+                    String(t.period) === String(targetPeriod)
+                ).filter(t => t.date >= joinDate);
+                tests.forEach(t => {
+                    const ev = state.test_evals?.[t.id]?.[student.id] || { pts: 0, sig: false, sigPts: t.points, sigPerc: t.percent };
+                    const mPts = (ev.sig && ev.sigPts > 0) ? ev.sigPts : (t.points || 0);
+                    const mPerc = (ev.sig && ev.sigPerc > 0) ? ev.sigPerc : (t.percent || 0);
+                    const n100 = mPts > 0 ? (ev.pts * 100 / mPts) : 0;
+                    notaTest += (n100 * mPerc / 100);
+                });
+            }
 
-            period = originalPeriod;
-            return notaCot + notaTask + notaTest + notaAtt;
+            // Proyecto (Taller)
+            let notaProj = 0;
+            if (mode === 'taller') {
+                const projects = Object.values(state.projects || {}).filter(p => 
+                    String(p.workshopId) === String(workshopId) && 
+                    String(p.period) === String(targetPeriod)
+                ).filter(p => (p.dates || []).some(d => d >= joinDate));
+                let sumProj = 0;
+                projects.forEach(p => {
+                    let pPts = 0; let pMax = 0;
+                    (p.skills || []).forEach((sk, skI) => (sk.indicators || []).forEach((ind, inI) => {
+                        pMax += 3;
+                        let best = 0;
+                        (p.dates || []).forEach(d => {
+                            const s = state.projectEvaluations?.[p.id]?.[d]?.[student.id]?.scores?.[`${skI}-${inI}`] || 0;
+                            if (s > best) best = s;
+                        });
+                        pPts += best;
+                    }));
+                    if (pMax > 0) sumProj += (pPts * 100 / pMax);
+                });
+                const projNota100 = projects.length > 0 ? (sumProj / projects.length) : 0;
+                notaProj = projNota100 * vProj / 100;
+            }
+
+            return notaCot + notaTask + notaTest + notaProj + notaAtt;
         }
 
-        // Lógica para obtener P1 y P2 calculándolos dinámicamente si no existen
-        let p1 = 0; let p2 = 0;
-        if (period === '1') {
-            p1 = currentPeriodGrade;
-            p2 = state.grades?.[studentLvl]?.[student.id]?.p2 || getPeriodGrade('2');
-        } else {
-            p1 = state.grades?.[studentLvl]?.[student.id]?.p1 || getPeriodGrade('1');
-            p2 = currentPeriodGrade;
-        }
+        // Obtener P1 y P2 dinámicamente con precisión
+        const p1 = (String(period) === '1') ? total : computePeriodGrade('1');
+        const p2 = (String(period) === '2') ? total : computePeriodGrade('2');
 
         const p1Contrib = p1 * 0.5;
         const p2Contrib = p2 * 0.5;
         const notaAnual = p1Contrib + p2Contrib;
 
-        // Inyectar valores
-        document.getElementById('ann-p1').innerHTML = `${p1.toFixed(2)} <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-1 rounded ml-1">${p1Contrib.toFixed(2)}%</span>`;
-        document.getElementById('ann-p2').innerHTML = `${p2.toFixed(2)} <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-1 rounded ml-1">${p2Contrib.toFixed(2)}%</span>`;
+        // Inyectar valores con su porcentaje ganado y nota base
+        document.getElementById('ann-p1').innerHTML = `${p1.toFixed(2)} <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-1 rounded ml-1 font-bold">${p1Contrib.toFixed(2)}%</span>`;
+        document.getElementById('ann-p2').innerHTML = `${p2.toFixed(2)} <span class="text-[10px] bg-blue-50 text-blue-500 px-2 py-1 rounded ml-1 font-bold">${p2Contrib.toFixed(2)}%</span>`;
         document.getElementById('ann-final').innerText = notaAnual.toFixed(2);
 
         const statusBox = document.getElementById('ann-status-box');
