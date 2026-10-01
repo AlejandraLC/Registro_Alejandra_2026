@@ -21,6 +21,10 @@
 </head>
 
 <body class="flex min-h-screen page-registro">
+    <button class="sidebar-toggle no-print" onclick="toggleSidebar()">
+        <i data-lucide="menu"></i>
+    </button>
+
     <aside
         class="w-20 hover:w-64 bg-white border-r border-slate-100 transition-all duration-300 flex flex-col h-screen sticky top-0 z-40 overflow-hidden group">
         <div class="flex flex-col gap-3 p-4 mt-6">
@@ -152,6 +156,7 @@
 
         document.addEventListener('DOMContentLoaded', init);
     </script>
+    <script src="nav.js"></script>
 </body>
 
 </html>
